@@ -1263,20 +1263,20 @@ reaction('OH + CH2CHO <=> H2O + CH2CO', [1.200000e+13, 0.0, 0.0])
 reaction('OH + CH2CHO <=> HCO + CH2OH', [3.010000e+13, 0.0, 0.0])
 
 # Reaction 185
-reaction('CH + O <=> HCO+ + E', [2.51E+11, 0.0, 1700])
+reaction('CH + O => HCO+ + E', [2.51E+11, 0.0, 1700])
 
 # Reaction 186
-reaction('HCO+ + H2O <=> H3O+ + CO', [1.51E+15, 0.0, 0.0])
+reaction('HCO+ + H2O => H3O+ + CO', [1.51E+15, 0.0, 0.0])
 
 # Reaction 187
-reaction('H3O+ + E <=> H2O + H', [2.29E+18, -0.5, 0.0])
+reaction('H3O+ + E => H2O + H', [2.29E+18, -0.5, 0.0])
 
 # Reaction 188
-reaction('H3O+ + E <=> OH + H + H', [7.95E+21, -1.4, 0.0])
+reaction('H3O+ + E => OH + H + H', [7.95E+21, -1.4, 0.0])
 
 #Reaction 189
-reaction('H3O+ + E <=> H2 + OH', [1.25E+19, -0.5, 0.0])
+reaction('H3O+ + E => H2 + OH', [1.25E+19, -0.5, 0.0])
 
 #Reaction 190
-reaction('H3O+ + E <=>  O + H2 + H', [6.0E+17, -0.3, 0.0])
+reaction('H3O+ + E =>  O + H2 + H', [6.0E+17, -0.3, 0.0])
 

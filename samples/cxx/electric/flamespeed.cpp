@@ -120,8 +120,8 @@ int flamespeed(double phi)
         flame.showSolution();
 
         int flowdomain = 1;
-        double ratio = 3.0;
-        double slope = 0.01;
+        double ratio = 5.0;
+        double slope = 0.04;
         double curve = 0.05;
 
         flame.setRefineCriteria(flowdomain,ratio,slope,curve);

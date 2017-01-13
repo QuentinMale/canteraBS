@@ -74,6 +74,7 @@ void IonFlow::updateDiffFluxes(const doublereal* x, size_t j0, size_t j1)
 {
     if (m_solnPhase == 1) {
         phaseOneDiffFluxes(x,j0,j1);
+        //phaseTwoDiffFluxes(x,j0,j1);
     } else if (m_solnPhase == 2) {
         phaseTwoDiffFluxes(x,j0,j1);
     } else if (m_solnPhase == 3) {
