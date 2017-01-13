@@ -3,7 +3,10 @@
 Cantera
 *******
 
-Version 2.3.0a3 (development)
+Version 2.3.0b1 (development)
+
+.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.170284.svg
+   :target: https://doi.org/10.5281/zenodo.170284
 
 What is Cantera?
 ================
@@ -42,7 +45,7 @@ Ubuntu. Anaconda packages containing the Cantera Python module are also
 available for Windows, OS X, and Linux.
 
 .. image:: https://anaconda.org/cantera/cantera/badges/installer/conda.svg
-    :target: https://conda.anaconda.org/cantera
+    :target: https://anaconda.org/Cantera/cantera
 
 For other platforms, or for users wishing to install a development version of
 Cantera, `compilation instructions
@@ -56,6 +59,8 @@ offers a number of starting points:
 
 - `Python tutorial
   <http://cantera.github.io/docs/sphinx/html/cython/tutorial.html>`_
+- `Application Examples in Python
+  <https://github.com/Cantera/cantera-jupyter#cantera-jupyter>`_
 - `A guide to Cantera's input file format
   <http://cantera.github.io/docs/sphinx/html/cti/index.html>`_
 - `A list of frequently asked questions

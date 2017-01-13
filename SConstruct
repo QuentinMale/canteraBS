@@ -630,7 +630,7 @@ for arg in ARGUMENTS:
         sys.exit(1)
 
 # Require a StrictVersion-compatible version
-env['cantera_version'] = "2.3.0a3"
+env['cantera_version'] = "2.3.0b1"
 ctversion = StrictVersion(env['cantera_version'])
 # For use where pre-release tags are not permitted (MSI, sonames)
 env['cantera_pure_version'] = '.'.join(str(x) for x in ctversion.version)
@@ -739,7 +739,7 @@ else:
     env['LINKFLAGS'] += listify(env['no_debug_linker_flags'])
 
 if env['coverage']:
-    if  'gcc' in env.subst('$CC'):
+    if  'gcc' in env.subst('$CC') or 'clang' in env.subst('$CC'):
         env.Append(CCFLAGS=['-fprofile-arcs', '-ftest-coverage'])
         env.Append(LINKFLAGS=['-fprofile-arcs', '-ftest-coverage'])
 
@@ -1096,10 +1096,18 @@ if env['python_package'] in ('full','default'):
             if env['OS'] == 'Windows':
                 python_dir = os.path.dirname(which(env['python_cmd']))
                 threetotwo_cmd = pjoin(python_dir, 'Scripts', '3to2')
-                ret = getCommandOutput(env['python_cmd'], threetotwo_cmd, '-l')
+                # Conda installs 3to2 as an EXE file that can be executed directly
+                # but pip installs only a script. Try executing the EXE file first,
+                # and if it fails because the file doesn't exist, try the script
+                try:
+                    ret = getCommandOutput(threetotwo_cmd, '-l')
+                    env['threetotwo_cmd'] = [threetotwo_cmd]
+                except WindowsError:
+                    ret = getCommandOutput(env['python_cmd'], threetotwo_cmd, '-l')
+                    env['threetotwo_cmd'] = [env['python_cmd'], threetotwo_cmd]
             else:
-                ret = getCommandOutput('3to2' '-l')
-        except OSError as err:
+                ret = getCommandOutput('3to2', '-l')
+        except (OSError, subprocess.CalledProcessError) as err:
             if env['VERBOSE']:
                 print 'Error checking for 3to2:'
                 print err
@@ -1108,7 +1116,8 @@ if env['python_package'] in ('full','default'):
             env['python_convert_examples'] = True
         else:
             env['python_convert_examples'] = False
-            print """WARNING: Couldn't find '3to2'. Python examples will not work correctly."""
+            print ("WARNING: Couldn't find the 3to2 package. "
+                   "Python 2 examples will not work correctly.")
 
 else:
     env['python_module_loc'] = ''

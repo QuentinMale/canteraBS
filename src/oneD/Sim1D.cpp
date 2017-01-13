@@ -298,7 +298,7 @@ void Sim1D::solve(int loglevel, bool refine_grid)
                 }
 
                 if (loglevel == 1) {
-                    writelog(" {:10.4g} {:10.4g}\n", dt,
+                    writelog("{:10.4g} {:10.4g}\n", dt,
                              log10(ssnorm(m_x.data(), m_xnew.data())));
                 }
                 istep++;

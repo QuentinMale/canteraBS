@@ -88,14 +88,14 @@ Windows
 =======
 
 Windows installers are provided for stable versions of Cantera. These
-installation instructions are for Cantera 2.2.0. Use these installers if you
+installation instructions are for Cantera 2.3.0. Use these installers if you
 want to work with a copy of Python downloaded from `Python.org
 <https://www.python.org/>`_. If you are using Anaconda / Miniconda, see the
 directions :ref:`above <sec-install-conda>`.
 
 1. **Choose your Python version and architecture**
 
-   - On Windows, Cantera supports Python 2.7, Python 3.3, Python 3.4, and Python
+   - On Windows, Installers are provided for Python 2.7, Python 3.4, and Python
      3.5. Python 3.5 is recommended unless you need to use legacy code that does
      not work with Python 3. You can install multiple Cantera Python modules
      simultaneously.
@@ -145,22 +145,27 @@ directions :ref:`above <sec-install-conda>`.
 
    - Run the installer.
 
+   - If this package is not installed, you will encounter the following error
+     when importing the `cantera` module::
+
+         ImportError: DLL load failed: The specified module could not be found.
+
 4. **Install Numpy and optional Python packages**
 
    - Go to the `Unofficial Windows Binaries for Python Extension Packages page
      <http://www.lfd.uci.edu/~gohlke/pythonlibs/#numpy>`_.
 
    - Download the most recent release (distributed as a "wheel" archive) of the
-     1.x series for Python *X.Y* that matches your Python architecture. The
-     binaries for Cantera 2.2.0 require Numpy 1.8.0 or newer, e.g. In the
+     1.x series for Python *X.Y* that matches your Python architecture. In the
      filename, the digits after "cp" indicate the Python version, e.g.
-     ``numpy‑1.8.2+mkl‑cp35‑none‑win_amd64.whl`` is the installer for 64-bit
-     Python 3.5.
+     ``numpy‑1.11.2+mkl‑cp35‑none‑win_amd64.whl`` is the installer for 64-bit
+     Python 3.5. The Windows installers for Cantera 2.3.0 require Numpy 1.10 or
+     newer.
 
    - From an administrative command prompt, install the downloaded wheel using
      pip, e.g.::
 
-         c:\python35\scripts\pip.exe install "%USERPROFILE%\Downloads\numpy‑1.8.2+mkl‑cp35‑none‑win_amd64.whl"
+         c:\python35\scripts\pip.exe install "%USERPROFILE%\Downloads\numpy‑1.11.2+mkl‑cp35‑none‑win_amd64.whl"
 
    - If you plan on using Cantera from Python, you may also want to install
      IPython (an advanced interactive Python interpreter) and Matplotlib (a
@@ -181,10 +186,10 @@ directions :ref:`above <sec-install-conda>`.
    - Go to the `Cantera Releases <https://github.com/Cantera/cantera/releases>`_
      page.
 
-     - *64-bit*: Download **Cantera-2.2.0-x64.msi** and
-       **Cantera-Python-2.2.0-x64-pyX.Y.msi**.
-     - *32-bit*: Download **Cantera-2.2.0-x86.msi** and
-       **Cantera-Python-2.2.0-x86-pyX.Y.msi**.
+     - *64-bit*: Download **Cantera-2.3.0-x64.msi** and
+       **Cantera-Python-2.3.0-x64-pyX.Y.msi**.
+     - *32-bit*: Download **Cantera-2.3.0-x86.msi** and
+       **Cantera-Python-2.3.0-x86-pyX.Y.msi**.
 
    - If you are only using the Python module, you do not need to download and
      install the base package.
@@ -225,7 +230,7 @@ directions :ref:`above <sec-install-conda>`.
    - Matlab::
 
          gas = IdealGasMix('gri30.cti')
-         h2o = importPhase('liquidvapor.cti','water')
+         h2o = Solution('liquidvapor.cti','water')
 
 .. _sec-install-osx:
 
@@ -416,9 +421,9 @@ Ubuntu
 ======
 
 Ubuntu packages are provided for recent versions of Ubuntu using a Personal
-Package Archive (PPA). As of Cantera 2.2.1, packages are available for Ubuntu
-Ubuntu 14.04 LTS (Trusty Tahr), Ubuntu 15.04 (Vivid Vervet), and Ubuntu 15.10
-(Wily Werewolf). To see which Ubuntu releases and Cantera versions are currently
+Package Archive (PPA). As of Cantera 2.3.0, packages are available for Ubuntu
+Ubuntu 14.04 LTS (Trusty Tahr), Ubuntu 16.04 (Xenial Xerus), and Ubuntu 16.10
+(Yakkety Yak). To see which Ubuntu releases and Cantera versions are currently
 available, visit https://launchpad.net/~speth/+archive/ubuntu/cantera
 
 The available packages are:

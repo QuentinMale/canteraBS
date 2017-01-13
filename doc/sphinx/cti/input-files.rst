@@ -280,7 +280,7 @@ From the point of view of the user, it appears that a Cantera application that
 imports a phase definition reads the input file, and uses the information there
 to construct the object representing the phase or interface in the
 application. While this is the net effect, it is actually a two-step
-process. When a function like importPhase is called to import a phase definition
+process. When a constructor like ``Solution`` is called to import a phase definition
 from a file, a preprocessor runs automatically to read the input file and create
 a string that contains the same information but in an XML-based format called
 CTML. After the preprocessor finishes, Cantera imports the phase definition from
@@ -491,7 +491,7 @@ extract a portion of a large reaction mechanism, as described in :ref:`sec-phase
 .. _sec-ck-format-conversion:
 
 Converting CK-format files
---------------------------
+==========================
 
 Many existing reaction mechanism files are in "CK format," by which we mean
 the input file format developed for use with the Chemkin-II software package
@@ -536,6 +536,11 @@ Example::
 If the output file name is not given, an output file with the same name as the
 input file, with the extension changed to '.cti'.
 
+If the ck2cti script is not on your path but the Cantera Python module is,
+ck2cti can also be used by running::
+
+    python -m cantera.ck2cti --input=chem.inp --thermo=therm.dat --transport=tran.dat
+
 An input file containing only species definitions (which can be referenced from
 phase definitions in other input files) can be created by specifying only a
 thermo file.
@@ -547,7 +552,7 @@ processed. Some of these errors may be avoided by specifying the
 may be caused by incorrect formatting of lines in one or more of the input files.
 
 Debugging common errors in CK files
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-----------------------------------
 
 When ``ck2cti`` encounters an error, it attempts to print the surrounding
 information to help you to locate the error. Many of the most common errors
@@ -709,4 +714,3 @@ in the report for Chemkin referenced above. These errors include:
 
 .. [SAND98] See R. J. Kee, G. Dixon-Lewis, J. Warnatz, M. E. Coltrin, J. A. Miller,
    H. K. Moffat, Sandia National Laboratories Report SAND86-8246B (1998).
-   

@@ -37,6 +37,7 @@ public:
      */
     Sim1D(std::vector<Domain1D*>& domains);
 
+
     /**
      * @name Setting initial values
      *
