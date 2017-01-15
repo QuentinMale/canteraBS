@@ -74,19 +74,18 @@ void IonFlow::updateDiffFluxes(const doublereal* x, size_t j0, size_t j1)
 {
     if (m_solnPhase == 1) {
         phaseOneDiffFluxes(x,j0,j1);
-        //phaseTwoDiffFluxes(x,j0,j1);
     } else if (m_solnPhase == 2) {
         phaseTwoDiffFluxes(x,j0,j1);
-    } else if (m_solnPhase == 3) {
+    } else {
         phaseThreeDiffFluxes(x,j0,j1);
-    }    
+    }
 }
 
 void IonFlow::phaseOneDiffFluxes(const doublereal* x, size_t j0, size_t j1)
 {
     for (size_t j = j0; j < j1; j++) {
         double wtm = m_wtm[j];
-        double rho = 0.5* (density(j+1)+density(j));
+        double rho = density(j);
         double dz = z(j+1) - z(j);
         double sum = 0.0;
         for (size_t k : m_kNeutral) {
@@ -111,7 +110,7 @@ void IonFlow::phaseTwoDiffFluxes(const doublereal* x, size_t j0, size_t j1)
 {
     for (size_t j = j0; j < j1; j++) {
         double wtm = m_wtm[j];
-        double rho = 0.5* (density(j+1)+density(j));
+        double rho = density(j);
         double dz = z(j+1) - z(j);
         // mixture-average diffusion
         double sum = 0.0;
@@ -132,7 +131,7 @@ void IonFlow::phaseTwoDiffFluxes(const doublereal* x, size_t j0, size_t j1)
 
         // ambipolar diffusion
         double drift;
-        double T_e = 0.5 * (T(x,j) + T(x,j+1));
+        double T_e = T(x,j);
         double E_ambi = 0.0;
         size_t k = m_kElectron;
         E_ambi = -Boltzmann * T_e / ElectronCharge;
@@ -168,46 +167,41 @@ void IonFlow::phaseTwoDiffFluxes(const doublereal* x, size_t j0, size_t j1)
 
 void IonFlow::phaseThreeDiffFluxes(const doublereal* x, size_t j0, size_t j1)
 {
-    // to be changed after new method
     for (size_t j = j0; j < j1; j++) {
         double wtm = m_wtm[j];
         double rho = density(j);
         double dz = z(j+1) - z(j);
-        if (m_do_electric) {
-            double sum = 0.0;
-            // mixture-average diffusion
-            for (size_t k = 0; k < m_nsp; k++) {       
-                if (k != m_kElectron) {
-                    m_flux(k,j) = m_wt[k]*(rho*m_diff[k+m_nsp*j]/wtm);
-                    m_flux(k,j) *= (X(x,k,j) - X(x,k,j+1))/dz;
-                    sum -= m_flux(k,j);
-                }
-            }
-            // correction flux
-            for (size_t k = 0; k < m_nsp; k++) {       
-                if (k != m_kElectron) {
-                    m_flux(k,j) += Y(x,k,j) * sum;
-                }
-            }
-            for (size_t k : m_kCharge) {
-                if ( k != m_kElectron) {
-                    m_flux(k,j) += m_speciesCharge[k] * m_mobi[k+m_nsp*j] * rho * Y(x,k,j) * E(x,j);
-                }
-            }
-            // flux for electron
-            sum = 0.0;
-            for (size_t k : m_kCharge) {
-                if ( k != m_kElectron) {
-                    sum += m_speciesCharge[k] / m_wt[k] * m_flux(k,j);
-                }
-            }
-            m_flux(m_kElectron,j) = m_wt[m_kElectron] * sum;
-        } else {
-            for (size_t k = 0; k < m_nsp; k++) { 
-                m_flux(k,j) = 0;
-            }
+        // mixture-average diffusion
+        double sum = 0.0;
+        m_mobi[m_kElectron+m_nsp*j] = 0.4;
+        m_diff[m_kElectron+m_nsp*j] = 0.4*(Boltzmann * T(x,j)) / ElectronCharge;
+        for (size_t k = 0; k < m_nsp; k++) {       
+            m_flux(k,j) = m_wt[k]*(rho*m_diff[k+m_nsp*j]/wtm);
+            m_flux(k,j) *= (X(x,k,j) - X(x,k,j+1))/dz;
+            sum -= m_flux(k,j); 
         }
-    }
+
+        // correction flux
+        for (size_t k = 0; k < m_nsp; k++) {       
+            m_flux(k,j) += Y(x,k,j) * sum;
+        }
+
+        // ambipolar diffusion
+        double drift;
+        double E_ambi = E(x,j);
+        sum = 0.0;
+        for (size_t k : m_kCharge) {
+            drift = rho * Y(x,k,j) * E_ambi;
+            drift *= m_speciesCharge[k] * m_mobi[k+m_nsp*j]; 
+            m_flux(k,j) += drift;
+            sum -= drift;
+        }
+
+        // correction drift
+        for (size_t k : m_kCharge) {
+            m_flux(k,j) += Y(x,k,j) * sum;
+        }
+    }   
 }
 
 void IonFlow::enableElectric(bool withElectric)

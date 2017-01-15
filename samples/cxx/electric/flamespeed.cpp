@@ -73,7 +73,7 @@ int flamespeed(double phi)
         // specify the objects to use to compute kinetic rates and
         // transport properties
 
-        std::unique_ptr<Transport> trmix(newTransportMgr("Mix", &gas));
+        unique_ptr<Transport> trmix(newTransportMgr("Mix", &gas));
 
         flow.setTransport(*trmix);
         flow.setKinetics(gas);
@@ -94,7 +94,7 @@ int flamespeed(double phi)
 
         //=================== create the container and insert the domains =====
 
-        std::vector<Domain1D*> domains { &inlet, &flow, &outlet };
+        vector<Domain1D*> domains { &inlet, &flow, &outlet };
         Sim1D flame(domains);
 
         //----------- Supply initial guess----------------------
@@ -205,27 +205,32 @@ int flamespeed(double phi)
             flame.solve(loglevel, refine_grid);
         }
         
-        /*
+        
         //****************** end of phase 2 ****************
         // set solving phase for IonFlow
         flow.setSolvingPhase(3);
-        locs = {0, 0.3, 0.5, 0.7, 1.0};
-        value = {0, 1, 10, 1, 0};
-        flame.setInitialGuess("ePotential",locs,value);
+        //locs = {0, 0.3, 0.5, 0.7, 1.0};
+        //value = {0, 1, 10, 1, 0};
+        //flame.setInitialGuess("ePotential",locs,value);
 
-        refine_grid = true;
+        // The converrgence is still a problem here
+        refine_grid = false;
 
         for (size_t i = 0; i < 1; i++) {
             // now enable Poisson's equation but hold y and T constant
             flow.solvePoissonEqn();
-            flow.enableElectric(false);
             flow.fixSpeciesMassFrac();
+            flow.enableElectric(false);
             flame.solve(loglevel, refine_grid);
+            cout << "the " << i << " iteration for phase3-1" << endl;
 
             // now enable electric effect but hold E and V constant
+            flow.fixElectricPotential();
+            flow.solveSpeciesEqn();
             flow.enableElectric(true);
-
-        }*/
+            flame.solve(loglevel, refine_grid);
+            cout << "the " << i << " iteration for phase3-2" << endl;
+        }
 
         vector_fp zvec,Tvec,HCOxvec,H3Oxvec,Evec,ePvec,eFvec,Uvec;
 
@@ -264,7 +269,7 @@ int flamespeed(double phi)
         print("\nAdiabatic flame temperature from equilibrium is: {}\n", Tad);
         print("Flame speed for phi={} is {} m/s.\n", phi, Uvec[0]);
 
-        std::ofstream outfile("flamespeed.csv", std::ios::trunc);
+        ofstream outfile("flamespeed.csv", ios::trunc);
         outfile << "  Grid, Temperature, Uvec, HCO+, H3O+, E, ePotential, efield\n";
         
         for (size_t n = 0; n < flow.nPoints(); n++) {
@@ -272,8 +277,8 @@ int flamespeed(double phi)
                   flow.grid(n), Tvec[n], Uvec[n], HCOxvec[n], H3Oxvec[n], Evec[n], ePvec[n], eFvec[n]);
         }
     } catch (CanteraError& err) {
-        std::cerr << err.what() << std::endl;
-        std::cerr << "program terminating." << std::endl;
+        cerr << err.what() << endl;
+        cerr << "program terminating." << endl;
         return -1;
     }
     return 0;
@@ -283,6 +288,6 @@ int main()
 {
     double phi;
     print("Enter phi: ");
-    std::cin >> phi;
+    cin >> phi;
     return flamespeed(phi);
 }

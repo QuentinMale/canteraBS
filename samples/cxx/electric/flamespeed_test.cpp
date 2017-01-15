@@ -11,12 +11,13 @@
 #include <fstream>
 
 using namespace Cantera;
+using namespace std;
 using fmt::print;
 
 int flamespeed(double phi)
 {
     try {
-        IdealGasMix gas("gri30.cti","gri30_mix");
+        IdealGasMix gas("methane_ion.xml");
 
         doublereal temp = 300.0; // K
         doublereal pressure = 1.0*OneAtm; //atm
@@ -46,6 +47,16 @@ int flamespeed(double phi)
         doublereal Tad = gas.temperature();
         print("phi = {}, Tad = {}\n", phi, Tad);
 
+        //=============  read phase one ===========================
+        ifstream infile("flamespeed.txt");
+
+        while(infile)
+        {
+
+        }
+
+        infile.close();
+
         //=============  build each domain ========================
 
 
@@ -67,7 +78,7 @@ int flamespeed(double phi)
         // specify the objects to use to compute kinetic rates and
         // transport properties
 
-        std::unique_ptr<Transport> trmix(newTransportMgr("Mix", &gas));
+        unique_ptr<Transport> trmix(newTransportMgr("Mix", &gas));
 
         flow.setTransport(*trmix);
         flow.setKinetics(gas);
@@ -89,7 +100,7 @@ int flamespeed(double phi)
 
         //=================== create the container and insert the domains =====
 
-        std::vector<Domain1D*> domains { &inlet, &flow, &outlet };
+        vector<Domain1D*> domains { &inlet, &flow, &outlet };
         Sim1D flame(domains);
 
         //----------- Supply initial guess----------------------
@@ -158,15 +169,15 @@ int flamespeed(double phi)
         print("\nAdiabatic flame temperature from equilibrium is: {}\n", Tad);
         print("Flame speed for phi={} is {} m/s.\n", phi, Uvec[0]);
 
-        std::ofstream outfile("flamespeed.csv", std::ios::trunc);
+        ofstream outfile("flamespeed.csv", ios::trunc);
         outfile << "  Grid,   Temperature,   Uvec,   CO,    CO2\n";
         for (size_t n = 0; n < flow.nPoints(); n++) {
             print(outfile, " {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}\n",
                   flow.grid(n), Tvec[n], Uvec[n], COvec[n], CO2vec[n]);
         }
     } catch (CanteraError& err) {
-        std::cerr << err.what() << std::endl;
-        std::cerr << "program terminating." << std::endl;
+        cerr << err.what() << endl;
+        cerr << "program terminating." << endl;
         return -1;
     }
     return 0;
@@ -176,6 +187,6 @@ int main()
 {
     double phi;
     print("Enter phi: ");
-    std::cin >> phi;
+    cin >> phi;
     return flamespeed(phi);
 }
