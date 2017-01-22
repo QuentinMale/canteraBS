@@ -45,7 +45,7 @@ IonFlow::IonFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
         setBounds(c_offset_Y+k, -1.0e-20, 1.0e5);
     }
     setBounds(c_offset_P, -1.0e20, 1.0e20);
-    m_refiner->setActive(4, false);
+    m_refiner->setActive(c_offset_P, false);
 
     m_mobi.resize(m_nsp*m_points);
     m_do_poisson.resize(m_points,false);
@@ -68,6 +68,8 @@ void IonFlow::updateTransport(doublereal* x, size_t j0, size_t j1)
     StFlow::updateTransport(x,j0,j1);
     for (size_t j = j0; j < j1; j++) {
         m_trans->getMobilities(&m_mobi[j*m_nsp]);
+        m_mobi[m_kElectron+m_nsp*j] = 0.4;
+        m_diff[m_kElectron+m_nsp*j] = 0.4*(Boltzmann * T(x,j)) / ElectronCharge;
     }
 }
 void IonFlow::updateDiffFluxes(const doublereal* x, size_t j0, size_t j1)
@@ -113,55 +115,35 @@ void IonFlow::phaseTwoDiffFluxes(const doublereal* x, size_t j0, size_t j1)
         double rho = density(j);
         double dz = z(j+1) - z(j);
         // mixture-average diffusion
-        double sum = 0.0;
+        double sum_flux = 0.0;
         for (size_t k = 0; k < m_nsp; k++) {       
-            if (k != m_kElectron) {
-                m_flux(k,j) = m_wt[k]*(rho*m_diff[k+m_nsp*j]/wtm);
-                m_flux(k,j) *= (X(x,k,j) - X(x,k,j+1))/dz;
-                sum -= m_flux(k,j);
-            }
+            m_flux(k,j) = m_wt[k]*(rho*m_diff[k+m_nsp*j]/wtm);
+            m_flux(k,j) *= (X(x,k,j) - X(x,k,j+1))/dz;
+            sum_flux -= m_flux(k,j);
+        }
+
+        // ambipolar diffusion
+        double sum_chargeFlux = 0.0;
+        double sum = 0.0;
+        for (size_t k : m_kCharge) {
+            int q_k = m_speciesCharge[k];
+            sum_chargeFlux += m_speciesCharge[k] / m_wt[k] * m_flux(k,j);
+            sum += m_mobi[k+m_nsp*j] * X(x,k,j) * q_k * q_k;
+        }
+        double drift;
+        double sum_drift = 0.0;
+        for (size_t k : m_kCharge) {
+            int q_k = m_speciesCharge[k];
+            drift = q_k * q_k * m_mobi[k+m_nsp*j] * X(x,k,j) / sum;
+            drift *= -sum_chargeFlux * m_wt[k] / q_k;
+            m_flux(k,j) += drift;
+            sum_drift -= drift;
         }
 
         // correction flux
         for (size_t k = 0; k < m_nsp; k++) {       
-            if (k != m_kElectron) {
-                m_flux(k,j) += Y(x,k,j) * sum;
-            }
+            m_flux(k,j) += Y(x,k,j) * sum_flux;
         }
-
-        // ambipolar diffusion
-        double drift;
-        double T_e = T(x,j);
-        double E_ambi = 0.0;
-        size_t k = m_kElectron;
-        E_ambi = -Boltzmann * T_e / ElectronCharge;
-        E_ambi *= (log(Y(x,k,j+1)) - log(Y(x,k,j)))/dz;
-
-        sum = 0.0;
-        for (size_t k : m_kCharge) {
-            if (k != m_kElectron) {
-                drift = rho * Y(x,k,j) * E_ambi;
-                drift *= m_speciesCharge[k] * m_mobi[k+m_nsp*j];
-                m_flux(k,j) += drift;
-                sum -= drift;
-            }
-        }
-
-        // correction drift
-        for (size_t k : m_kCharge) {
-            if (k != m_kElectron) {
-                m_flux(k,j) += Y(x,k,j) * sum;
-            }
-        }
-
-        // flux for electron
-        sum = 0.0;
-        for (size_t k : m_kCharge) {
-            if ( k != m_kElectron) {
-                sum += m_speciesCharge[k] / m_wt[k] * m_flux(k,j);
-            }
-        }
-        m_flux(m_kElectron,j) = m_wt[m_kElectron] * sum;
     }
 }
 
@@ -173,8 +155,6 @@ void IonFlow::phaseThreeDiffFluxes(const doublereal* x, size_t j0, size_t j1)
         double dz = z(j+1) - z(j);
         // mixture-average diffusion
         double sum = 0.0;
-        m_mobi[m_kElectron+m_nsp*j] = 0.4;
-        m_diff[m_kElectron+m_nsp*j] = 0.4*(Boltzmann * T(x,j)) / ElectronCharge;
         for (size_t k = 0; k < m_nsp; k++) {       
             m_flux(k,j) = m_wt[k]*(rho*m_diff[k+m_nsp*j]/wtm);
             m_flux(k,j) *= (X(x,k,j) - X(x,k,j+1))/dz;
@@ -245,17 +225,29 @@ void IonFlow::eval(size_t jg, doublereal* xg,
                 rsd[index(c_offset_U, j)] = u(x,j) - u_fixed(j);
                 diag[index(c_offset_U, j)] = 0;
             }
-            if (m_do_poisson[j]) {
-                evalPoisson(j,x,rsd,diag,rdt);
-            } else {
-                rsd[index(c_offset_P, j)] = phi(x,j) - phi_fixed(j);
-                diag[index(c_offset_P, j)] = 0;
-            }
             for (size_t k = 0; k < m_nsp; k++) {
                 if (!m_do_species[k]) {
                     rsd[index(c_offset_Y + k, j)] = Y(x,k,j) - Y_fixed(k,j);
                     diag[index(c_offset_Y + k, j)] = 0;                
                 }
+            }
+        }
+    }
+    
+    // convinent method due to interference
+    for (size_t j = jmin; j <= jmax; j++) {
+        if (j == 0 || j == 1) {
+            rsd[index(c_offset_P, j)] = -phi(x,j);
+            diag[index(c_offset_P, j)] = 0;
+        } else if (j == m_points - 1) {
+            rsd[index(c_offset_P, j)] = -phi(x,j);
+            diag[index(c_offset_P, j)] = 0;
+        } else {
+            if (m_do_poisson[j]) {
+                evalPoisson(j,x,rsd,diag,rdt);
+            } else {
+                rsd[index(c_offset_P, j)] = phi(x,j) - phi_fixed(j);
+                diag[index(c_offset_P, j)] = 0;
             }
         }
     }
@@ -336,7 +328,7 @@ void IonFlow::solvePoissonEqn(size_t j)
         }
         m_do_poisson[j] = true;
     }
-    m_refiner->setActive(c_offset_P, true);
+    //m_refiner->setActive(c_offset_P, true);
     if (changed) {
         needJacUpdate();
     }

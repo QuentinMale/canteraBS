@@ -19,7 +19,6 @@ int flamespeed(double phi)
 {
     try {
         IdealGasMix gas("methane_ion.xml");
-        IdealGasMix gasCopy("methane_ion.xml");
 
         doublereal temp = 300.0; // K
         doublereal pressure = 1.0*OneAtm; //atm
@@ -120,9 +119,9 @@ int flamespeed(double phi)
         flame.showSolution();
 
         int flowdomain = 1;
-        double ratio = 5.0;
-        double slope = 0.04;
-        double curve = 0.05;
+        double ratio = 3.0;
+        double slope = 0.06;
+        double curve = 0.12;
 
         flame.setRefineCriteria(flowdomain,ratio,slope,curve);
 
@@ -138,12 +137,8 @@ int flamespeed(double phi)
         bool refine_grid = true;
 
         // not sure what to do!!
-        for (size_t i = 184; i < 186; i++) {
+        for (size_t i = 184; i < 190; i++) {
             gas.setMultiplier(i,0.0);
-        }
-        
-        for (size_t i = 186; i < 190; i++) {
-            gas.setMultiplier(i,0);
         }
         
         flame.solve(loglevel,refine_grid);
@@ -176,9 +171,9 @@ int flamespeed(double phi)
             for (size_t k : list) {
                 y[k] = flame.value(flowdomain,k+c_offset_Y,n);
             }
-            gasCopy.setState_TPY(locTemp,pressure,y.data());
-            gasCopy.equilibrate("HP");
-            gasCopy.getMassFractions(&y[0]);
+            gas.setState_TPY(locTemp,pressure,y.data());
+            gas.equilibrate("HP");
+            gas.getMassFractions(&y[0]);
             for (size_t k : flow.chargeList()) {
                 flame.setValue(flowdomain, c_offset_Y + k, n, y[k]);
             }
@@ -191,9 +186,9 @@ int flamespeed(double phi)
         flow.fixTemperature();
         flow.fixVelocity();
         
-        for (size_t j = 0; j < 11; j++) {
+        for (size_t j = 0; j < 51; j++) {
             for (size_t i = 184; i < 190; i++) {
-                gas.setMultiplier(i,0.1*j);
+                gas.setMultiplier(i,0.02*j);
             }
             flame.solve(loglevel, refine_grid);
         }
@@ -201,7 +196,7 @@ int flamespeed(double phi)
         // turn on energy equation
         flow.solveEnergyEqn();
         flow.solveVelocity();
-        for (size_t j = 0; j < 1; j++) {
+        for (size_t j = 0; j < 10; j++) {
             flame.solve(loglevel, refine_grid);
         }
         
@@ -214,24 +209,30 @@ int flamespeed(double phi)
         //flame.setInitialGuess("ePotential",locs,value);
 
         // The converrgence is still a problem here
-        refine_grid = false;
+        refine_grid = true;
 
-        for (size_t i = 0; i < 1; i++) {
+        flow.solvePoissonEqn();
+        flame.solve(loglevel, refine_grid);
+
+        /*// turn on the charged species slowly
+        for (size_t j = 0; j < 1; j++) {
             // now enable Poisson's equation but hold y and T constant
             flow.solvePoissonEqn();
             flow.fixSpeciesMassFrac();
-            flow.enableElectric(false);
+            flow.fixTemperature();
+            flow.fixVelocity();
             flame.solve(loglevel, refine_grid);
-            cout << "the " << i << " iteration for phase3-1" << endl;
+            cout << "the " << j << " iteration for phase3-1" << endl;
 
             // now enable electric effect but hold E and V constant
             flow.fixElectricPotential();
             flow.solveSpeciesEqn();
-            flow.enableElectric(true);
+            flow.solveEnergyEqn();
+            flow.solveVelocity();
             flame.solve(loglevel, refine_grid);
-            cout << "the " << i << " iteration for phase3-2" << endl;
-        }
-
+            cout << "the " << j << " iteration for phase3-2" << endl;
+        }*/
+        
         vector_fp zvec,Tvec,HCOxvec,H3Oxvec,Evec,ePvec,eFvec,Uvec;
 
         for (size_t n = 0; n < flow.nPoints(); n++) {
@@ -259,12 +260,10 @@ int flamespeed(double phi)
                   flow.grid(n), Tvec[n], Uvec[n], ePvec[n]);
         }
 
-        eFvec.push_back(0);
-        for (size_t n = 1; n < flow.nPoints()-1; n++) {
-            eFvec.push_back(-(ePvec[n+1]-ePvec[n-1])/(flow.grid(n+1)-flow.grid(n-1)));
+        for (size_t n = 0; n < flow.nPoints()-1; n++) {
+            eFvec.push_back(1e-2*(ePvec[n]-ePvec[n+1])/(flow.grid(n+1)-flow.grid(n)));
         }      
         eFvec.push_back(eFvec[flow.nPoints()-2]);
-        eFvec[0] = eFvec[1];
 
         print("\nAdiabatic flame temperature from equilibrium is: {}\n", Tad);
         print("Flame speed for phi={} is {} m/s.\n", phi, Uvec[0]);
