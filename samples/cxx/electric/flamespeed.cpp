@@ -22,7 +22,7 @@ int flamespeed(double phi)
 
         doublereal temp = 300.0; // K
         doublereal pressure = 1.0*OneAtm; //atm
-        doublereal uin = 0.3; //m/sec
+        doublereal uin = 0.6; //m/sec
 
         size_t nsp = gas.nSpecies();
         vector_fp x(nsp, 0.0);
@@ -30,10 +30,9 @@ int flamespeed(double phi)
         doublereal C_atoms = 1.0;
         doublereal H_atoms = 4.0;
         doublereal ax = C_atoms + H_atoms / 4.0;
-        doublereal fa_stoic = 1.0 / (4.76 * ax);
+        doublereal fa_stoic = 1.0 / ax;
         x[gas.speciesIndex("CH4")] = 1.0;
-        x[gas.speciesIndex("O2")] = 0.21 / phi / fa_stoic;
-        x[gas.speciesIndex("N2")] = 0.79 / phi/ fa_stoic;
+        x[gas.speciesIndex("O2")] = 1.0 / phi / fa_stoic;
 
         gas.setState_TPX(temp, pressure, x.data());
         doublereal rho_in = gas.density();
@@ -107,9 +106,22 @@ int flamespeed(double phi)
         value = {temp, temp, Tad, Tad};
         flame.setInitialGuess("T",locs,value);
 
-        for (size_t i=0; i<nsp; i++) {
-            value = {yin[i], yin[i], yout[i], yout[i]};
-            flame.setInitialGuess(gas.speciesName(i),locs,value);
+        for (size_t k=0; k<nsp; k++) {
+            value = {yin[k], yin[k], yout[k], yout[k]};
+            flame.setInitialGuess(gas.speciesName(k),locs,value);
+        }
+
+        // turn off the reaction for ions
+        for (size_t i = 184; i < 190; i++) {
+            gas.setMultiplier(i,0.0);
+        }
+
+        // fix the species equation for ions
+        for (size_t k : flow.chargeList()) {
+            locs = {0.1, 0.3, 0.7, 0.9};
+            value = {yin[k], yin[k], yout[k], yout[k]};
+            flow.setFixedMassFracProfile(locs, value);
+            flow.fixSpeciesMassFrac(k);
         }
 
         inlet.setMoleFractions(x.data());
@@ -119,9 +131,9 @@ int flamespeed(double phi)
         flame.showSolution();
 
         int flowdomain = 1;
-        double ratio = 3.0;
-        double slope = 0.06;
-        double curve = 0.12;
+        double ratio = 10.0;
+        double slope = 0.08;
+        double curve = 0.1;
 
         flame.setRefineCriteria(flowdomain,ratio,slope,curve);
 
@@ -135,105 +147,75 @@ int flamespeed(double phi)
         flame.setFixedTemperature(0.5 * (temp + Tad));
         flow.solveEnergyEqn();
         bool refine_grid = true;
-
-        // not sure what to do!!
-        for (size_t i = 184; i < 190; i++) {
-            gas.setMultiplier(i,0.0);
-        }
         
-        flame.solve(loglevel,refine_grid);
+        flame.solve(loglevel+5,refine_grid);
         double flameSpeed_mix = flame.value(flowdomain,flow.componentIndex("u"),0);
         print("Flame speed with mixture-averaged transport: {} m/s\n",
-              flameSpeed_mix);
-        
+              flameSpeed_mix);  
         // finish standard Cantera calculation
-        // generate initial guess for the charged species
-        // the list for important species
-        vector_fp list;
-        list.push_back(gas.speciesIndex("H2O"));
-        list.push_back(gas.speciesIndex("CO2"));
-        list.push_back(gas.speciesIndex("N2"));
-        list.push_back(gas.speciesIndex("O2"));
-        list.push_back(gas.speciesIndex("H2"));
-        list.push_back(gas.speciesIndex("CO"));
-        list.push_back(gas.speciesIndex("H"));
-        list.push_back(gas.speciesIndex("OH"));
-        list.push_back(gas.speciesIndex("O"));
-        list.push_back(gas.speciesIndex("CH"));
-        list.push_back(gas.speciesIndex("CH3"));
-        list.push_back(gas.speciesIndex("CH4"));
-        list.push_back(gas.speciesIndex("C2H2"));
-        list.push_back(gas.speciesIndex("C2H4"));
 
+        // generate the initial guess for the ions
+        /*
         for (size_t n = 0; n < flow.nPoints(); n++) {
             double locTemp = flame.value(flowdomain,flow.componentIndex("T"),n);
             vector_fp y(nsp, 0.0);
-            for (size_t k : list) {
+            for (size_t k = 0; k < nsp; k++) {
                 y[k] = flame.value(flowdomain,k+c_offset_Y,n);
             }
-            gas.setState_TPY(locTemp,pressure,y.data());
+            gas.setState_TPY(locTemp, pressure, y.data());
             gas.equilibrate("HP");
             gas.getMassFractions(&y[0]);
+
             for (size_t k : flow.chargeList()) {
                 flame.setValue(flowdomain, c_offset_Y + k, n, y[k]);
             }
         }
-        
+        */
+        /*
         //****************** end of phase 1*****************
         // set solving phase for IonFlow
         flow.setSolvingPhase(2);
-        refine_grid = false;
         flow.fixTemperature();
         flow.fixVelocity();
+
+        // set tolerances for E
+        flow.setSteadyTolerances(1.0e-4,1.0e-15,c_offset_Y + gas.speciesIndex("E"));
+        flow.setTransientTolerances(1.0e-4,1.0e-17,c_offset_Y + gas.speciesIndex("E"));
         
-        for (size_t j = 0; j < 51; j++) {
+        for (size_t j = 0; j < 1; j++) {
             for (size_t i = 184; i < 190; i++) {
-                gas.setMultiplier(i,0.02*j);
+                gas.setMultiplier(i,1.0 / pow(2,10-j));
             }
             flame.solve(loglevel, refine_grid);
+            cout << endl << j << "0 percent" << endl;
         }
-        
+
         // turn on energy equation
         flow.solveEnergyEqn();
         flow.solveVelocity();
-        for (size_t j = 0; j < 10; j++) {
-            flame.solve(loglevel, refine_grid);
-        }
+        flame.solve(loglevel, refine_grid);
         
-        
+        cout << "finish phase two" << endl;
+        */
+        /*
         //****************** end of phase 2 ****************
         // set solving phase for IonFlow
         flow.setSolvingPhase(3);
-        //locs = {0, 0.3, 0.5, 0.7, 1.0};
-        //value = {0, 1, 10, 1, 0};
-        //flame.setInitialGuess("ePotential",locs,value);
+        // set tolerances for HCO+
+        flow.setSteadyTolerances(1.0e-4,1.0e-13,c_offset_Y + gas.speciesIndex("HCO+"));
+        flow.setTransientTolerances(1.0e-5,1.0e-16,c_offset_Y + gas.speciesIndex("HCO+"));
+        // set tolerances for H3O+
+        flow.setSteadyTolerances(1.0e-4,1.0e-10,c_offset_Y + gas.speciesIndex("H3O+"));
+        flow.setTransientTolerances(1.0e-5,1.0e-13,c_offset_Y + gas.speciesIndex("H3O+"));
+        // set tolerances for E
+        flow.setSteadyTolerances(1.0e-4,1.0e-14,c_offset_Y + gas.speciesIndex("E"));
+        flow.setTransientTolerances(1.0e-5,1.0e-17,c_offset_Y + gas.speciesIndex("E"));
 
-        // The converrgence is still a problem here
         refine_grid = true;
-
         flow.solvePoissonEqn();
         flame.solve(loglevel, refine_grid);
-
-        /*// turn on the charged species slowly
-        for (size_t j = 0; j < 1; j++) {
-            // now enable Poisson's equation but hold y and T constant
-            flow.solvePoissonEqn();
-            flow.fixSpeciesMassFrac();
-            flow.fixTemperature();
-            flow.fixVelocity();
-            flame.solve(loglevel, refine_grid);
-            cout << "the " << j << " iteration for phase3-1" << endl;
-
-            // now enable electric effect but hold E and V constant
-            flow.fixElectricPotential();
-            flow.solveSpeciesEqn();
-            flow.solveEnergyEqn();
-            flow.solveVelocity();
-            flame.solve(loglevel, refine_grid);
-            cout << "the " << j << " iteration for phase3-2" << endl;
-        }*/
-        
-        vector_fp zvec,Tvec,HCOxvec,H3Oxvec,Evec,ePvec,eFvec,Uvec;
+        */
+        vector_fp HCOxvec,H3Oxvec,Evec;
 
         for (size_t n = 0; n < flow.nPoints(); n++) {
             double rho = flow.density(n);
@@ -245,19 +227,19 @@ int flamespeed(double phi)
             Evec.push_back(1e-6*Avogadro*rho*flame.value(flowdomain,k+c_offset_Y,n)/mw[k]);
         } 
 
-        print("\n{:9s}\t{:8s}\t{:8s}\t{:5s}\n",
-              "z (m)", "T (K)", "U (m/s)", "eP[V]");
+        print("\n{:9s}\t{:8s}\t{:8s}\t{:8s}\t{:5s}\n",
+              "z (m)", "T (K)", "U (m/s)", "eP[V]", "Y(E)");
 
-        Tvec.resize(flow.nPoints(), 0.0);
-        zvec.resize(flow.nPoints(), 0.0);
+        vector_fp Tvec,ePvec,eFvec,Uvec;
 
         for (size_t n = 0; n < flow.nPoints(); n++) {
-            Tvec[n] = flame.value(flowdomain,flow.componentIndex("T"),n);
+            size_t k = gas.speciesIndex("E");
+            Tvec.push_back(flame.value(flowdomain,flow.componentIndex("T"),n));
             ePvec.push_back(flame.value(flowdomain,flow.componentIndex("ePotential"),n));
             Uvec.push_back(flame.value(flowdomain,flow.componentIndex("u"),n));
-            zvec[n] = flow.grid(n);
-            print("{:9.6f}\t{:8.3f}\t{:8.3f}\t{:5.3f}\n",
-                  flow.grid(n), Tvec[n], Uvec[n], ePvec[n]);
+
+            print("{:9.6f}\t{:8.3f}\t{:8.3f}\t{:8.3f}\t{:11.3e}\n",
+                  flow.grid(n), Tvec[n], Uvec[n], ePvec[n],flame.value(flowdomain,k+c_offset_Y,n));
         }
 
         for (size_t n = 0; n < flow.nPoints()-1; n++) {

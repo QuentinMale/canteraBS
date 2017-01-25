@@ -42,7 +42,7 @@ IonFlow::IonFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
 
     // mass fraction bounds (strict bound for ions)
     for (size_t k : m_kCharge) {
-        setBounds(c_offset_Y+k, -1.0e-20, 1.0e5);
+        setBounds(c_offset_Y+k, -1.0e-20, 1e-5);
     }
     setBounds(c_offset_P, -1.0e20, 1.0e20);
     m_refiner->setActive(c_offset_P, false);
@@ -236,7 +236,7 @@ void IonFlow::eval(size_t jg, doublereal* xg,
     
     // convinent method due to interference
     for (size_t j = jmin; j <= jmax; j++) {
-        if (j == 0 || j == 1) {
+        if (j == 0) {
             rsd[index(c_offset_P, j)] = -phi(x,j);
             diag[index(c_offset_P, j)] = 0;
         } else if (j == m_points - 1) {
@@ -328,7 +328,9 @@ void IonFlow::solvePoissonEqn(size_t j)
         }
         m_do_poisson[j] = true;
     }
-    //m_refiner->setActive(c_offset_P, true);
+    m_refiner->setActive(0, true);
+    m_refiner->setActive(1, true);
+    m_refiner->setActive(2, true);
     if (changed) {
         needJacUpdate();
     }
@@ -350,7 +352,9 @@ void IonFlow::fixElectricPotential(size_t j)
         }
         m_do_poisson[j] = false;
     }
-    m_refiner->setActive(c_offset_P, false);
+    m_refiner->setActive(0, false);
+    m_refiner->setActive(1, false);
+    m_refiner->setActive(2, false);
     if (changed) {
         needJacUpdate();
     }
@@ -372,7 +376,9 @@ void IonFlow::solveVelocity(size_t j)
         }
         m_do_velocity[j] = true;
     }
-    m_refiner->setActive(c_offset_U, true);
+    m_refiner->setActive(0, true);
+    m_refiner->setActive(1, true);
+    m_refiner->setActive(2, true);
     if (changed) {
         needJacUpdate();
     }
@@ -394,43 +400,39 @@ void IonFlow::fixVelocity(size_t j)
         }
         m_do_velocity[j] = false;
     }
-    m_refiner->setActive(c_offset_U, false);
+    m_refiner->setActive(0, false);
+    m_refiner->setActive(1, false);
+    m_refiner->setActive(2, false);
     if (changed) {
         needJacUpdate();
     }
 }
 
-void IonFlow::setFixedElecPotenProfile(vector_fp& zfixed, vector_fp& pfixed)
-{
-    m_zfix_p = zfixed;
-    m_pfix = pfixed;
-}
-
 void IonFlow::_finalize(const doublereal* x)
 {
     FreeFlame::_finalize(x);
-
-    bool y = m_do_species[0];
-    for (size_t j = 0; j < m_points; j++) {
-        for (size_t k = 0; k < m_nsp; k++) {
-            if (!y) {
+    size_t nz = m_zfix_y.size();
+    for (size_t k = 0; k < m_nsp; k++) {
+        if (nz == 0) {
+            for (size_t j = 0; j < m_points; j++) {
                 m_fixedMassFrac[m_points*k+j] = Y(x,k,j);
+            }
+        } else {
+            for (size_t j = 0; j < m_points; j++) {
+                double zz = (z(j) - z(0))/(z(m_points - 1) - z(0));
+                double yy = linearInterp(zz, m_zfix_y, m_yfix);
+                m_fixedMassFrac[m_points*k+j] = yy;
             }
         }
     }
-    if (y) {
-        solveSpeciesEqn();
-    }
 
-    size_t nz = m_zfix_p.size();
+    // This method is still not tested
+    // not sure why you want to return to original state
+    // if not doing on point zero
     bool p = m_do_poisson[0];
     for (size_t j = 0; j < m_points; j++) {
-        if (p || nz == 0) {
+        if (!p) {
             m_fixedElecPoten[j] = phi(x, j);
-        } else {
-            double zz = (z(j) - z(0))/(z(m_points - 1) - z(0));
-            double pp = linearInterp(zz, m_zfix, m_pfix);
-            m_fixedElecPoten[j] = pp;
         }
     }
     if (p) {
