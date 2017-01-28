@@ -67,6 +67,7 @@ void IonFlow::updateTransport(doublereal* x, size_t j0, size_t j1)
 {
     StFlow::updateTransport(x,j0,j1);
     for (size_t j = j0; j < j1; j++) {
+        setGasAtMidpoint(x,j);
         m_trans->getMobilities(&m_mobi[j*m_nsp]);
         m_mobi[m_kElectron+m_nsp*j] = 0.4;
         m_diff[m_kElectron+m_nsp*j] = 0.4*(Boltzmann * T(x,j)) / ElectronCharge;
@@ -126,15 +127,17 @@ void IonFlow::phaseTwoDiffFluxes(const doublereal* x, size_t j0, size_t j1)
         double sum_chargeFlux = 0.0;
         double sum = 0.0;
         for (size_t k : m_kCharge) {
+            double Xav = 0.5 * (X(x,k,j+1) + X(x,k,j));
             int q_k = m_speciesCharge[k];
             sum_chargeFlux += m_speciesCharge[k] / m_wt[k] * m_flux(k,j);
-            sum += m_mobi[k+m_nsp*j] * X(x,k,j) * q_k * q_k;
+            sum += m_mobi[k+m_nsp*j] * Xav * q_k * q_k;
         }
         double drift;
         double sum_drift = 0.0;
         for (size_t k : m_kCharge) {
+            double Xav = 0.5 * (X(x,k,j+1) + X(x,k,j));
             int q_k = m_speciesCharge[k];
-            drift = q_k * q_k * m_mobi[k+m_nsp*j] * X(x,k,j) / sum;
+            drift = q_k * q_k * m_mobi[k+m_nsp*j] * Xav / sum;
             drift *= -sum_chargeFlux * m_wt[k] / q_k;
             m_flux(k,j) += drift;
             sum_drift -= drift;
@@ -171,7 +174,8 @@ void IonFlow::phaseThreeDiffFluxes(const doublereal* x, size_t j0, size_t j1)
         double E_ambi = E(x,j);
         sum = 0.0;
         for (size_t k : m_kCharge) {
-            drift = rho * Y(x,k,j) * E_ambi;
+            double Yav = 0.5 * (Y(x,k,j) + Y(x,k,j+1));
+            drift = rho * Yav * E_ambi;
             drift *= m_speciesCharge[k] * m_mobi[k+m_nsp*j]; 
             m_flux(k,j) += drift;
             sum -= drift;
@@ -217,9 +221,17 @@ void IonFlow::eval(size_t jg, doublereal* xg,
         if (j == 0) {
             rsd[index(c_offset_P, j)] = -phi(x,j);
             diag[index(c_offset_P, j)] = 0;
+            for ( size_t k : m_kCharge) {
+                rsd[index(c_offset_Y + k, j)] = Y(x,k,j); 
+                diag[index(c_offset_Y + k, j)] = 0;
+            }
         } else if (j == m_points - 1) {
             rsd[index(c_offset_P, j)] = -phi(x,j);
             diag[index(c_offset_P, j)] = 0;
+            for ( size_t k : m_kCharge) {
+                rsd[index(c_offset_Y + k, j)] = Y(x,k,j); 
+                diag[index(c_offset_Y + k, j)] = 0;
+            }
         } else {
             if (!m_do_velocity[j]) {
                 rsd[index(c_offset_U, j)] = u(x,j) - u_fixed(j);
@@ -227,8 +239,9 @@ void IonFlow::eval(size_t jg, doublereal* xg,
             }
             for (size_t k = 0; k < m_nsp; k++) {
                 if (!m_do_species[k]) {
-                    rsd[index(c_offset_Y + k, j)] = Y(x,k,j) - Y_fixed(k,j);
-                    diag[index(c_offset_Y + k, j)] = 0;                
+                rsd[index(c_offset_Y + k, j)] = Y(x,k,j) - Y_fixed(k,j);
+                rsd[index(c_offset_Y + k, j)] -= rdt*(Y(x,k,j) - Y_prev(k,j));
+                diag[index(c_offset_Y + k, j)] = 1;            
                 }
             }
         }
@@ -411,17 +424,12 @@ void IonFlow::fixVelocity(size_t j)
 void IonFlow::_finalize(const doublereal* x)
 {
     FreeFlame::_finalize(x);
-    size_t nz = m_zfix_y.size();
+
     for (size_t k = 0; k < m_nsp; k++) {
-        if (nz == 0) {
+        bool y = m_do_species[k];
+        if (!y) {
             for (size_t j = 0; j < m_points; j++) {
                 m_fixedMassFrac[m_points*k+j] = Y(x,k,j);
-            }
-        } else {
-            for (size_t j = 0; j < m_points; j++) {
-                double zz = (z(j) - z(0))/(z(m_points - 1) - z(0));
-                double yy = linearInterp(zz, m_zfix_y, m_yfix);
-                m_fixedMassFrac[m_points*k+j] = yy;
             }
         }
     }

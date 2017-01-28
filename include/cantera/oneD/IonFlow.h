@@ -47,10 +47,6 @@ public:
     void fixElectricPotential(size_t j=npos);
     void solveVelocity(size_t j=npos);
     void fixVelocity(size_t j=npos);
-    void setFixedMassFracProfile(vector_fp& zfixed, vector_fp& yfixed) {
-        m_zfix_y = zfixed;
-        m_yfix = yfixed;
-    }
 
 protected:
     virtual void updateTransport(doublereal* x, size_t j0, size_t j1);
@@ -93,12 +89,6 @@ protected:
 
     // fixed velocity value
     vector_fp m_fixedVelocity;
-
-    // !fix electric potentail profile z value
-    vector_fp m_zfix_y;
-
-    // !fix electric potential profile phi value
-    vector_fp m_yfix;
 
     //! The fixed electric potential value at point j
     doublereal phi_fixed(size_t j) const {
