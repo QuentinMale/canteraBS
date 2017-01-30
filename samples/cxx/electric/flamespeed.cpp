@@ -19,7 +19,7 @@ using fmt::print;
 int flamespeed(double phi)
 {
     try {
-        IdealGasMix gas("methane_ion.xml");
+        IdealGasMix gas("gri30_ion.xml","gri30_mix");
 
         doublereal temp = 300.0; // K
         doublereal pressure = 1.0*OneAtm; //atm
@@ -136,7 +136,7 @@ int flamespeed(double phi)
         flow.solveEnergyEqn();
         bool refine_grid = true;
 
-        for (size_t i = 184; i < 185; i++) {
+        for (size_t i = 325; i < 326; i++) {
             gas.setMultiplier(i,0.1);
         }
         
@@ -148,14 +148,21 @@ int flamespeed(double phi)
 
         // set solving phase for IonFlow
         flow.setSolvingPhase(2);
+        flow.fixTemperature();
+        flow.fixVelocity();
 
         // use full reaction rate
-        for (size_t i = 184; i < 185; i++) {
+        for (size_t i = 325; i < 326; i++) {
             gas.setMultiplier(i,1.0);
         }
         // set tolerances for E
         flow.setSteadyTolerances(1.0e-4,1.0e-16,c_offset_Y + gas.speciesIndex("E"));
         flow.setTransientTolerances(1.0e-4,1.0e-18,c_offset_Y + gas.speciesIndex("E"));
+        flame.solve(loglevel, refine_grid);
+
+        // turn on the energy equation
+        flow.solveEnergyEqn();
+        flow.solveVelocity();
         flame.solve(loglevel, refine_grid);
         //****************** end of phase 2 ****************
 
