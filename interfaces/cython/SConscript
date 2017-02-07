@@ -43,8 +43,6 @@ def add_dependencies(mod, ext):
 
     for f in (mglob(localenv, 'cantera', 'py') +
               mglob(localenv, 'cantera/test', 'py') +
-              mglob(localenv, 'cantera/mixmaster', 'py') +
-              mglob(localenv, 'cantera/mixmaster/Units', 'py') +
               mglob(localenv, 'cantera/examples/tutorial', 'py') +
               mglob(localenv, 'cantera/examples/equilibrium', 'py') +
               mglob(localenv, 'cantera/examples/kinetics', 'py') +
@@ -118,6 +116,7 @@ def install_module(prefix, python_version):
           env['install_python2_action'] = mod_inst
 
     elif localenv['PYTHON_INSTALLER'] == 'debian':
+        extra = localenv.subst(' --root=${python%s_prefix}' % ver)
         install(localenv.Command, dummy, mod,
                 build_cmd + ' install --install-layout=deb --no-compile %s' % extra)
         env['python%s_module_loc' % ver] = '<unspecified>'

@@ -95,10 +95,17 @@ directions :ref:`above <sec-install-conda>`.
 
 1. **Choose your Python version and architecture**
 
+<<<<<<< HEAD
    - On Windows, Installers are provided for Python 2.7, Python 3.4, and Python
      3.5. Python 3.5 is recommended unless you need to use legacy code that does
      not work with Python 3. You can install multiple Cantera Python modules
      simultaneously.
+=======
+   - On Windows, Installers are provided for Python 2.7, Python 3.4, Python 3.5,
+     and Python 3.6. Python 3.6 is recommended unless you need to use legacy
+     code that does not work with Python 3. You can install multiple Cantera
+     Python modules simultaneously.
+>>>>>>> master
 
    - Cantera supports both 32- and 64- bit Python installations.
 
@@ -134,8 +141,8 @@ directions :ref:`above <sec-install-conda>`.
 
 3. **Install the Visual C++ Redistributable for Visual Studio 2015**
 
-   - If you are using Python 3.5, you can skip this step as this will have
-     already been installed when you installed Python.
+   - If you are using Python 3.5 or Python 3.6 you can skip this step as this
+     will have already been installed when you installed Python.
 
    - Go to the `Microsoft Visual C++ Redistributable Download Page
      <https://www.microsoft.com/en-us/download/details.aspx?id=48145>`_.
@@ -292,7 +299,7 @@ you can skip any steps which have already been completed.
 
    - Install Python packages required to compile Cantera by running::
 
-         pip install cython numpy
+         pip install numpy
 
      Note that these packages are required even if you do not plan on using the
      Cantera Python 2 module.
@@ -332,12 +339,10 @@ you can skip any steps which have already been completed.
          installed Matlab version)
 
      ``--without-sundials``
-         Do not use an external SUNDIALS version to build Cantera. Users
-         choosing this option will not be able to run sensitivity analysis
-         of Reactor Networks, but it may prevent errors when installing
-         the Matlab toolbox.
+         Do not use an external SUNDIALS version to build Cantera. This option
+         is set automatically when using Matlab.
 
-     ``--without-check``
+     ``--without-test``
          NOT RECOMMENDED! Disable automatic testing of Cantera during the
          installation process.
 
@@ -348,7 +353,7 @@ you can skip any steps which have already been completed.
 
    * If you are installing the Matlab toolbox, the recommended command is::
 
-         brew install cantera --with-matlab=/Applications/MATLAB_R2014a.app/ --without-sundials
+         brew install cantera --with-matlab=/Applications/MATLAB_R2014a.app/
 
    * If something goes wrong with the Homebrew install, re-run the command with
      the ``-v`` flag to get more verbose output that may help identify the
@@ -422,9 +427,9 @@ Ubuntu
 
 Ubuntu packages are provided for recent versions of Ubuntu using a Personal
 Package Archive (PPA). As of Cantera 2.3.0, packages are available for Ubuntu
-Ubuntu 14.04 LTS (Trusty Tahr), Ubuntu 16.04 (Xenial Xerus), and Ubuntu 16.10
-(Yakkety Yak). To see which Ubuntu releases and Cantera versions are currently
-available, visit https://launchpad.net/~speth/+archive/ubuntu/cantera
+Ubuntu 16.04 (Xenial Xerus) and Ubuntu 16.10 (Yakkety Yak). To see which Ubuntu
+releases and Cantera versions are currently available, visit
+https://launchpad.net/~speth/+archive/ubuntu/cantera
 
 The available packages are:
 
