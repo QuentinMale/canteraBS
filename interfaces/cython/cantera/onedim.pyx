@@ -487,6 +487,40 @@ cdef class FreeFlow(_FlowBase):
         self.flow = <CxxStFlow*>(new CxxFreeFlame(gas, thermo.n_species, 2))
 
 
+cdef class IonFlow(_FlowBase):
+    """
+    An ion flow domain.
+
+    In an ion flow dommain, the electric drift is added to the diffusion flux
+    """
+    def __cinit__(self, _SolutionBase thermo, *args, **kwargs):
+        gas = getIdealGasPhase(thermo)
+        self.flow = <CxxStFlow*>(new CxxIonFlow(gas, thermo.n_species, 2))
+
+    def set_solvingPhase(self, phase):
+        (<CxxIonFlow*>self.flow).setSolvingPhase(phase)
+
+    property poisson_enabled:
+        """ Determines whether or not to solve the energy equation."""
+        def __get__(self):
+            return (<CxxIonFlow*>self.flow).doPoisson(0)
+        def __set__(self, enable):
+            if enable:
+                (<CxxIonFlow*>self.flow).solvePoissonEqn()
+            else:
+                (<CxxIonFlow*>self.flow).fixElectricPotential()
+
+    property velocity_enabled:
+        """ Determines whether or not to solve the velocity."""
+        def __get__(self):
+            return (<CxxIonFlow*>self.flow).doVelocity(0)
+        def __set__(self, enable):
+            if enable:
+                (<CxxIonFlow*>self.flow).solveVelocity()
+            else:
+                (<CxxIonFlow*>self.flow).fixVelocity()
+
+
 cdef class AxisymmetricStagnationFlow(_FlowBase):
     """
     An axisymmetric flow domain.
@@ -1079,7 +1113,7 @@ cdef class Sim1D:
         self.sim.clearStats()
 
     def solve_adjoint(self, perturb, n_params, dgdx, g=None, dp=1e-5):
-        r"""
+        """
         Find the sensitivities of an objective function using an adjoint method.
 
         For an objective function :math:`g(x, p)` where :math:`x` is the state

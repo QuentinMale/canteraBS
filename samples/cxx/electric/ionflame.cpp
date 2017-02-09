@@ -136,17 +136,26 @@ int flamespeed(double phi)
         flow.solveEnergyEqn();
         bool refine_grid = true;
 
+        // set tolerances for ions
+        flow.setSteadyTolerances(1.0e-5,1.0e-16,c_offset_Y + gas.speciesIndex("HCO+"));
+        flow.setTransientTolerances(1.0e-5,1.0e-18,c_offset_Y + gas.speciesIndex("HCO+"));
+        flow.setSteadyTolerances(1.0e-5,1.0e-13,c_offset_Y + gas.speciesIndex("H3O+"));
+        flow.setTransientTolerances(1.0e-5,1.0e-15,c_offset_Y + gas.speciesIndex("H3O+"));
+        flow.setSteadyTolerances(1.0e-5,1.0e-16,c_offset_Y + gas.speciesIndex("E"));
+        flow.setTransientTolerances(1.0e-5,1.0e-18,c_offset_Y + gas.speciesIndex("E"));
+
+        // phase one
+        // turn down the reaction for production of electron
         for (size_t i = 325; i < 326; i++) {
-            gas.setMultiplier(i,0.1);
+            gas.setMultiplier(i,0.01);
         }
         
         flame.solve(loglevel,refine_grid);
         double flameSpeed_mix = flame.value(flowdomain,flow.componentIndex("u"),0);
         print("Flame speed with mixture-averaged transport: {} m/s\n",
               flameSpeed_mix);       
-        //****************** end of phase 1*****************
 
-        // set solving phase for IonFlow
+        // phase two
         flow.setSolvingPhase(2);
         flow.fixTemperature();
         flow.fixVelocity();
@@ -155,38 +164,31 @@ int flamespeed(double phi)
         for (size_t i = 325; i < 326; i++) {
             gas.setMultiplier(i,1.0);
         }
-        // set tolerances for E
-        flow.setSteadyTolerances(1.0e-4,1.0e-16,c_offset_Y + gas.speciesIndex("E"));
-        flow.setTransientTolerances(1.0e-4,1.0e-18,c_offset_Y + gas.speciesIndex("E"));
         flame.solve(loglevel, refine_grid);
 
         // turn on the energy equation
         flow.solveEnergyEqn();
         flow.solveVelocity();
         flame.solve(loglevel, refine_grid);
-        //****************** end of phase 2 ****************
 
-        // set solving phase for IonFlow
+        // phase three
         flow.setSolvingPhase(3);
         flow.solvePoissonEqn();
         flame.solve(loglevel, refine_grid);
-        //****************** end of phase 3 **************** 
 
         // post simulation       
         vector_fp rho_vec,HCOxvec,H3Oxvec,Evec;
 
         for (size_t n = 0; n < flow.nPoints(); n++) {
+            // save the concentrations for charged species in number density
             double rho = flow.density(n);
             size_t k = gas.speciesIndex("HCO+");
             rho_vec.push_back(rho);
             HCOxvec.push_back(2e-4*Avogadro*rho*flame.value(flowdomain,k+c_offset_Y,n)/mw[k]);
-            //HCOxvec.push_back(flame.value(flowdomain,k+c_offset_Y,n));
             k = gas.speciesIndex("H3O+");
             H3Oxvec.push_back(1e-6*Avogadro*rho*flame.value(flowdomain,k+c_offset_Y,n)/mw[k]);
-            //H3Oxvec.push_back(flame.value(flowdomain,k+c_offset_Y,n));
             k = gas.speciesIndex("E");
             Evec.push_back(1e-6*Avogadro*rho*flame.value(flowdomain,k+c_offset_Y,n)/mw[k]);
-            //Evec.push_back(flame.value(flowdomain,k+c_offset_Y,n));
         } 
 
         print("\n{:9s}\t{:8s}\t{:8s}\t{:8s}\t{:5s}\n",
@@ -205,6 +207,7 @@ int flamespeed(double phi)
         }
 
         for (size_t n = 0; n < flow.nPoints()-1; n++) {
+            // save electrical field strength in V/cm
             eFvec.push_back(1e-2*(ePvec[n]-ePvec[n+1])/(flow.grid(n+1)-flow.grid(n)));
         }      
         eFvec.push_back(eFvec[flow.nPoints()-2]);

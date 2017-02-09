@@ -175,6 +175,13 @@ class FlameBase(Sim1D):
         """
         return self.profile(self.flame, 'lambda')
 
+    @property
+    def phi(self):
+        """
+        Array containing the electric potential at each point.
+        """
+        return self.profile(self.flame, 'ePotential')
+
     def elemental_mass_fraction(self, m):
         r"""
         Get the elemental mass fraction :math:`Z_{\mathrm{mass},m}` of element
@@ -288,8 +295,39 @@ class FlameBase(Sim1D):
                          'T (K)', 'rho (kg/m3)'] + self.gas.species_names)
         for n in range(self.flame.n_points):
             self.set_gas_state(n)
-            writer.writerow([z[n], u[n], V[n], T[n], self.gas.density] +
+            writer.writerow([z[n], u[n], V[n], T[n], self.gas.density] + 
                             list(getattr(self.gas, species)))
+        csvfile.close()
+        if not quiet:
+            print("Solution saved to '{0}'.".format(filename))
+
+    def write_electric_csv(self, filename, species='X', quiet=True):
+        """
+        Write electric potential, electric field stregth, 
+        and the charged species profiles to a CSV file.
+
+        :param filename:
+            Output file name
+        :param species:
+            Attribute to use obtaining species profiles, e.g. ``X`` for
+            mole fractions or ``Y`` for mass fractions.
+        """
+        z = self.grid
+        phi = self.phi
+        E = []
+        
+        # calculate E field strength
+        for n in range(self.flame.n_points-1):
+            E.append((phi[n+1] - phi[n]) / (z[n+1] - z[n]))
+        
+        E.append(E[self.flame.n_points-2])
+
+        csvfile = open(filename, 'w')
+        writer = _csv.writer(csvfile)
+        writer.writerow(['z (m)', 'phi (Volt)', 'E (V/m)'])
+        for n in range(self.flame.n_points):
+            self.set_gas_state(n)
+            writer.writerow([z[n], phi[n], E[n]])
         csvfile.close()
         if not quiet:
             print("Solution saved to '{0}'.".format(filename))
@@ -454,7 +492,7 @@ class FreeFlame(FlameBase):
                              locs, [Y0[n], Y0[n], Yeq[n], Yeq[n]])
 
     def get_flame_speed_reaction_sensitivities(self):
-        r"""
+        """
         Compute the normalized sensitivities of the laminar flame speed
         :math:`S_u` with respect to the reaction rate constants :math:`k_i`:
 
@@ -480,6 +518,130 @@ class FreeFlame(FlameBase):
             sim.gas.set_multiplier(1+dp, i)
 
         return self.solve_adjoint(perturb, self.gas.n_reactions, dgdx) / Su0
+
+
+class IonFlame(FlameBase):
+    """A freely-propagating flat flame."""
+    __slots__ = ('inlet', 'outlet', 'flame')
+
+    def __init__(self, gas, grid=None, width=None):
+        """
+        A domain of type FreeFlow named 'flame' will be created to represent
+        the flame. The three domains comprising the stack are stored as
+        ``self.inlet``, ``self.flame``, and ``self.outlet``.
+
+        :param grid:
+            A list of points to be used as the initial grid. Not recommended
+            unless solving only on a fixed grid; Use the `width` parameter
+            instead.
+        :param width:
+            Defines a grid on the interval [0, width] with internal points
+            determined automatically by the solver.
+        """
+        self.inlet = Inlet1D(name='reactants', phase=gas)
+        self.outlet = Outlet1D(name='products', phase=gas)
+        self.flame = IonFlow(gas, name='flame')
+
+        if width is not None:
+            grid = np.array([0.0, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0]) * width
+
+        super(IonFlame, self).__init__((self.inlet, self.flame, self.outlet),
+                                        gas, grid)
+
+        # Setting X needs to be deferred until linked to the flow domain
+        self.inlet.T = gas.T
+        self.inlet.X = gas.X
+
+    def set_initial_guess(self):
+        """
+        Set the initial guess for the solution. The adiabatic flame
+        temperature and equilibrium composition are computed for the inlet gas
+        composition. The temperature profile rises linearly over 20% of the
+        domain width to Tad, then is flat. The mass fraction profiles are set
+        similarly.
+        """
+        super(IonFlame, self).set_initial_guess()
+        self.gas.TPY = self.inlet.T, self.P, self.inlet.Y
+
+        if not self.inlet.mdot:
+            # nonzero initial guess increases likelihood of convergence
+            self.inlet.mdot = 1.0 * self.gas.density
+
+        Y0 = self.inlet.Y
+        u0 = self.inlet.mdot/self.gas.density
+        T0 = self.inlet.T
+
+        # get adiabatic flame temperature and composition
+        self.gas.equilibrate('HP')
+        Teq = self.gas.T
+        Yeq = self.gas.Y
+        u1 = self.inlet.mdot/self.gas.density
+
+        locs = [0.0, 0.3, 0.5, 1.0]
+        self.set_profile('u', locs, [u0, u0, u1, u1])
+        self.set_profile('T', locs, [T0, T0, Teq, Teq])
+
+        # Pick the location of the fixed temperature point, using an existing
+        # point if a reasonable choice exists
+        T = self.T
+        Tmid = 0.75 * T0 + 0.25 * Teq
+        i = np.flatnonzero(T < Tmid)[-1] # last point less than Tmid
+        if Tmid - T[i] < 0.2 * (Tmid - T0):
+            self.set_fixed_temperature(T[i])
+        elif T[i+1] - Tmid < 0.2 * (Teq - Tmid):
+            self.set_fixed_temperature(T[i+1])
+        else:
+            self.set_fixed_temperature(Tmid)
+
+        for n in range(self.gas.n_species):
+            self.set_profile(self.gas.species_name(n),
+                             locs, [Y0[n], Y0[n], Yeq[n], Yeq[n]])
+
+    def get_flame_speed_reaction_sensitivities(self):
+        """
+        Compute the normalized sensitivities of the laminar flame speed
+        :math:`S_u` with respect to the reaction rate constants :math:`k_i`:
+
+        .. math::
+
+            s_i = \frac{k_i}{S_u} \frac{dS_u}{dk_i}
+        """
+
+        def g(sim):
+            return sim.u[0]
+
+        Nvars = sum(D.n_components * D.n_points for D in self.domains)
+
+        # Index of u[0] in the global solution vector
+        i_Su = self.inlet.n_components + self.flame.component_index('u')
+
+        dgdx = np.zeros(Nvars)
+        dgdx[i_Su] = 1
+
+        Su0 = g(self)
+
+        def perturb(sim, i, dp):
+            sim.gas.set_multiplier(1+dp, i)
+
+        return self.solve_adjoint(perturb, self.gas.n_reactions, dgdx) / Su0
+
+    @property
+    def poisson_enabled(self):
+        """ Get/Set whether or not to solve the energy equation."""
+        return self.flame.poisson_enabled
+
+    @poisson_enabled.setter
+    def poisson_enabled(self, enable):
+        self.flame.poisson_enabled = enable
+
+    @property
+    def velocity_enabled(self):
+        """ Get/Set whether or not to solve the energy equation."""
+        return self.flame.velocity_enabled
+
+    @velocity_enabled.setter
+    def velocity_enabled(self, enable):
+        self.flame.velocity_enabled = enable
 
 
 class BurnerFlame(FlameBase):
