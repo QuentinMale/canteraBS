@@ -106,11 +106,7 @@ General
            author = "David G. Goodwin and Harry K. Moffat and Raymond L. Speth",
            title = "Cantera: An Object-oriented Software Toolkit for Chemical
                     Kinetics, Thermodynamics, and Transport Processes",
-<<<<<<< HEAD
-           year = 2016,
-=======
            year = 2017,
->>>>>>> master
            note = "Version 2.3.0",
            howpublished = "\url{http://www.cantera.org}"
            doi = {10.5281/zenodo.170284}

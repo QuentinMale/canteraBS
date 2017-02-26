@@ -295,7 +295,7 @@ class FlameBase(Sim1D):
                          'T (K)', 'rho (kg/m3)'] + self.gas.species_names)
         for n in range(self.flame.n_points):
             self.set_gas_state(n)
-            writer.writerow([z[n], u[n], V[n], T[n], self.gas.density] + 
+            writer.writerow([z[n], u[n], V[n], T[n], self.gas.density] +
                             list(getattr(self.gas, species)))
         csvfile.close()
         if not quiet:

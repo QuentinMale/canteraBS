@@ -390,7 +390,6 @@ void StFlow::eval(size_t jg, doublereal* xg,
 
             // set residual of poisson's equ to zero
             rsd[index(c_offset_P, 0)] = x[index(c_offset_P, j)];
-
         } else if (j == m_points - 1) {
             evalRightBoundary(x, rsd, diag, rdt);
             // set residual of poisson's equ to zero
