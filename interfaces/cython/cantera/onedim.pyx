@@ -497,8 +497,11 @@ cdef class IonFlow(_FlowBase):
         gas = getIdealGasPhase(thermo)
         self.flow = <CxxStFlow*>(new CxxIonFlow(gas, thermo.n_species, 2))
 
-    def set_solvingPhase(self, phase):
-        (<CxxIonFlow*>self.flow).setSolvingPhase(phase)
+    def set_solvingStage(self, stage):
+        (<CxxIonFlow*>self.flow).setSolvingStage(stage)
+
+    def set_electricPotential(self, v_inlet, v_outlet):
+        (<CxxIonFlow*>self.flow).setElectricPotential(v_inlet, v_outlet)
 
     property poisson_enabled:
         """ Determines whether or not to solve the energy equation."""

@@ -23,34 +23,15 @@ gas.TPX = Tin, p, reactants
 f = ct.IonFlame(gas, width=width)
 f.set_refine_criteria(ratio=3, slope=0.06, curve=0.12)
 f.show_solution()
-# Set tolerance for ions
-f.flame.set_steady_tolerances(**{'HCO+':(1.0e-5, 1.0e-16)})
-f.flame.set_transient_tolerances(**{'HCO+':(1.0e-5, 1.0e-18)})
-f.flame.set_steady_tolerances(**{'H3O+':(1.0e-5, 1.0e-13)})
-f.flame.set_transient_tolerances(**{'H3O+':(1.0e-5, 1.0e-15)})
-f.flame.set_steady_tolerances(**{'E':(1.0e-5, 1.0e-16)})
-f.flame.set_transient_tolerances(**{'E':(1.0e-5, 1.0e-18)})
 
 # phase one
-gas.set_multiplier(325,0.01)
 f.solve(loglevel=loglevel, auto=True)
 
 # phase two
-f.flame.set_solvingPhase(2)
-f.energy_enabled = False
-f.velocity_enabled = False
-gas.set_multiplier(325,1.0)
-# Solve with Prager's ambipolar diffusion model
-f.solve(loglevel)
-f.energy_enabled = True
-f.velocity_enabled = True
-f.solve(loglevel)
+f.solve(loglevel=loglevel, stage=2, enable_energy=False)
 
 # phase three
-f.flame.set_solvingPhase(3)
-f.poisson_enabled = True
-# Solve with electric force
-f.solve(loglevel)
+f.solve(loglevel=loglevel, stage=3, enable_energy=False)
 
 f.save('CH4_adiabatic.xml', 'mix', 'solution with mixture-averaged transport')
 f.show_solution()
@@ -58,4 +39,4 @@ print('mixture-averaged flamespeed = {0:7f} m/s'.format(f.u[0]))
 
 # write the velocity, temperature, density, and mole fractions to a CSV file
 f.write_csv('CH4_adiabatic.csv', quiet=False)
-f.write_electric_csv('CH4_adiabatic_ion.csv', quiet=False)
+

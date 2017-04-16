@@ -6,33 +6,52 @@
 #ifndef CT_IONFLOW_H
 #define CT_IONFLOW_H
 
-#include "Domain1D.h"
-#include "cantera/base/Array.h"
-#include "cantera/thermo/IdealGasPhase.h"
-#include "cantera/kinetics/Kinetics.h"
 #include "cantera/oneD/StFlow.h"
 
 namespace Cantera
 {
 /**
- * A class for ion flow.
+ * This class models the ion transportation in a flame. There are three
+ * stages of the simulation.
+ *
+ * The first stage turns off the diffusion of ions due to the fast
+ * diffusion rate of electron without internal electric forces (ambi-
+ * polar diffusion effect).
+ * 
+ * The second stage uses charge neutrality model, which assume zero charge
+ * flux throughout the domain, to calculate drift flux. The drift flux is 
+ * added to the total flux of ions. 
+ * Reference:
+ * Prager, J., U. Riedel, and J. Warnatz.
+ * "Modeling ion chemistry and charged species diffusion in lean
+ * methane–oxygen flames."
+ * Proceedings of the Combustion Institute 31.1 (2007): 1129-1137.
+ *
+ * The third stage evaluates drift flux from electric field calculated from
+ * Poisson's equation, which is solved together with other equations. Poisson's
+ * equation is coupled because the total charge densities depends on the species' 
+ * concentration.
+ * Reference:
+ * Pederson, Timothy, and R. C. Brown.
+ * "Simulation of electric field effects in premixed methane flames."
+ * Combustion and Flames 94.4(1993): 433-448.
  * @ingroup onedim
  */
 class IonFlow : public FreeFlame
 {
 public:
     IonFlow(IdealGasPhase* ph = 0, size_t nsp = 1, size_t points = 1);
-    //! set the solving phase
-    virtual void setSolvingPhase(const size_t phase);
+    //! set the solving stage
+    virtual void setSolvingStage(const size_t phase);
     //! set electric voltage at inlet and outlet
-    virtual void setElectricVoltage(const double v1, const double v2);
+    virtual void setElectricPotential(const double v1, const double v2);
 
-    virtual void eval(size_t jg, doublereal* xg,
-              doublereal* rg, integer* diagg, doublereal rdt);
+    virtual void eval(size_t jg, double* xg,
+              double* rg, integer* diagg, double rdt);
 
     virtual void resize(size_t components, size_t points);
 
-    virtual void _finalize(const doublereal* x);
+    virtual void _finalize(const double* x);
     //! set to solve Poisson's equation on a point
     void solvePoissonEqn(size_t j=npos);
     //! set to fix voltage on a point
@@ -49,35 +68,35 @@ public:
     }
 
 protected:
-    virtual void updateTransport(doublereal* x, size_t j0, size_t j1);
-    virtual void updateDiffFluxes(const doublereal* x, size_t j0, size_t j1);
-    //! evaluate the residual for Poisson's equation 
-    virtual void evalPoisson(size_t j, doublereal* x, doublereal* r, integer* diag, doublereal rdt);
+    virtual void updateTransport(double* x, size_t j0, size_t j1);
+    virtual void updateDiffFluxes(const double* x, size_t j0, size_t j1);
+    //! evaluate the residual for Poisson's equation
+    virtual void evalPoisson(size_t j, double* x, double* r, integer* diag, double rdt);
     //! Solving phase one: the fluxes of charged species are turned off
-    virtual void phaseOneDiffFluxes(const doublereal* x, size_t j0, size_t j1);
-    //! Solving phase two: the Prager's ambipolar-diffusion model is used       
-    virtual void phaseTwoDiffFluxes(const doublereal* x, size_t j0, size_t j1);
-    //! Solving phase three: the Poisson's equation is added coupled by the electrical drift 
-    virtual void phaseThreeDiffFluxes(const doublereal* x, size_t j0, size_t j1);
+    virtual void frozenIonMethod(const double* x, size_t j0, size_t j1);
+    //! Solving phase two: the Prager's ambipolar-diffusion model is used
+    virtual void chargeNeutralityModel(const double* x, size_t j0, size_t j1);
+    //! Solving phase three: the Poisson's equation is added coupled by the electrical drift
+    virtual void poissonEqnMethod(const double* x, size_t j0, size_t j1);
     //! flag for solving poisson's equation or not
     std::vector<bool> m_do_poisson;
     //! flag for solving the velocity or not
     std::vector<bool> m_do_velocity;
 
-    // !electrical properties
+    //! electrical properties
     vector_int m_speciesCharge;
 
-    // !index of species with charges
+    //! index of species with charges
     std::vector<size_t> m_kCharge;
 
     //! index of neutral species
     std::vector<size_t> m_kNeutral;
 
     //! mobility
-    vector_fp m_mobi;
+    vector_fp m_mobility;
 
-    //! solving phase
-    int m_phase;
+    //! solving stage
+    int m_stage;
 
     //! The voltage 
     double m_inletVoltage;
@@ -93,31 +112,31 @@ protected:
     vector_fp m_fixedVelocity;
 
     //! The fixed electric potential value at point j
-    doublereal phi_fixed(size_t j) const {
+    double phi_fixed(size_t j) const {
         return m_fixedElecPoten[j];
     }
 
     //! The fixed velocity value at point j
-    doublereal u_fixed(size_t j) const {
+    double u_fixed(size_t j) const {
         return m_fixedVelocity[j];
     }
 
     //! electric potential
-    doublereal phi(const doublereal* x, size_t j) const {
+    double phi(const double* x, size_t j) const {
         return x[index(c_offset_P, j)];
     }  
 
     //! electric field
-    doublereal E(const doublereal* x, size_t j) const {
+    double E(const double* x, size_t j) const {
         return -(phi(x,j+1)-phi(x,j))/(z(j+1)-z(j));
     }
 
-    doublereal dEdz(const doublereal* x, size_t j) const {
+    double dEdz(const double* x, size_t j) const {
         return 2*(E(x,j)-E(x,j-1))/(z(j+1)-z(j-1));
     }
 
     //! number density
-    doublereal ND(const doublereal* x, size_t k, size_t j) const {
+    double ND(const double* x, size_t k, size_t j) const {
         return Avogadro * m_rho[j] * Y(x,k,j) / m_wt[k];
     }
 };

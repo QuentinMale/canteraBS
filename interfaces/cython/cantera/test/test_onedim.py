@@ -859,37 +859,21 @@ class TestIonFlame(utilities.CanteraTest):
         self.sim.set_refine_criteria(ratio=5, slope=0.5, curve=0.3)
         self.sim.flame.set_steady_tolerances(default=self.tol_ss)
         self.sim.flame.set_transient_tolerances(default=self.tol_ts)
-        self.sim.flame.set_steady_tolerances(**{'HCO+':(1.0e-5, 1.0e-16)})
-        self.sim.flame.set_transient_tolerances(**{'HCO+':(1.0e-5, 1.0e-18)})
-        self.sim.flame.set_steady_tolerances(**{'H3O+':(1.0e-5, 1.0e-13)})
-        self.sim.flame.set_transient_tolerances(**{'H3O+':(1.0e-5, 1.0e-15)})
-        self.sim.flame.set_steady_tolerances(**{'E':(1.0e-5, 1.0e-16)})
-        self.sim.flame.set_transient_tolerances(**{'E':(1.0e-5, 1.0e-18)})
 
-        # phase zero
-        for i in range(184,190):
-            self.gas.set_multiplier(i,0)
-
+        # stage zero
         self.sim.solve(loglevel=0, refine_grid=True)
         T0 = self.sim.T[-1]
 
-        # phase one 
-        self.gas.set_multiplier(184,0.01)
-        self.sim.solve(loglevel=0, refine_grid=False)
+        # stage one 
+        self.sim.solve(loglevel=0, refine_grid=False, stage=1)
         T1 = self.sim.T[-1]
 
-        #phase two
-        self.sim.flame.set_solvingPhase(2)
-        self.gas.set_multiplier(184,1.0)
-        self.energy_enabled = False
-        self.velocity_enabled = False
-        self.sim.solve(loglevel=0, refine_grid=False)
+        # stage two
+        self.sim.solve(loglevel=0, refine_grid=False, stage=2, enable_energy=False)
         Electron2 = self.sim.value(self.sim.flame, 'E', self.sim.flame.n_points-1)
 
-        #phase three 
-        self.sim.flame.set_solvingPhase(3)
-        self.poisson_enabled = True
-        self.sim.solve(loglevel=0, refine_grid=False)
+        #stage three 
+        self.sim.solve(loglevel=0, refine_grid=False, stage=3, enable_energy=False)
         Electron3 = self.sim.value(self.sim.flame, 'E', self.sim.flame.n_points-1)
 
         # check Temperature at outlet
