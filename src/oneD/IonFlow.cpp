@@ -343,10 +343,10 @@ void IonFlow::fixElectricPotential(size_t j)
         }
         m_do_poisson[j] = false;
     }
-    m_refiner->setActive(0, false);
-    m_refiner->setActive(1, false);
-    m_refiner->setActive(2, false);
-    m_refiner->setActive(4, false);
+    m_refiner->setActive(c_offset_U, false);
+    m_refiner->setActive(c_offset_V, false);
+    m_refiner->setActive(c_offset_T, false);
+    m_refiner->setActive(c_offset_P, false);
     if (changed) {
         needJacUpdate();
     }
@@ -368,9 +368,9 @@ void IonFlow::solveVelocity(size_t j)
         }
         m_do_velocity[j] = true;
     }
-    m_refiner->setActive(0, true);
-    m_refiner->setActive(1, true);
-    m_refiner->setActive(2, true);
+    m_refiner->setActive(c_offset_U, true);
+    m_refiner->setActive(c_offset_V, true);
+    m_refiner->setActive(c_offset_T, true);
     if (changed) {
         needJacUpdate();
     }
@@ -392,9 +392,9 @@ void IonFlow::fixVelocity(size_t j)
         }
         m_do_velocity[j] = false;
     }
-    m_refiner->setActive(0, false);
-    m_refiner->setActive(1, false);
-    m_refiner->setActive(2, false);
+    m_refiner->setActive(c_offset_U, false);
+    m_refiner->setActive(c_offset_V, false);
+    m_refiner->setActive(c_offset_T, false);
     if (changed) {
         needJacUpdate();
     }
