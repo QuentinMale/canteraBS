@@ -16,6 +16,8 @@ namespace Cantera
 
 IonFlow::IonFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
     FreeFlame(ph, nsp, points),
+    m_import_electron_transport(false),
+    m_overwrite_eTransport(true),
     m_stage(1),
     m_inletVoltage(0.0),
     m_outletVoltage(0.0),
@@ -73,6 +75,8 @@ void IonFlow::resize(size_t components, size_t points){
     m_do_velocity.resize(m_points,true);
     m_fixedElecPoten.resize(m_points,0.0);
     m_fixedVelocity.resize(m_points);
+    m_elecMobility.resize(m_points);
+    m_elecDiffCoeff.resize(m_points);
 }
 
 void IonFlow::updateTransport(double* x, size_t j0, size_t j1)
@@ -81,12 +85,13 @@ void IonFlow::updateTransport(double* x, size_t j0, size_t j1)
     for (size_t j = j0; j < j1; j++) {
         setGasAtMidpoint(x,j);
         m_trans->getMobilities(&m_mobility[j*m_nsp]);
-        if (m_kElectron != npos) {
-            m_mobility[m_kElectron+m_nsp*j] = 0.4;
-            m_diff[m_kElectron+m_nsp*j] = 0.4*(Boltzmann * T(x,j)) / ElectronCharge;
+        if (m_overwrite_eTransport && (m_kElectron != npos)) {
+            m_mobility[m_kElectron+m_nsp*j] = m_elecMobility[j];
+            m_diff[m_kElectron+m_nsp*j] = m_elecDiffCoeff[j];
         }
     }
 }
+
 void IonFlow::updateDiffFluxes(const double* x, size_t j0, size_t j1)
 {
     if (m_stage == 1) {
@@ -395,6 +400,15 @@ void IonFlow::fixVelocity(size_t j)
     }
 }
 
+void IonFlow::setElectronTransport(vector_fp& zfixed, vector_fp& diff_e_fixed, 
+                                   vector_fp& mobi_e_fixed)
+{
+    m_ztfix = zfixed;
+    m_diff_e_fix = diff_e_fixed;
+    m_mobi_e_fix = mobi_e_fixed;
+    m_import_electron_transport = true;
+}
+
 void IonFlow::_finalize(const double* x)
 {
     FreeFlame::_finalize(x);
@@ -417,6 +431,20 @@ void IonFlow::_finalize(const double* x)
     }
     if (v) {
         solveVelocity();
+    }
+    if (m_overwrite_eTransport == true) {
+        for (size_t j = 0; j < m_points; j++) {
+            if (m_import_electron_transport == false) {
+                m_diff_e_fix[j] = 0.4*(Boltzmann * T(x,j)) / ElectronCharge;
+                m_mobi_e_fix[j] = 0.4;
+            } else {
+                double zz = (z(j) - z(0))/(z(m_points - 1) - z(0));
+                double d = linearInterp(zz, m_ztfix, m_diff_e_fix);
+                double mu = linearInterp(zz, m_ztfix, m_mobi_e_fix);
+                m_diff_e_fix[j] = d;
+                m_mobi_e_fix[j] = mu;
+            }
+        }
     }
 }
 

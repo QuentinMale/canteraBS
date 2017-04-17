@@ -67,6 +67,20 @@ public:
         return m_do_velocity[j];
     }
 
+    /**
+     * Sometimes it is desired to carry out the simulation using a specified
+     * electron transport profile, rather than assuming it as a constant (0.4).
+     * Reference:
+     * Bisetti, Fabrizio, and Mbark El Morsli.
+     * "Calculation and analysis of the mobility and diffusion coefficient
+     * of thermal electrons in methane/air premixed flames."
+     * Combustion and flame 159.12 (2012): 3518-3521.
+     * If in the future the class GasTranport is improved, this method may
+     * be discard. This method specifies this profile.
+    */
+    void setElectronTransport(vector_fp& zfixed, vector_fp& diff_e_fixed,
+                              vector_fp& mobi_e_fixed);
+
 protected:
     virtual void updateTransport(double* x, size_t j0, size_t j1);
     virtual void updateDiffFluxes(const double* x, size_t j0, size_t j1);
@@ -83,6 +97,12 @@ protected:
     //! flag for solving the velocity or not
     std::vector<bool> m_do_velocity;
 
+    //! flag for importing transport of electron
+    bool m_import_electron_transport;
+
+    //! flag for overwrite transport of electron or not
+    bool m_overwrite_eTransport;
+
     //! electrical properties
     vector_int m_speciesCharge;
 
@@ -91,6 +111,10 @@ protected:
 
     //! index of neutral species
     std::vector<size_t> m_kNeutral;
+
+    //! fixed transport profile of electron
+    vector_fp m_elecMobility;
+    vector_fp m_elecDiffCoeff;
 
     //! mobility
     vector_fp m_mobility;
@@ -110,6 +134,11 @@ protected:
 
     //! fixed velocity value
     vector_fp m_fixedVelocity;
+
+    //! fixed electron transport values
+    vector_fp m_ztfix;
+    vector_fp m_diff_e_fix;
+    vector_fp m_mobi_e_fix;
 
     //! The fixed electric potential value at point j
     double phi_fixed(size_t j) const {
