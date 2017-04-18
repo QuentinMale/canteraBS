@@ -841,44 +841,38 @@ class TestTwinFlame(utilities.CanteraTest):
         self.solve(phi=0.4, T=300, width=0.05, P=0.1)
 
 class TestIonFlame(utilities.CanteraTest):
-    tol_ss = [1.0e-5, 1.0e-14]  # [rtol atol] for steady-state problem
-    tol_ts = [1.0e-4, 1.0e-11]  # [rtol atol] for time stepping
 
     def test_ion_profile(self):
-        reactants = 'CH4:0.5, O2:2'
+        reactants = 'CH4:0.216, O2:2'
         p = ct.one_atm
         Tin = 300
         width = 0.03
 
         # IdealGasMix object used to compute mixture properties
-        self.gas = ct.Solution('methane_ion.xml')
+        self.gas = ct.Solution('ch4_ion.cti')
         self.gas.TPX = Tin, p, reactants
-
-        # Flame object
         self.sim = ct.IonFlame(self.gas, width=width)
-        self.sim.set_refine_criteria(ratio=5, slope=0.5, curve=0.3)
-        self.sim.flame.set_steady_tolerances(default=self.tol_ss)
-        self.sim.flame.set_transient_tolerances(default=self.tol_ts)
+        self.sim.set_refine_criteria(ratio=4, slope=0.8, curve=1.0)
 
-        # stage zero
-        self.sim.solve(loglevel=0, refine_grid=True)
-        T0 = self.sim.T[-1]
-
-        # stage one 
-        self.sim.solve(loglevel=0, refine_grid=False, stage=1)
+        # stage one
+        self.sim.solve(loglevel=0, auto=True)
         T1 = self.sim.T[-1]
 
+        # stage two 
+        self.sim.solve(loglevel=0, stage=2, enable_energy=False)
+
         # stage two
-        self.sim.solve(loglevel=0, refine_grid=False, stage=2, enable_energy=False)
+        self.sim.solve(loglevel=0, stage=2, enable_energy=True)
         Electron2 = self.sim.value(self.sim.flame, 'E', self.sim.flame.n_points-1)
 
         #stage three 
-        self.sim.solve(loglevel=0, refine_grid=False, stage=3, enable_energy=False)
+        self.sim.solve(loglevel=0, stage=3, enable_energy=True)
         Electron3 = self.sim.value(self.sim.flame, 'E', self.sim.flame.n_points-1)
+        T3 = self.sim.T[-1]
 
         # check Temperature at outlet
-        self.assertNear(T0, T1, 1e-3)
-        self.assertNotEqual(T0, T1)
+        self.assertNear(T1, T3, 1e-3)
+        self.assertNotEqual(T1, T3)
         # check Electron concentration at outlet
         self.assertNear(Electron2, Electron3, 1e-13)
         self.assertNotEqual(Electron2, Electron3)
