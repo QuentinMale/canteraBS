@@ -9,10 +9,9 @@ import numpy as np
 # Simulation parameters
 p = ct.one_atm  # pressure [Pa]
 Tin = 300.0  # unburned gas temperature [K]
-reactants = 'CH4:0.216, O2:2'  # premixed gas composition
+reactants = 'CH4:1, O2:2, N2:9.52'  # premixed gas composition
 width = 0.05  # m
 loglevel = 1  # amount of diagnostic output (0 to 8)
-offset = 5    #the offset for the species
 
 # IdealGasMix object used to compute mixture properties, set to the state of the
 # upstream fuel-air mixture
