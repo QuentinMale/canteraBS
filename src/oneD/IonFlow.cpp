@@ -86,8 +86,13 @@ void IonFlow::updateTransport(double* x, size_t j0, size_t j1)
         setGasAtMidpoint(x,j);
         m_trans->getMobilities(&m_mobility[j*m_nsp]);
         if (m_overwrite_eTransport && (m_kElectron != npos)) {
-            m_mobility[m_kElectron+m_nsp*j] = m_elecMobility[j];
-            m_diff[m_kElectron+m_nsp*j] = m_elecDiffCoeff[j];
+            if (m_import_electron_transport) {
+                m_mobility[m_kElectron+m_nsp*j] = m_elecMobility[j];
+                m_diff[m_kElectron+m_nsp*j] = m_elecDiffCoeff[j];
+            } else {
+                m_mobility[m_kElectron+m_nsp*j] = 0.4;
+                m_diff[m_kElectron+m_nsp*j] = 0.4*(Boltzmann * T(x,j)) / ElectronCharge;
+            }
         }
     }
 }
@@ -431,20 +436,6 @@ void IonFlow::_finalize(const double* x)
     }
     if (v) {
         solveVelocity();
-    }
-    if (m_overwrite_eTransport == true) {
-        for (size_t j = 0; j < m_points; j++) {
-            if (m_import_electron_transport == false) {
-                m_diff_e_fix[j] = 0.4*(Boltzmann * T(x,j)) / ElectronCharge;
-                m_mobi_e_fix[j] = 0.4;
-            } else {
-                double zz = (z(j) - z(0))/(z(m_points - 1) - z(0));
-                double d = linearInterp(zz, m_ztfix, m_diff_e_fix);
-                double mu = linearInterp(zz, m_ztfix, m_mobi_e_fix);
-                m_diff_e_fix[j] = d;
-                m_mobi_e_fix[j] = mu;
-            }
-        }
     }
 }
 
