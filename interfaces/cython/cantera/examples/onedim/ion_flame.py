@@ -9,7 +9,7 @@ import numpy as np
 # Simulation parameters
 p = ct.one_atm  # pressure [Pa]
 Tin = 300.0  # unburned gas temperature [K]
-reactants = 'CH4:1, O2:2, N2:9.52'  # premixed gas composition
+reactants = 'CH4:1, O2:2, N2:7.52'  # premixed gas composition
 width = 0.05  # m
 loglevel = 1  # amount of diagnostic output (0 to 8)
 
@@ -28,9 +28,10 @@ f.solve(loglevel=loglevel, auto=True)
 
 # phase two
 f.solve(loglevel=loglevel, stage=2, enable_energy=False)
+f.solve(loglevel=loglevel, stage=2, enable_energy=True)
 
 # phase three
-f.solve(loglevel=loglevel, stage=3, enable_energy=False)
+f.solve(loglevel=loglevel, stage=3, enable_energy=True)
 
 f.save('CH4_adiabatic.xml', 'mix', 'solution with mixture-averaged transport')
 f.show_solution()
