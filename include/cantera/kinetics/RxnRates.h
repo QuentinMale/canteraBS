@@ -158,7 +158,9 @@ public:
     }
 
 protected:
-    double m_n, m_m, m_A, m_B, m_C, m_D, m_E, m_logA;
+    double m_n, m_m, m_A, m_B, m_C;
+    size_t m_D;
+    double m_E, m_logA;
 };
 
 /**

@@ -247,6 +247,9 @@ bool GasKinetics::addReaction(shared_ptr<Reaction> r)
     case ELEMENTARY_RXN:
         addElementaryReaction(dynamic_cast<ElementaryReaction&>(*r));
         break;
+    case VT_RELAXATION_RXN:
+        addVTRelaxationReaction(dynamic_cast<VTRelaxationReaction&>(*r));
+        break;
     case THREE_BODY_RXN:
         addThreeBodyReaction(dynamic_cast<ThreeBodyReaction&>(*r));
         break;
@@ -302,6 +305,11 @@ void GasKinetics::addFalloffReaction(FalloffReaction& r)
     falloff_work.resize(m_falloffn.workSize());
 }
 
+void GasKinetics::addVTRelaxationReaction(VTRelaxationReaction& r)
+{
+    m_vt_relaxation_rates.install(nReactions()-1, r.rate);
+}
+
 void GasKinetics::addThreeBodyReaction(ThreeBodyReaction& r)
 {
     m_rates.install(nReactions()-1, r.rate);
@@ -340,6 +348,9 @@ void GasKinetics::modifyReaction(size_t i, shared_ptr<Reaction> rNew)
     case ELEMENTARY_RXN:
         modifyElementaryReaction(i, dynamic_cast<ElementaryReaction&>(*rNew));
         break;
+    case VT_RELAXATION_RXN:
+        modifyVTRelaxationReaction(i, dynamic_cast<VTRelaxationReaction&>(*rNew));
+        break;
     case THREE_BODY_RXN:
         modifyThreeBodyReaction(i, dynamic_cast<ThreeBodyReaction&>(*rNew));
         break;
@@ -362,6 +373,11 @@ void GasKinetics::modifyReaction(size_t i, shared_ptr<Reaction> rNew)
     m_ROP_ok = false;
     m_temp += 0.1234;
     m_pres += 0.1234;
+}
+
+void GasKinetics::modifyVTRelaxationReaction(size_t i, VTRelaxationReaction& r)
+{
+    m_vt_relaxation_rates.replace(i, r.rate);
 }
 
 void GasKinetics::modifyThreeBodyReaction(size_t i, ThreeBodyReaction& r)

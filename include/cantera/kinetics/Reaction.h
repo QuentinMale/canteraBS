@@ -94,8 +94,6 @@ public:
     VTRelaxationReaction();
     VTRelaxationReaction(const Composition& reactants, const Composition products,
                          const SSHArrhenius& rate);
-    virtual void validate();
-
     SSHArrhenius rate;
 };
 

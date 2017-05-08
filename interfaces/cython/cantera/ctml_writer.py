@@ -1100,7 +1100,7 @@ class stick(Arrhenius):
         self.unit_factor = 1.0
         Arrhenius.build(self, p, name, a)
 
-class VTRelaxationArrhenius(rate_expression):
+class SSHArrhenius(rate_expression):
     def __init__(self,
                  n = 0.0,
                  m = 0.0,
@@ -1117,13 +1117,24 @@ class VTRelaxationArrhenius(rate_expression):
 
     def build(self, p, name='', a=None):
         if a is None:
-            a = p.addChild('VTRelaxationArrhenius')
+            a = p.addChild('SSHArrhenius')
         if name:
             a['name'] = name
 
         addFloat(a,'n',self._c[0], fmt = '%f')
         addFloat(a,'m',self._c[1], fmt = '%f')
-        addFloat(a,'A',self._c[2], fmt = '%14.6E')
+
+        # if a pure number is entered for A, multiply by the conversion
+        # factor to SI and write it to CTML as a pure number. Otherwise,
+        # pass it as-is through to CTML with the unit string.
+        if isnum(self._c[2]):
+            addFloat(a,'A',self._c[2]*self.unit_factor, fmt = '%14.6E')
+        elif len(self._c[2]) == 2 and self._c[2][1] == '/site':
+            addFloat(a,'A',self._c[2][0]/self.rxn_phase._sitedens,
+                     fmt = '%14.6E')
+        else:
+            addFloat(a,'A',self._c[2], fmt = '%14.6E')
+
         addFloat(a,'B',self._c[3], fmt = '%f')
         addFloat(a,'C',self._c[4], fmt = '%f')
         # The D coefficient should be dimensionless, so there is no
@@ -1329,7 +1340,7 @@ class reaction(object):
             self.ldim -= 3
         elif self._type == 'chebyshev':
             self._kf = []
-        elif self._type == 'vtRelaxation':
+        elif self._type == 'vt_relaxation':
             self._kf = [self._kf]
 
         if self._type == 'edge':
@@ -1337,7 +1348,7 @@ class reaction(object):
                 electro = kfnode.addChild('electrochem')
                 electro['beta'] = repr(self._beta)
 
-        if self._type != 'vtRelaxation':
+        if self._type != 'vt_relaxation':
             for kf in self._kf:
                 if isinstance(kf, rate_expression):
                     k = kf
@@ -1365,7 +1376,7 @@ class reaction(object):
                 if isinstance(kf, rate_expression):
                     k = kf
                 else:
-                    k = VTRelaxationArrhenius(n = kf[0], m = kf[1], A = kf[2], B = kf[3],
+                    k = SSHArrhenius(n = kf[0], m = kf[1], A = kf[2], B = kf[3],
                                               C = kf[4], D = kf[5], E = kf[6])
                 if isinstance(kf, stick):
                     kf.gas_species = self._igspecies
@@ -1474,7 +1485,7 @@ class pdep_reaction(reaction):
         if self._falloff:
             self._falloff.build(kfnode)
 
-class vtRelaxation_reaction(reaction):
+class vt_relaxation_reaction(reaction):
     """ A gas-phase falloff reaction. """
     def __init__(self, 
                  equation = '', 
@@ -1486,7 +1497,7 @@ class vtRelaxation_reaction(reaction):
         
         """
         reaction.__init__(self, equation, kf, id, '', options)
-        self._type = 'vtRelaxation'
+        self._type = 'vt_relaxation'
 
 class falloff_reaction(pdep_reaction):
     """ A gas-phase falloff reaction. """

@@ -96,6 +96,7 @@ protected:
 
     Rate1<Plog> m_plog_rates;
     Rate1<ChebyshevRate> m_cheb_rates;
+    Rate1<SSHArrhenius> m_vt_relaxation_rates;
 
     //! @name Reaction rate data
     //!@{
@@ -112,12 +113,12 @@ protected:
     //!@}
 
     void processFalloffReactions();
-
+    void addVTRelaxationReaction(VTRelaxationReaction& r);
     void addThreeBodyReaction(ThreeBodyReaction& r);
     void addFalloffReaction(FalloffReaction& r);
     void addPlogReaction(PlogReaction& r);
     void addChebyshevReaction(ChebyshevReaction& r);
-
+    void modifyVTRelaxationReaction(size_t i, VTRelaxationReaction& r);
     void modifyThreeBodyReaction(size_t i, ThreeBodyReaction& r);
     void modifyFalloffReaction(size_t i, FalloffReaction& r);
     void modifyPlogReaction(size_t i, PlogReaction& r);
