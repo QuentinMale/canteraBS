@@ -1,0 +1,47 @@
+units(length='cm', time='s', quantity='mol', act_energy='cal/mol')
+
+ideal_gas(name='gas',
+          elements=' O  H  C  N  Ar',
+          species=['''gri30: H2  H  O  O2  OH  H2O  HO2  H2O2  C  CH 
+                   CH2  CH2(S)  CH3  CH4  CO  CO2  HCO  CH2O  CH2OH  CH3O 
+                   CH3OH  C2H  C2H2  C2H3  C2H4  C2H5  C2H6  HCCO  CH2CO  HCCOH 
+                   N  NH  NH2  NH3  NNH  NO  NO2  N2O  HNO  CN 
+                   HCN  H2CN  HCNN  HCNO  HOCN  HNCO  NCO  N2  AR  C3H7 
+                   C3H8  CH2CHO  CH3CHO''',
+                   'O2(v1)'],
+          reactions=['gri30: all', 'all'],
+          transport='Mix',
+          options=['skip_undeclared_species', 'skip_undeclared_third_bodies'],
+          initial_state=state(temperature=300.0, pressure=OneAtm))
+
+#-------------------------------------------------------------------------------
+# Species data
+#-------------------------------------------------------------------------------
+
+species(name = "O2(v1)",
+    atoms = " O:2 ",
+    thermo = (
+       NASA( [  200.00,  1000.00], [  3.782456360E+00,  -2.996734160E-03, 
+                9.847302010E-06,  -9.681295090E-09,   3.243728370E-12,
+               -1.063943560E+03,   3.657675730E+00] ),
+       NASA( [ 1000.00,  3500.00], [  3.282537840E+00,   1.483087540E-03, 
+               -7.579666690E-07,   2.094705550E-10,  -2.167177940E-14,
+               -1.088457720E+03,   5.453231290E+00] )
+             ),
+    transport = gas_transport(
+                     geom = "linear",
+                     diam =     3.46,
+                     well_depth =   107.40,
+                     polar =     1.60,
+                     rot_relax =     3.80),
+    note = "TPIS89"
+       )
+
+#-------------------------------------------------------------------------------
+# Reaction data
+#-------------------------------------------------------------------------------
+
+vtRelaxation_reaction('O2 + O2 => O2(v1) + O2', [1.0, 0.0, 1.35E-12, 137.9, 0.0, 1, 0.19])
+
+
+
