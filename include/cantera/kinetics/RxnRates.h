@@ -92,6 +92,72 @@ protected:
     doublereal m_logA, m_b, m_E, m_A;
 };
 
+class SSHArrhenius
+{
+public:
+    //! return the rate coefficient type.
+    static int type() {
+        return SSH_ARRHENIUS_REACTION_RATECOEFF_TYPE;
+    }
+
+    //! Default constructor.
+    SSHArrhenius();
+
+    /// Constructor.
+    /// @param A pre-exponential. The unit system is
+    ///     (kmol, m, s). The actual units depend on the reaction
+    ///     order and the dimensionality (surface or bulk).
+    /// @param b Temperature exponent. Non-dimensional.
+    /// @param E Activation energy in temperature units. Kelvin.
+    SSHArrhenius(double n, double m, double A, double B, double C, size_t D, double E);
+
+    //! Update concentration-dependent parts of the rate coefficient.
+    /*!
+     *   For this class, there are no concentration-dependent parts, so this
+     *   method does nothing.
+     */
+    void update_C(const double* c) {
+    }
+
+    /**
+     * Update the value of the natural logarithm of the rate constant.
+     */
+    double updateLog(double logT, double recipT) const {
+        double Qvib = m_D * std::exp(-m_E*recipT);
+        return m_logA + m_n*logT - m_B*pow(recipT, -1.0/3.0) + m_C*pow(recipT, -m_m) - log(1-Qvib);
+    }
+
+    /**
+     * Update the value the rate constant.
+     *
+     * This function returns the actual value of the rate constant. It can be
+     * safely called for negative values of the pre-exponential factor.
+     */
+    double updateRC(double logT, double recipT) const {
+        double Qvib = m_D * std::exp(-m_E*recipT);
+        return m_A * std::exp(m_n*logT - m_B*pow(recipT, -1.0/3.0) + m_C*pow(recipT, -m_m)) / (1-Qvib);
+    }
+
+    //! Return the pre-exponential factor *A* (in m, kmol, s to powers depending
+    //! on the reaction order)
+    double preExponentialFactor() const {
+        return m_A;
+    }
+
+    //! Return the temperature exponent *b*
+    double temperatureExponent() const {
+        return m_n;
+    }
+
+    //! Return the activation energy divided by the gas constant (i.e. the
+    //! activation temperature) [K]
+    double activationEnergy_R() const {
+        return m_E;
+    }
+
+protected:
+    double m_n, m_m, m_A, m_B, m_C, m_D, m_E, m_logA;
+};
 
 /**
  * An Arrhenius rate with coverage-dependent terms.

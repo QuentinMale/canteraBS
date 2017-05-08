@@ -36,6 +36,8 @@ const int ELEMENTARY_RXN = 1;
  */
 const int THREE_BODY_RXN = 2;
 
+const int VT_RELAXATION_RXN = 3;
+
 /**
  * The general form for a gas-phase association or dissociation reaction, with a
  * pressure-dependent rate. Example: CH3 + H (+M) <-> CH4 (+M)
@@ -126,6 +128,7 @@ const int ARRHENIUS_SUM_REACTION_RATECOEFF_TYPE = 5;
 const int EXCHANGE_CURRENT_REACTION_RATECOEFF_TYPE = 6;
 const int PLOG_REACTION_RATECOEFF_TYPE = 7;
 const int CHEBYSHEV_REACTION_RATECOEFF_TYPE = 8;
+const int SSH_ARRHENIUS_REACTION_RATECOEFF_TYPE = 9;
 
 //@}
 

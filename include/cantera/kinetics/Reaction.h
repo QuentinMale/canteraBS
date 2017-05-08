@@ -88,6 +88,17 @@ public:
     bool allow_negative_pre_exponential_factor;
 };
 
+class VTRelaxationReaction : public Reaction
+{
+public:
+    VTRelaxationReaction();
+    VTRelaxationReaction(const Composition& reactants, const Composition products,
+                         const SSHArrhenius& rate);
+    virtual void validate();
+
+    SSHArrhenius rate;
+};
+
 //! A class for managing third-body efficiencies, including default values
 class ThirdBody
 {
