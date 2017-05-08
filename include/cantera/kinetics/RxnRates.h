@@ -14,6 +14,8 @@
 
 #include <iostream>
 
+using namespace std;
+
 namespace Cantera
 {
 
@@ -68,7 +70,7 @@ public:
      * safely called for negative values of the pre-exponential factor.
      */
     doublereal updateRC(doublereal logT, doublereal recipT) const {
-        return m_A * std::exp(m_b*logT - m_E*recipT);
+        return m_A * exp(m_b*logT - m_E*recipT);
     }
 
     //! Return the pre-exponential factor *A* (in m, kmol, s to powers depending
@@ -123,7 +125,7 @@ public:
      * Update the value of the natural logarithm of the rate constant.
      */
     double updateLog(double logT, double recipT) const {
-        double Qvib = m_D * std::exp(-m_E*recipT);
+        double Qvib = m_D * exp(-m_E*recipT);
         return m_logA + m_n*logT - m_B*pow(recipT, -1.0/3.0) + m_C*pow(recipT, -m_m) - log(1-Qvib);
     }
 
@@ -134,8 +136,8 @@ public:
      * safely called for negative values of the pre-exponential factor.
      */
     double updateRC(double logT, double recipT) const {
-        double Qvib = m_D * std::exp(-m_E*recipT);
-        return m_A * std::exp(m_n*logT - m_B*pow(recipT, -1.0/3.0) + m_C*pow(recipT, -m_m)) / (1-Qvib);
+        double Qvib = m_D * exp(-m_E*recipT);
+        return m_A * exp(m_n*logT - m_B*pow(recipT, -1.0/3.0) + m_C*pow(recipT, -m_m)) / (1-Qvib);
     }
 
     //! Return the pre-exponential factor *A* (in m, kmol, s to powers depending
@@ -212,8 +214,8 @@ public:
         }
         for (size_t n = 0; n < m_mc.size(); n++) {
             k = m_msp[n];
-            th = std::max(theta[k], Tiny);
-            m_mcov += m_mc[n]*std::log(th);
+            th = max(theta[k], Tiny);
+            m_mcov += m_mc[n]*log(th);
         }
     }
 
@@ -224,7 +226,7 @@ public:
      * safely called for negative values of the pre-exponential factor.
      */
     doublereal updateRC(doublereal logT, doublereal recipT) const {
-        return m_A * std::exp(std::log(10.0)*m_acov + m_b*logT -
+        return m_A * exp(log(10.0)*m_acov + m_b*logT -
                               (m_E + m_ecov)*recipT + m_mcov);
     }
 
@@ -234,7 +236,7 @@ public:
      *  Returns reaction prexponent accounting for both *a* and *m*.
      */
     doublereal preExponentialFactor() const {
-        return m_A * std::exp(std::log(10.0)*m_acov + m_mcov);
+        return m_A * exp(log(10.0)*m_acov + m_mcov);
     }
 
     //! Return effective temperature exponent
@@ -251,7 +253,7 @@ public:
 protected:
     doublereal m_b, m_E, m_A;
     doublereal m_acov, m_ecov, m_mcov;
-    std::vector<size_t> m_sp, m_msp;
+    vector<size_t> m_sp, m_msp;
     vector_fp m_ac, m_ec, m_mc;
 };
 
@@ -286,7 +288,7 @@ public:
     Plog() {}
 
     //! Constructor from Arrhenius rate expressions at a set of pressures
-    explicit Plog(const std::multimap<double, Arrhenius>& rates);
+    explicit Plog(const multimap<double, Arrhenius>& rates);
 
     //! Update concentration-dependent parts of the rate coefficient.
     //! @param c natural log of the pressure in Pa
@@ -329,7 +331,7 @@ public:
             for (size_t i = ilow1_; i < ilow2_; i++) {
                 k += rates_[i].updateRC(logT, recipT);
             }
-            log_k1 = std::log(k);
+            log_k1 = log(k);
         }
 
         if (ihigh1_ == ihigh2_) {
@@ -339,28 +341,28 @@ public:
             for (size_t i = ihigh1_; i < ihigh2_; i++) {
                 k += rates_[i].updateRC(logT, recipT);
             }
-            log_k2 = std::log(k);
+            log_k2 = log(k);
         }
 
-        return std::exp(log_k1 + (log_k2-log_k1) * (logP_-logP1_) * rDeltaP_);
+        return exp(log_k1 + (log_k2-log_k1) * (logP_-logP1_) * rDeltaP_);
     }
 
     //! Check to make sure that the rate expression is finite over a range of
     //! temperatures at each interpolation pressure. This is potentially an
     //! issue when one of the Arrhenius expressions at a particular pressure
     //! has a negative pre-exponential factor.
-    void validate(const std::string& equation);
+    void validate(const string& equation);
 
     //! Return the pressures and Arrhenius expressions which comprise this
     //! reaction.
-    std::vector<std::pair<double, Arrhenius> > rates() const;
+    vector<pair<double, Arrhenius> > rates() const;
 
 protected:
     //! log(p) to (index range) in the rates_ vector
-    std::map<double, std::pair<size_t, size_t> > pressures_;
+    map<double, pair<size_t, size_t> > pressures_;
 
     // Rate expressions which are referenced by the indices stored in pressures_
-    std::vector<Arrhenius> rates_;
+    vector<Arrhenius> rates_;
 
     double logP_; //!< log(p) at the current state
     double logP1_, logP2_; //!< log(p) at the lower / upper pressure reference
@@ -464,7 +466,7 @@ public:
             Cnm1 = Cn;
             Cn = Cnp1;
         }
-        return std::pow(10, logk);
+        return pow(10, logk);
     }
 
     //! Minimum valid temperature [K]
