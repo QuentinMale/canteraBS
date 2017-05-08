@@ -1100,6 +1100,40 @@ class stick(Arrhenius):
         self.unit_factor = 1.0
         Arrhenius.build(self, p, name, a)
 
+class VTRelaxationArrhenius(rate_expression):
+    def __init__(self,
+                 n = 0.0,
+                 m = 0.0,
+                 A = 0.0,
+                 B = 0.0,
+                 C = 0.0,
+                 D = 0,
+                 E = 0.0):
+        """
+
+        """
+
+        self._c = [n, m, A, B, C, D, E]
+
+    def build(self, p, name='', a=None):
+        if a is None:
+            a = p.addChild('VTRelaxationArrhenius')
+        if name:
+            a['name'] = name
+
+        addFloat(a,'n',self._c[0], fmt = '%f')
+        addFloat(a,'m',self._c[1], fmt = '%f')
+        addFloat(a,'A',self._c[2], fmt = '%14.6E')
+        addFloat(a,'B',self._c[3], fmt = '%f')
+        addFloat(a,'C',self._c[4], fmt = '%f')
+        # The D coefficient should be dimensionless, so there is no
+        # need to use 'addFloat'
+        a.addChild('D', repr(self._c[5]))
+
+        # If a pure number is entered for the activation energy,
+        # add the default units, otherwise use the supplied units.
+        addFloat(a,'E', self._c[6], fmt = '%f', defunits = _ue)
+
 def getPairs(s):
     toks = s.split()
     m = {}
@@ -1295,34 +1329,50 @@ class reaction(object):
             self.ldim -= 3
         elif self._type == 'chebyshev':
             self._kf = []
+        elif self._type == 'vtRelaxation':
+            self._kf = [self._kf]
 
         if self._type == 'edge':
             if self._beta > 0:
                 electro = kfnode.addChild('electrochem')
                 electro['beta'] = repr(self._beta)
 
-        for kf in self._kf:
-            if isinstance(kf, rate_expression):
-                k = kf
-            else:
-                k = Arrhenius(A = kf[0], b = kf[1], E = kf[2])
-            if isinstance(kf, stick):
-                kf.gas_species = self._igspecies
-                kf.rxn_phase = self._rxnphase
-            k.unit_factor = self.unit_factor()
-            k.build(kfnode, name=nm)
+        if self._type != 'vtRelaxation':
+            for kf in self._kf:
+                if isinstance(kf, rate_expression):
+                    k = kf
+                else:
+                    k = Arrhenius(A = kf[0], b = kf[1], E = kf[2])
+                if isinstance(kf, stick):
+                    kf.gas_species = self._igspecies
+                    kf.rxn_phase = self._rxnphase
+                k.unit_factor = self.unit_factor()
+                k.build(kfnode, name=nm)
 
-            if self._type == 'falloff':
-                # set values for low-pressure rate coeff if falloff rxn
-                self.mdim += 1
-                self.ldim -= 3
-                nm = 'k0'
-            elif self._type == 'chemAct':
-                # set values for high-pressure rate coeff if this is a
-                # chemically activated reaction
-                self.mdim -= 1
-                self.ldim += 3
-                nm = 'kHigh'
+                if self._type == 'falloff':
+                    # set values for low-pressure rate coeff if falloff rxn
+                    self.mdim += 1
+                    self.ldim -= 3
+                    nm = 'k0'
+                elif self._type == 'chemAct':
+                    # set values for high-pressure rate coeff if this is a
+                    # chemically activated reaction
+                    self.mdim -= 1
+                    self.ldim += 3
+                    nm = 'kHigh'
+        else:
+            for kf in self._kf:
+                if isinstance(kf, rate_expression):
+                    k = kf
+                else:
+                    k = VTRelaxationArrhenius(n = kf[0], m = kf[1], A = kf[2], B = kf[3],
+                                              C = kf[4], D = kf[5], E = kf[6])
+                if isinstance(kf, stick):
+                    kf.gas_species = self._igspecies
+                    kf.rxn_phase = self._rxnphase
+                k.unit_factor = self.unit_factor()
+                k.build(kfnode, name=nm)
+
 
         rstr = ' '.join('%s:%s' % item for item in self._r.items())
         pstr = ' '.join('%s:%s' % item for item in self._p.items())
@@ -1424,6 +1474,19 @@ class pdep_reaction(reaction):
         if self._falloff:
             self._falloff.build(kfnode)
 
+class vtRelaxation_reaction(reaction):
+    """ A gas-phase falloff reaction. """
+    def __init__(self, 
+                 equation = '', 
+                 kf = None,
+                 efficiencies='', 
+                 id='', 
+                 options=[]):
+        """
+        
+        """
+        reaction.__init__(self, equation, kf, id, '', options)
+        self._type = 'vtRelaxation'
 
 class falloff_reaction(pdep_reaction):
     """ A gas-phase falloff reaction. """
