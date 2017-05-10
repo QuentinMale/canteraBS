@@ -1393,6 +1393,34 @@ class reaction(object):
 
 #-------------------
 
+class vt_relaxation_reaction(reaction):
+    """ A vibrational translational relaxation reaction. """
+    def __init__(self, 
+                 equation = '', 
+                 kf = None,
+                 efficiencies='', 
+                 id='', 
+                 options=[]):
+        """
+        
+        """
+        super(vt_relaxation_reaction, self).__init__(equation, kf, efficiencies, id, options)
+        self._type = 'vt_relaxation'
+        if self._e.find('<=>') >=0:
+            r, p = self._e.split("<=>")
+        elif self._e.find('=>') >=0:
+            r, p = self._e.split('=>')
+        elif self._e.find('=') >=0:
+            r, p = self._e.split('=')
+
+        if r.find('v') >= 0:
+            vibration_level = 1+int(r[r.find('v')+1:r.rfind(')')])
+        else:
+            vibration_level = 1
+
+        print('vibration_level',vibration_level)
+
+
 
 class three_body_reaction(reaction):
     """
@@ -1485,19 +1513,6 @@ class pdep_reaction(reaction):
         if self._falloff:
             self._falloff.build(kfnode)
 
-class vt_relaxation_reaction(reaction):
-    """ A gas-phase falloff reaction. """
-    def __init__(self, 
-                 equation = '', 
-                 kf = None,
-                 efficiencies='', 
-                 id='', 
-                 options=[]):
-        """
-        
-        """
-        reaction.__init__(self, equation, kf, id, '', options)
-        self._type = 'vt_relaxation'
 
 class falloff_reaction(pdep_reaction):
     """ A gas-phase falloff reaction. """
