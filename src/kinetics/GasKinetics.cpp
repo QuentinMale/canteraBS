@@ -39,6 +39,10 @@ void GasKinetics::update_rates_T()
             m_rates.update(T, logT, m_rfn.data());
         }
 
+        if (m_vt_relaxation_rates.nReactions()) {
+            m_vt_relaxation_rates.update(T, logT, m_rfn.data());
+        }
+
         if (!m_rfn_low.empty()) {
             m_falloff_low_rates.update(T, logT, m_rfn_low.data());
             m_falloff_high_rates.update(T, logT, m_rfn_high.data());
@@ -73,6 +77,11 @@ void GasKinetics::update_rates_C()
     // 3-body reactions
     if (!concm_3b_values.empty()) {
         m_3b_concm.update(m_conc, ctot, concm_3b_values.data());
+    }
+
+    // vt reactions
+    if (!concm_vt_relaxation_values.empty()) {
+        m_vt_relaxation_concm.update(m_conc, ctot, concm_vt_relaxation_values.data());
     }
 
     // Falloff reactions
@@ -175,6 +184,10 @@ void GasKinetics::updateROP()
         m_3b_concm.multiply(m_ropf.data(), concm_3b_values.data());
     }
 
+    if (!concm_vt_relaxation_values.empty()) {
+        m_vt_relaxation_concm.multiply(m_ropf.data(), concm_vt_relaxation_values.data());
+    }
+
     if (m_falloff_high_rates.nReactions()) {
         processFalloffReactions();
     }
@@ -221,6 +234,10 @@ void GasKinetics::getFwdRateConstants(doublereal* kfwd)
     // multiply ropf by enhanced 3b conc for all 3b rxns
     if (!concm_3b_values.empty()) {
         m_3b_concm.multiply(m_ropf.data(), concm_3b_values.data());
+    }
+
+    if (!concm_vt_relaxation_values.empty()) {
+        m_vt_relaxation_concm.multiply(m_ropf.data(), concm_vt_relaxation_values.data());
     }
 
     if (m_falloff_high_rates.nReactions()) {
@@ -308,6 +325,21 @@ void GasKinetics::addFalloffReaction(FalloffReaction& r)
 void GasKinetics::addVTRelaxationReaction(VTRelaxationReaction& r)
 {
     m_vt_relaxation_rates.install(nReactions()-1, r.rate);
+    // install the enhanced third-body concentration calculator
+    map<size_t, double> efficiencies;
+    for (const auto& eff : r.third_body.efficiencies) {
+        size_t k = kineticsSpeciesIndex(eff.first);
+        if (k != npos) {
+            efficiencies[k] = eff.second;
+        } else if (!m_skipUndeclaredThirdBodies) {
+            throw CanteraError("GasKinetics::addVTRelaxationReaction", "Found "
+                "third-body efficiency for undefined species '" + eff.first +
+                "' while adding reaction '" + r.equation() + "'");
+        }
+    }
+    m_vt_relaxation_concm.install(nReactions()-1, efficiencies,
+                       r.third_body.default_efficiency);
+    concm_vt_relaxation_values.resize(m_vt_relaxation_concm.workSize());
 }
 
 void GasKinetics::addThreeBodyReaction(ThreeBodyReaction& r)

@@ -137,7 +137,7 @@ public:
      */
     double updateRC(double logT, double recipT) const {
         double Qvib = m_D * exp(-m_E*recipT);
-        return m_A * exp(m_n*logT - m_B*pow(recipT, -1.0/3.0) + m_C*pow(recipT, -m_m)) / (1-Qvib);
+        return m_A * exp(m_n*logT - m_B*pow(recipT, 1.0/3.0) + m_C*pow(recipT, m_m)) / (1.0-Qvib);
     }
 
     //! Return the pre-exponential factor *A* (in m, kmol, s to powers depending

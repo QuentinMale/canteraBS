@@ -88,15 +88,6 @@ public:
     bool allow_negative_pre_exponential_factor;
 };
 
-class VTRelaxationReaction : public Reaction
-{
-public:
-    VTRelaxationReaction();
-    VTRelaxationReaction(const Composition& reactants, const Composition products,
-                         const SSHArrhenius& rate);
-    SSHArrhenius rate;
-};
-
 //! A class for managing third-body efficiencies, including default values
 class ThirdBody
 {
@@ -129,6 +120,19 @@ public:
 
     //! Relative efficiencies of third-body species in enhancing the reaction
     //! rate.
+    ThirdBody third_body;
+};
+
+//! A reaction of vibrational excitation/relaxation by collision with a neutral molecule 
+class VTRelaxationReaction : public Reaction
+{
+public:
+    VTRelaxationReaction();
+    VTRelaxationReaction(const Composition& reactants, const Composition products,
+                         const SSHArrhenius& rate, const ThirdBody& tbody);
+    SSHArrhenius rate;
+    
+    //! Relative efficiencies of third-body species in enhancing the reaction rate
     ThirdBody third_body;
 };
 

@@ -92,6 +92,7 @@ protected:
     FalloffMgr m_falloffn;
 
     ThirdBodyCalc m_3b_concm;
+    ThirdBodyCalc m_vt_relaxation_concm;
     ThirdBodyCalc m_falloff_concm;
 
     Rate1<Plog> m_plog_rates;
@@ -110,6 +111,7 @@ protected:
     vector_fp falloff_work;
     vector_fp concm_3b_values;
     vector_fp concm_falloff_values;
+    vector_fp concm_vt_relaxation_values;
     //!@}
 
     void processFalloffReactions();

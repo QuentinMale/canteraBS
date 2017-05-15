@@ -288,7 +288,8 @@ cdef extern from "cantera/kinetics/Reaction.h" namespace "Cantera":
 
     cdef cppclass CxxVTRelaxationReaction "Cantera::VTRelaxationReaction" (CxxReaction):
         CxxVTRelaxationReaction()
-        CxxSSHArrhenius rate 
+        CxxSSHArrhenius rate
+        CxxThirdBody third_body
 
     cdef cppclass CxxThreeBodyReaction "Cantera::ThreeBodyReaction" (CxxElementaryReaction):
         CxxThreeBodyReaction()

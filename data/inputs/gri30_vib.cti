@@ -8,7 +8,7 @@ ideal_gas(name='gas',
                    N  NH  NH2  NH3  NNH  NO  NO2  N2O  HNO  CN 
                    HCN  H2CN  HCNN  HCNO  HOCN  HNCO  NCO  N2  AR  C3H7 
                    C3H8  CH2CHO  CH3CHO''',
-                   'O2(v1) O2(v2)'],
+                   'O2(v1)'],
           reactions=['gri30: all', 'all'],
           transport='Mix',
           options=['skip_undeclared_species', 'skip_undeclared_third_bodies'],
@@ -45,7 +45,7 @@ species(name = "O2(v2)",
 #-------------------------------------------------------------------------------
 units(length='cm', time='s', quantity='molec', act_energy='eV')
 O2_SSH = [1.0, 0.0, 1.35E-12, 137.9, 0.0, 1, 0.19]
-vt_relaxation_reaction('O2 + O2 => O2(v1) + O2', O2_SSH)
-vt_relaxation_reaction('O2(v1) + O2 => O2(v2) + O2', O2_SSH)
+vt_relaxation_reaction('O2(v1) + M => O2 + M', O2_SSH, "O2:1 O2(v1):1")
+
 
 

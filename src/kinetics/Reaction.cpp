@@ -128,9 +128,11 @@ VTRelaxationReaction::VTRelaxationReaction():
 
 VTRelaxationReaction::VTRelaxationReaction(const Composition& reactants_,
                                            const Composition products_,
-                                           const SSHArrhenius& rate_):
+                                           const SSHArrhenius& rate_,
+                                           const ThirdBody& tbody):
     Reaction(VT_RELAXATION_RXN, reactants_, products_),
-    rate(rate_)
+    rate(rate_),
+    third_body(tbody)
 {
 }
 
@@ -405,6 +407,7 @@ void setupVTRelaxationReaction(VTRelaxationReaction& R, const XML_Node& rxn_node
     } else {
         throw CanteraError("setupVTRelaxationReaction", "Couldn't find SSHArrhenius node");
     }
+    readEfficiencies(R.third_body, rc_node);
     setupReaction(R, rxn_node);
 }
 

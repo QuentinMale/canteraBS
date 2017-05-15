@@ -388,6 +388,7 @@ cdef class ElementaryReaction(Reaction):
 
 cdef class VTRelaxationReaction(Reaction):
     """
+    A reaction of vibrational-translational relaxation
     """
     reaction_type = VT_RELAXATION_RXN
 
