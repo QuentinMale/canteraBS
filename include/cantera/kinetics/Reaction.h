@@ -123,6 +123,19 @@ public:
     ThirdBody third_body;
 };
 
+//! A reaction of vibrational-translational relaxation by collision with a neutral molecule
+class VTRelaxationReaction : public Reaction
+{
+public:
+    VTRelaxationReaction();
+    VTRelaxationReaction(const Composition& reactants, const Composition products,
+                         const SSHArrhenius& rate, const ThirdBody& tbody);
+    SSHArrhenius rate;
+
+    //! Relative efficiencies of third-body species in enhancing the reaction rate
+    ThirdBody third_body;
+};
+
 //! A reaction that is first-order in [M] at low pressure, like a third-body
 //! reaction, but zeroth-order in [M] as pressure increases.
 class FalloffReaction : public Reaction

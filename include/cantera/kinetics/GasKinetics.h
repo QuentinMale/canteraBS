@@ -84,10 +84,12 @@ protected:
     FalloffMgr m_falloffn;
 
     ThirdBodyCalc m_3b_concm;
+    ThirdBodyCalc m_vt_relaxation_concm;
     ThirdBodyCalc m_falloff_concm;
 
     Rate1<Plog> m_plog_rates;
     Rate1<ChebyshevRate> m_cheb_rates;
+    Rate1<SSHArrhenius> m_vt_relaxation_rates;
 
     //! @name Reaction rate data
     //!@{
@@ -101,15 +103,16 @@ protected:
     vector_fp falloff_work;
     vector_fp concm_3b_values;
     vector_fp concm_falloff_values;
+    vector_fp concm_vt_relaxation_values;
     //!@}
 
     void processFalloffReactions();
-
+    void addVTRelaxationReaction(VTRelaxationReaction& r);
     void addThreeBodyReaction(ThreeBodyReaction& r);
     void addFalloffReaction(FalloffReaction& r);
     void addPlogReaction(PlogReaction& r);
     void addChebyshevReaction(ChebyshevReaction& r);
-
+    void modifyVTRelaxationReaction(size_t i, VTRelaxationReaction& r);
     void modifyThreeBodyReaction(size_t i, ThreeBodyReaction& r);
     void modifyFalloffReaction(size_t i, FalloffReaction& r);
     void modifyPlogReaction(size_t i, PlogReaction& r);
