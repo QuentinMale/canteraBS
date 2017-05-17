@@ -28,6 +28,35 @@ Arrhenius::Arrhenius(doublereal A, doublereal b, doublereal E)
     }
 }
 
+SSHArrhenius::SSHArrhenius():
+    m_n(0.0),
+    m_m(0.0),
+    m_A(0.0),
+    m_B(0.0),
+    m_C(0.0),
+    m_D(0),
+    m_E(0.0),
+    m_logA(-1.0E300)
+{
+}
+
+SSHArrhenius::SSHArrhenius(double n, double m, double A, double B, double C, size_t D, double E):
+    m_n(n),
+    m_m(m),
+    m_A(A),
+    m_B(B),
+    m_C(C),
+    m_D(D),
+    m_E(E),
+    m_logA(-1.0E300)
+{
+    if (m_A <= 0.0) {
+        m_logA = -1.0E300;
+    } else {
+        m_logA = std::log(m_A);
+    }
+}
+
 SurfaceArrhenius::SurfaceArrhenius()
     : m_b(0.0)
     , m_E(0.0)

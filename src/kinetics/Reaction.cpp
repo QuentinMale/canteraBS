@@ -121,6 +121,21 @@ void ElementaryReaction::validate()
     }
 }
 
+VTRelaxationReaction::VTRelaxationReaction():
+    Reaction(VT_RELAXATION_RXN)
+{
+}
+
+VTRelaxationReaction::VTRelaxationReaction(const Composition& reactants_,
+                                           const Composition products_,
+                                           const SSHArrhenius& rate_,
+                                           const ThirdBody& tbody):
+    Reaction(VT_RELAXATION_RXN, reactants_, products_),
+    rate(rate_),
+    third_body(tbody)
+{
+}
+
 ThirdBody::ThirdBody(double default_eff)
     : default_efficiency(default_eff)
 {
@@ -278,6 +293,17 @@ Arrhenius readArrhenius(const XML_Node& arrhenius_node)
                      getFloat(arrhenius_node, "E", "actEnergy") / GasConstant);
 }
 
+SSHArrhenius readSSHArrhenius(const XML_Node& SSH_arrhenius_node)
+{
+    return SSHArrhenius(getFloat(SSH_arrhenius_node, "n"),
+                        getFloat(SSH_arrhenius_node, "m"),
+                        getFloat(SSH_arrhenius_node, "A", "toSI"),
+                        getFloat(SSH_arrhenius_node, "B"),
+                        getFloat(SSH_arrhenius_node, "C"),
+                        getInteger(SSH_arrhenius_node, "D"),
+                        getFloat(SSH_arrhenius_node, "E","actEnergy") / GasConstant);
+}
+
 //! Parse falloff parameters, given a rateCoeff node
 /*!
  * @verbatim
@@ -370,6 +396,18 @@ void setupElementaryReaction(ElementaryReaction& R, const XML_Node& rxn_node)
     if (rxn_node["nonreactant_orders"] == "yes") {
         R.allow_nonreactant_orders = true;
     }
+    setupReaction(R, rxn_node);
+}
+
+void setupVTRelaxationReaction(VTRelaxationReaction& R, const XML_Node& rxn_node)
+{
+    const XML_Node& rc_node = rxn_node.child("rateCoeff");
+    if (rc_node.hasChild("SSHArrhenius")) {
+        R.rate = readSSHArrhenius(rc_node.child("SSHArrhenius"));
+    } else {
+        throw CanteraError("setupVTRelaxationReaction", "Couldn't find SSHArrhenius node");
+    }
+    readEfficiencies(R.third_body, rc_node);
     setupReaction(R, rxn_node);
 }
 
@@ -616,6 +654,10 @@ shared_ptr<Reaction> newReaction(const XML_Node& rxn_node)
     if (type == "elementary" || type == "arrhenius" || type == "") {
         auto R = make_shared<ElementaryReaction>();
         setupElementaryReaction(*R, rxn_node);
+        return R;
+    } else if (type == "vt_relaxation") {
+        auto R = make_shared<VTRelaxationReaction>();
+        setupVTRelaxationReaction(*R, rxn_node);
         return R;
     } else if (type == "threebody" || type == "three_body") {
         auto R = make_shared<ThreeBodyReaction>();
