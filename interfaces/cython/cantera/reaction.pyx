@@ -308,9 +308,9 @@ cdef class SSHArrhenius:
     r"""
 
     """
-    def __cinit__(self, n=0.0, m=0.0, A=0.0, B=0.0, C=0.0, D=0, E=0.0, init=True):
+    def __cinit__(self, n=0.0, m=0.0, A=0.0, B=0.0, C=0.0, D=0, E=0.0, v=0, init=True):
         if init:
-            self.rate = new CxxSSHArrhenius(n, m, A, B, C, D, E)
+            self.rate = new CxxSSHArrhenius(n, m, A, B, C, D, E, v)
             self.reaction = None
 
     def __dealloc__(self):

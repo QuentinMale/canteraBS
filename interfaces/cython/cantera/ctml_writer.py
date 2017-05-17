@@ -1145,6 +1145,7 @@ class SSHArrhenius(rate_expression):
         # add the default units, otherwise use the supplied units.
         addFloat(a,'E', self._c[6], fmt = '%f', defunits = _ue)
 
+
 def getPairs(s):
     toks = s.split()
     m = {}
@@ -1460,7 +1461,7 @@ class vt_relaxation_reaction(reaction):
         r = reaction.build(self, p)
         if r == 0: return
         kfnode = r.child('rateCoeff')
-        kfnode.addChild('vibrationLevel', self._vibrationLevel)
+        kfnode.child('SSHArrhenius').addChild('v', self._vibrationLevel)
 
         if self._eff:
             eff = kfnode.addChild('efficiencies',self._eff)

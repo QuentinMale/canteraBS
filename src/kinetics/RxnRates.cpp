@@ -36,11 +36,14 @@ SSHArrhenius::SSHArrhenius():
     m_C(0.0),
     m_D(0),
     m_E(0.0),
-    m_logA(-1.0E300)
+    m_v(0),
+    m_logA(-1.0E300),
+    m_log_v(-1.0E300)
 {
 }
 
-SSHArrhenius::SSHArrhenius(double n, double m, double A, double B, double C, size_t D, double E):
+SSHArrhenius::SSHArrhenius(double n, double m, double A, double B, 
+                           double C, size_t D, double E, size_t v):
     m_n(n),
     m_m(m),
     m_A(A),
@@ -48,12 +51,20 @@ SSHArrhenius::SSHArrhenius(double n, double m, double A, double B, double C, siz
     m_C(C),
     m_D(D),
     m_E(E),
-    m_logA(-1.0E300)
+    m_v(v),
+    m_logA(-1.0E300),
+    m_log_v(-1.0E300)
 {
     if (m_A <= 0.0) {
         m_logA = -1.0E300;
     } else {
         m_logA = std::log(m_A);
+    }
+
+    if (m_v <= 0.0) {
+        m_log_v = -1.0E300;
+    } else {
+        m_log_v = std::log(m_v);
     }
 }
 

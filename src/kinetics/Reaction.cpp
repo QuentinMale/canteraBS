@@ -301,7 +301,8 @@ SSHArrhenius readSSHArrhenius(const XML_Node& SSH_arrhenius_node)
                         getFloat(SSH_arrhenius_node, "B"),
                         getFloat(SSH_arrhenius_node, "C"),
                         getInteger(SSH_arrhenius_node, "D"),
-                        getFloat(SSH_arrhenius_node, "E","actEnergy") / GasConstant);
+                        getFloat(SSH_arrhenius_node, "E","actEnergy") / GasConstant,
+                        getInteger(SSH_arrhenius_node, "v"));
 }
 
 //! Parse falloff parameters, given a rateCoeff node
