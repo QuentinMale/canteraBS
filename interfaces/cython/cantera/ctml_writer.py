@@ -1100,6 +1100,51 @@ class stick(Arrhenius):
         self.unit_factor = 1.0
         Arrhenius.build(self, p, name, a)
 
+class SSHArrhenius(rate_expression):
+    def __init__(self,
+                 n = 0.0,
+                 m = 0.0,
+                 A = 0.0,
+                 B = 0.0,
+                 C = 0.0,
+                 D = 0,
+                 E = 0.0):
+        """
+
+        """
+
+        self._c = [n, m, A, B, C, D, E]
+
+    def build(self, p, name='', a=None):
+        if a is None:
+            a = p.addChild('SSHArrhenius')
+        if name:
+            a['name'] = name
+
+        addFloat(a,'n',self._c[0], fmt = '%f')
+        addFloat(a,'m',self._c[1], fmt = '%f')
+
+        # if a pure number is entered for A, multiply by the conversion
+        # factor to SI and write it to CTML as a pure number. Otherwise,
+        # pass it as-is through to CTML with the unit string.
+        if isnum(self._c[2]):
+            addFloat(a,'A',self._c[2]*self.unit_factor, fmt = '%14.6E')
+        elif len(self._c[2]) == 2 and self._c[2][1] == '/site':
+            addFloat(a,'A',self._c[2][0]/self.rxn_phase._sitedens,
+                     fmt = '%14.6E')
+        else:
+            addFloat(a,'A',self._c[2], fmt = '%14.6E')
+
+        addFloat(a,'B',self._c[3], fmt = '%f')
+        addFloat(a,'C',self._c[4], fmt = '%f')
+        # The D coefficient should be dimensionless, so there is no
+        # need to use 'addFloat'
+        a.addChild('D', repr(self._c[5]))
+
+        # If a pure number is entered for the activation energy,
+        # add the default units, otherwise use the supplied units.
+        addFloat(a,'E', self._c[6], fmt = '%f', defunits = _ue)
+
 def getPairs(s):
     toks = s.split()
     m = {}
