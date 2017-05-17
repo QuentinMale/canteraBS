@@ -1295,6 +1295,8 @@ class reaction(object):
             self.ldim -= 3
         elif self._type == 'chebyshev':
             self._kf = []
+        elif self._type == 'vt_relaxation':
+            self._kf = [self._kf]
 
         if self._type == 'edge' or self._type == 'surface':
             if self._beta > 0:
@@ -1305,7 +1307,12 @@ class reaction(object):
             if isinstance(kf, rate_expression):
                 k = kf
             else:
-                k = Arrhenius(A = kf[0], b = kf[1], E = kf[2])
+                if self._type == 'vt_relaxation':
+                    k = SSHArrhenius(n = kf[0], m = kf[1], A = kf[2],
+                                     B = kf[3], C = kf[4], D = kf[5],
+                                     E = kf[6])
+                else:
+                    k = Arrhenius(A = kf[0], b = kf[1], E = kf[2])
             if isinstance(kf, stick):
                 kf.gas_species = self._igspecies
                 kf.rxn_phase = self._rxnphase
@@ -1332,6 +1339,87 @@ class reaction(object):
 
 #-------------------
 
+
+class vt_relaxation_reaction(reaction):
+    """ A vibrational translational relaxation reaction. """
+    def __init__(self,
+                 equation = '',
+                 kf = None,
+                 efficiencies='',
+                 id='',
+                 options=[]):
+        """
+        :param equation:
+            A string specifying the chemical equation. The reaction can be
+            written in either the association or dissociation directions, and
+            may be reversible or irreversible.
+        :param kf:
+            The rate coefficient for the forward direction. If a sequence of
+            three numbers is given, these will be interpreted as [A, b, E] in
+            the modified Arrhenius function.
+        :param efficiencies:
+            A string specifying the third-body collision efficiencies.
+            The efficiencies for unspecified species are set to 1.0.
+        :param id:
+            An optional identification string. If omitted, it defaults to a
+            four-digit numeric string beginning with 0001 for the first
+            reaction in the file.
+        :param options: Processing options, as described in
+            :ref:`sec-reaction-options`.
+        """
+        reaction.__init__(self, equation, kf, id, '', options)
+        self._type = 'vt_relaxation'
+        self._effm = 1.0
+        self._eff = efficiencies
+
+        # clean up reactant and product lists
+        for r in list(self._r.keys()):
+            if r == 'M' or r == 'm':
+                del self._r[r]
+        for p in list(self._p.keys()):
+            if p == 'M' or p == 'm':
+                del self._p[p]
+
+        # find the vibration level
+        if self._e.find('<=>') >=0:
+            r, p = self._e.split("<=>")
+        elif self._e.find('=>') >=0:
+            r, p = self._e.split('=>')
+        elif self._e.find('=') >=0:
+            r, p = self._e.split('=')
+
+        if r.find('(v') >= 0:
+            vibration_level_r = int(r[r.find('v')+1:r.rfind(')')])
+        else:
+            raise CTI_Error( "In reaction '{0}', the reactants have to include"
+                            " species with vibration level. Ex. (v1)."
+                            .format(self._e, species))
+
+        if p.find('v') >= 0:
+            vibration_level_p = int(p[p.find('v')+1:p.rfind(')')])
+        elif p.find('(') <= 0:
+            vibration_level_p = 0
+        else:
+            raise CTI_Error( "In reaction '{0}', wrong format for the species"
+                            "of product. Ex. (v1)."
+                            .format(self._e))
+
+        if (vibration_level_r - vibration_level_p) == 1:
+            self._vibrationLevel = vibration_level_r
+        else:
+            raise CTI_Error( "In reaction '{0}', the vibration level"
+                            " of reactant has to be +1 of the product"
+                            .format(self._e))
+
+    def build(self, p):
+        r = reaction.build(self, p)
+        if r == 0: return
+        kfnode = r.child('rateCoeff')
+        kfnode.addChild('vibrationLevel', self._vibrationLevel)
+
+        if self._eff:
+            eff = kfnode.addChild('efficiencies',self._eff)
+            eff['default'] = repr(self._effm)
 
 class three_body_reaction(reaction):
     """
