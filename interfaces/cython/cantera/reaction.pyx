@@ -3,6 +3,7 @@
 
 cdef extern from "cantera/kinetics/reaction_defs.h" namespace "Cantera":
     cdef int ELEMENTARY_RXN
+    cdef int VT_RELAXATION_RXN
     cdef int THREE_BODY_RXN
     cdef int FALLOFF_RXN
     cdef int PLOG_RXN
@@ -303,6 +304,59 @@ cdef copyArrhenius(CxxArrhenius* rate):
     return r
 
 
+cdef class SSHArrhenius:
+    r"""
+
+    """
+    def __cinit__(self, n=0.0, m=0.0, A=0.0, B=0.0, C=0.0, D=0, E=0.0, init=True):
+        if init:
+            self.rate = new CxxSSHArrhenius(n, m, A, B, C, D, E)
+            self.reaction = None
+
+    def __dealloc__(self):
+        if self.reaction is None:
+            del self.rate
+
+    property pre_exponential_factor:
+        """
+        The pre-exponential factor *A* in units of m, kmol, and s raised to
+        powers depending on the reaction order.
+        """
+        def __get__(self):
+            return self.rate.preExponentialFactor()
+
+    property temperature_exponent:
+        """
+        The temperature exponent *n*.
+        """
+        def __get__(self):
+            return self.rate.temperatureExponent()
+
+    property activation_energy:
+        """
+        The activation energy *E* [J/kmol].
+        """
+        def __get__(self):
+            return self.rate.activationEnergy_R() * gas_constant
+
+    def __repr__(self):
+        return 'SSHArrhenius(A={:g}, n={:g}, E={:g})'.format(
+            self.pre_exponential_factor, self.temperature_exponent,
+            self.activation_energy)
+
+    def __call__(self, float T):
+        cdef double logT = np.log(T)
+        cdef double recipT = 1/T
+        return self.rate.updateRC(logT, recipT)
+
+
+cdef wrapSSHArrhenius(CxxSSHArrhenius* rate, Reaction reaction):
+    r = SSHArrhenius(init=False)
+    r.rate = rate
+    r.reaction = reaction
+    return r
+
+
 cdef class ElementaryReaction(Reaction):
     """
     A reaction which follows mass-action kinetics with a modified Arrhenius
@@ -330,6 +384,22 @@ cdef class ElementaryReaction(Reaction):
         def __set__(self, allow):
             cdef CxxElementaryReaction* r = <CxxElementaryReaction*>self.reaction
             r.allow_negative_pre_exponential_factor = allow
+
+
+cdef class VTRelaxationReaction(Reaction):
+    """
+    A reaction of vibrational-translational relaxation
+    """
+    reaction_type = VT_RELAXATION_RXN
+
+    property rate:
+        """ Get/Set the `SSHArrhenius` rate coefficient for this reaction. """
+        def __get__(self):
+            cdef CxxVTRelaxationReaction* r = <CxxVTRelaxationReaction*>self.reaction
+            return wrapSSHArrhenius(&(r.rate), self)
+        def __set__(self, SSHArrhenius rate):
+            cdef CxxVTRelaxationReaction* r = <CxxVTRelaxationReaction*>self.reaction
+            r.rate = deref(rate.rate)
 
 
 cdef class ThreeBodyReaction(ElementaryReaction):
@@ -743,6 +813,8 @@ cdef Reaction wrapReaction(shared_ptr[CxxReaction] reaction):
 
     if reaction_type == ELEMENTARY_RXN:
         R = ElementaryReaction(init=False)
+    elif reaction_type == VT_RELAXATION_RXN:
+        R = VTRelaxationReaction(init=False)
     elif reaction_type == THREE_BODY_RXN:
         R = ThreeBodyReaction(init=False)
     elif reaction_type == FALLOFF_RXN:
@@ -767,6 +839,8 @@ cdef CxxReaction* newReaction(int reaction_type):
     """
     if reaction_type == ELEMENTARY_RXN:
         return new CxxElementaryReaction()
+    elif reaction_type == VT_RELAXATION_RXN:
+        return new CxxVTRelaxationReaction()
     elif reaction_type == THREE_BODY_RXN:
         return new CxxThreeBodyReaction()
     elif reaction_type == FALLOFF_RXN:
