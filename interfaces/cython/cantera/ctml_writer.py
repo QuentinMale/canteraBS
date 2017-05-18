@@ -1437,24 +1437,20 @@ class vt_relaxation_reaction(reaction):
         if r.find('(v') >= 0:
             vibration_level_r = int(r[r.find('v')+1:r.rfind(')')])
         else:
-            raise CTI_Error( "In reaction '{0}', the reactants have to include"
-                            " species with vibration level. Ex. (v1)."
-                            .format(self._e, species))
+            vibration_level_r = 0
 
         if p.find('v') >= 0:
             vibration_level_p = int(p[p.find('v')+1:p.rfind(')')])
-        elif p.find('(') <= 0:
-            vibration_level_p = 0
         else:
-            raise CTI_Error( "In reaction '{0}', wrong format for the species"
-                            "of product. Ex. (v1)."
-                            .format(self._e))
+            vibration_level_p = 0
 
         if (vibration_level_r - vibration_level_p) == 1:
             self._vibrationLevel = vibration_level_r
+        elif (vibration_level_r - vibration_level_p) == -1:
+            self._vibrationLevel = -vibration_level_p
         else:
             raise CTI_Error( "In reaction '{0}', the vibration level"
-                            " of reactant has to be +1 of the product"
+                            " is not right. The level difference can only be 1"
                             .format(self._e))
 
     def build(self, p):
