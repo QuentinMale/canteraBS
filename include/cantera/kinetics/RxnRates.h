@@ -112,7 +112,7 @@ public:
     /// @param b Temperature exponent. Non-dimensional.
     /// @param E Activation energy in temperature units. Kelvin.
     SSHArrhenius(double n, double m, double A, double B, 
-                 double C, size_t D, double E, size_t v);
+                 double C, size_t D, double E, int v);
 
     //! Update concentration-dependent parts of the rate coefficient.
     /*!
@@ -126,8 +126,15 @@ public:
      * Update the value of the natural logarithm of the rate constant.
      */
     double updateLog(double logT, double recipT) const {
-        double Qvib = m_D * exp(-m_E*recipT);
-        return m_log_v + m_logA + m_n*logT - m_B*pow(recipT, -1.0/3.0) + m_C*pow(recipT, -m_m) - log(1-Qvib);
+        double Qvib = exp(-m_E*recipT);
+        double logQvib = log(Qvib);
+        double log_k = m_logA + m_n*logT - m_B*pow(recipT, -1.0/3.0) + m_C*pow(recipT, -m_m) - log(1.0 - m_D*Qvib);
+        if (m_v > 0) {
+            log_k += m_log_v;
+        } else {
+            log_k += m_log_v + logQvib;
+        }
+        return log_k;
     }
 
     /**
@@ -137,8 +144,16 @@ public:
      * safely called for negative values of the pre-exponential factor.
      */
     double updateRC(double logT, double recipT) const {
-        double Qvib = m_D * exp(-m_E*recipT);
-        return m_v * m_A * exp(m_n*logT - m_B*pow(recipT, 1.0/3.0) + m_C*pow(recipT, m_m)) / (1.0-Qvib);
+        double Qvib = exp(-m_E*recipT);
+        double k = m_A * exp(m_n*logT - m_B*pow(recipT, 1.0/3.0) + m_C*pow(recipT, m_m)) / (1.0 - m_D*Qvib);
+        if (m_v > 0) {
+            // relaxation rate
+            k *= m_v;
+        } else {
+            // reverse relaxation rate
+            k *= -Qvib * m_v;
+        }
+        return k;
     }
 
     //! Return the pre-exponential factor *A* (in m, kmol, s to powers depending
@@ -162,7 +177,7 @@ protected:
     double m_n, m_m, m_A, m_B, m_C;
     size_t m_D;
     double m_E;
-    size_t m_v;
+    int m_v;
     double m_logA;
     double m_log_v;
 };

@@ -248,7 +248,7 @@ cdef extern from "cantera/kinetics/Reaction.h" namespace "Cantera":
 
     cdef cppclass CxxSSHArrhenius "Cantera::SSHArrhenius":
         CxxSSHArrhenius()
-        CxxSSHArrhenius(double, double, double, double, double, size_t, double, size_t)
+        CxxSSHArrhenius(double, double, double, double, double, size_t, double, int)
         double updateRC(double, double)
         double preExponentialFactor()
         double temperatureExponent()

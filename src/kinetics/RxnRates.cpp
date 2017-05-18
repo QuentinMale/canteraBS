@@ -43,7 +43,7 @@ SSHArrhenius::SSHArrhenius():
 }
 
 SSHArrhenius::SSHArrhenius(double n, double m, double A, double B, 
-                           double C, size_t D, double E, size_t v):
+                           double C, size_t D, double E, int v):
     m_n(n),
     m_m(m),
     m_A(A),
@@ -61,10 +61,10 @@ SSHArrhenius::SSHArrhenius(double n, double m, double A, double B,
         m_logA = std::log(m_A);
     }
 
-    if (m_v <= 0.0) {
+    if (m_v == 0) {
         m_log_v = -1.0E300;
     } else {
-        m_log_v = std::log(m_v);
+        m_log_v = std::log(abs(m_v));
     }
 }
 

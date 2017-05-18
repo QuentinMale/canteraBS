@@ -1,5 +1,3 @@
-units(length='cm', time='s', quantity='mol', act_energy='cal/mol')
-
 ideal_gas(name='gas',
           elements=' O  H  C  N  Ar',
           species=['''gri30: H2  H  O  O2  OH  H2O  HO2  H2O2  C  CH 
@@ -53,16 +51,52 @@ species(name = "O2(v4)",
 #-------------------------------------------------------------------------------
 # Reaction data
 #-------------------------------------------------------------------------------
-units(length='cm', time='s', quantity='molec', act_energy='eV')
-O2_SSH = [1.0, 0.0, 1.35E-12, 137.9, 0.0, 1, 0.19]
-vt_relaxation_reaction('O2(v1) + M => O2 + M', O2_SSH,
+# Reaction of O2-O2 collision vibrational relaxation
+O2O2_SSH = [1.0, 0.0, (1.35E-12, 'cm3/molec/s'), 137.9, 0.0, 1, (0.19, 'eV')]
+
+vt_relaxation_reaction('O2(v1) + M <=> O2 + M', O2O2_SSH,
                        "O2:1 O2(v1):1 O2(v2):1 O2(v3):1 O2(v4):1")
-vt_relaxation_reaction('O2(v2) + M => O2(v1) + M', O2_SSH, 
+vt_relaxation_reaction('O2(v2) + M <=> O2(v1) + M', O2O2_SSH, 
                        "O2:1 O2(v1):1 O2(v2):1 O2(v3):1 O2(v4):1")
-vt_relaxation_reaction('O2(v3) + M => O2(v2) + M', O2_SSH,
+vt_relaxation_reaction('O2(v3) + M <=> O2(v2) + M', O2O2_SSH,
                        "O2:1 O2(v1):1 O2(v2):1 O2(v3):1 O2(v4):1")
-vt_relaxation_reaction('O2(v4) + M => O2(v3) + M', O2_SSH,
+vt_relaxation_reaction('O2(v4) + M <=> O2(v3) + M', O2O2_SSH,
                        "O2:1 O2(v1):1 O2(v2):1 O2(v3):1 O2(v4):1")
+
+# Reaction of O2-H2 collision vibrational relaxation
+O2H2_SSH = [1.0, 0.0, (2.69E-10, 'cm3/molec/s'), 91.5, 0.0, 1, (0.19, 'eV')]
+
+
+# Reaction of N2-N2 collision vibrational relaxation
+N2N2_SSH = [1.0, 1.0, (7.8E-12, 'cm3/molec/s'), 218, 690, 1, (0.29, 'eV')]
+
+# Reaction of N2-H2 collision vibrational relaxation
+N2H2_SSH = [1.0, 0.667, (4.9E-12, 'cm3/molec/s'), 167.1, 394, 1, (0.29, 'eV')]
+
+# Reaction of N2-H2O collision vibrational relaxation
+N2H2O_SSH = [1.0, 0.000, (2.5E-15, 'cm3/molec/s'), 21.18, 0.0, 0, (0.29, 'eV')]
+
+# Reaction of N2-CO2 collision vibrational relaxation
+N2CO2_SSH = [1.0, 0.667, (1.1E-12, 'cm3/molec/s'), 218.0, 690, 1, (0.29, 'eV')]
+
+# Reaction of H2-H2 collision vibrational relaxation
+H2H2_SSH = [0.5, 0.00, (7.47E-12, 'cm3/molec/s'), 93.87, 0.0, 1, (0.516, 'eV')]
+
+# Reaction of CO-CO collision vibrational relaxation
+COCO_SSH = [1.0, 0.00, (1.0E-12, 'cm3/molec/s'), 150.7, 0.0, 0, (0.266, 'eV')]
+
+
+
+#duplicated reactions
+#  Reaction 34
+reaction( "H + O2(v1) + O2 => HO2 + O2",   [2.08000E+19, -1.24, 0])
+
+#  Reaction 35
+reaction( "H + O2(v1) + H2O => HO2 + H2O",   [1.12600E+19, -0.76, 0])
+
+
+
+
 
 
 
