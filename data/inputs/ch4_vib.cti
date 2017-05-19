@@ -1,18 +1,17 @@
+units(length='cm', time='s', quantity='mol', act_energy='cal/mol')
+
 ideal_gas(name='gas',
-          elements=' O  H  C  N  Ar  E',
-          species=['''gri30: H2  H  O  O2  OH  H2O  HO2  H2O2  C  CH 
-                   CH2  CH2(S)  CH3  CH4  CO  CO2  HCO  CH2O  CH2OH  CH3O 
-                   CH3OH  C2H  C2H2  C2H3  C2H4  C2H5  C2H6  HCCO  CH2CO  HCCOH 
-                   N  NH  NH2  NH3  NNH  NO  NO2  N2O  HNO  CN 
-                   HCN  H2CN  HCNN  HCNO  HOCN  HNCO  NCO  N2  AR  C3H7 
-                   C3H8  CH2CHO  CH3CHO''',
-                   '''HCO+    H3O+    E
+          elements='O H C N E',
+          species=['''gri30: H2      H       O       O2      OH      H2O     HO2
+                     H2O2    C       CH      CH2     CH2(S)  CH3     CH4
+                     CO      CO2     HCO     CH2O    CH3O    N2''',
+                    '''HCO+    H3O+    E
                      O2(v1) O2(v2) O2(v3) O2(v4)
                      H2(v1) H2(v2) H2(v3)
                      N2(v1) N2(v2) N2(v3) N2(v4)
-                     CO2(v1) CO2(v2) CO2(v3) CO2(v4) CO2(v5) CO2(v6)
-                     CO(v1) CO(v2) CO(v3) CO(v4)
-                     H2O(a) H2O(b) H2O(c) '''],
+                     CO2(v1) CO2(v2) CO2(v3) CO2(v4) CO2(v5) 
+                     H2O(a) H2O(b) H2O(c)
+                     CO(v1) CO(v2) CO(v3) CO(v4)'''],
           reactions=['gri30: all', 'all'],
           transport='Mix',
           options=['skip_undeclared_species', 'skip_undeclared_third_bodies'],
@@ -200,11 +199,6 @@ species(name = "CO2(v5)",
         thermo = CO2_thermo,
         transport = CO2_transport)
 
-species(name = "CO2(v6)",
-        atoms = " C:1  O:2 ",
-        thermo = CO2_thermo,
-        transport = CO2_transport)
-
 CO_thermo = ( NASA( [  200.00,  1000.00], [  3.579533470E+00,  -6.103536800E-04, 
                        1.016814330E-06,   9.070058840E-10,  -9.044244990E-13,
                        -1.434408600E+04,   3.508409280E+00] ),
@@ -269,11 +263,17 @@ reaction('H3O+ + E =>  O + H2 + H', [6.0E+17, -0.3, 0.0])
 
 # Third body groups
 O2_body = "O2:1 O2(v1):1 O2(v2):1 O2(v3):1 O2(v4):1 "
+O2_body7 = "O2:0.7 O2(v1):0.7 O2(v2):0.7 O2(v3):0.7 O2(v4):0.7 "
+O2_body4 = "O2:0.4 O2(v1):0.4 O2(v2):0.4 O2(v3):0.4 O2(v4):0.4 "
 H2_body = "H2:1 H2(v1):1 H2(v2):1 H2(v3):1 "
 N2_body = "N2:1 N2(v1):1 N2(v2):1 N2(v3):1 N2(v4):1 "
+N2_body7 = "N2:0.7 N2(v1):0.7 N2(v2):0.7 N2(v3):0.7 N2(v4):0.7 "
+N2_body3 = "N2:0.3 N2(v1):0.3 N2(v2):0.3 N2(v3):0.3 N2(v4):0.3 "
 H2O_body = "H2O:1 H2O(a):1 H2O(b):1 H2O(c):1 "
 CO2_body = "CO2:1 CO2(v1):1 CO2(v2):1 CO2(v3):1 CO2(v4):1 "
 CO_body = "CO:1 CO(v1):1 CO(v2):1 CO(v3):1 CO(v4):1 "
+CO_body7 = "CO:0.7 CO(v1):0.7 CO(v2):0.7 CO(v3):0.7 CO(v4):0.7 "
+CO_body3 = "CO:0.3 CO(v1):0.3 CO(v2):0.3 CO(v3):0.3 CO(v4):0.3 "
 
 # Reaction of O2-O2 collision vibrational relaxation
 O2O2_SSH = [1.0, 0.0, (1.35E-12, 'cm3/molec/s'), 137.9, 0.0, 1, (0.19, 'eV')]
@@ -363,20 +363,45 @@ vt_relaxation_reaction('CO(v1) + M => CO(v2) + M', COCO_SSH, CO_body)
 vt_relaxation_reaction('CO(v2) + M => CO(v3) + M', COCO_SSH, CO_body)
 vt_relaxation_reaction('CO(v3) + M => CO(v4) + M', COCO_SSH, CO_body)
 
+# Reaction of CO2-CO2 010->000 collision vibrational relaxation
+SSH = [0.0, 0.667, (7.14E-8, 'cm3/molec/s'), 177, 451, 0, (0.08, 'eV')]
+#vt_relaxation_reaction('CO2(010) + M => CO2      + M', CO2CO2_010_SSH, CO2_body)
+#vt_relaxation_reaction('CO2      + M => CO2(010) + M', CO2CO2_010_SSH, CO2_body)
+#vt_relaxation_reaction('CO2(010) + M => CO2      + M', CO2CO2_010_SSH, N2_body7 + O2_body7 + CO_body7)
+#vt_relaxation_reaction('CO2      + M => CO2(010) + M', CO2CO2_010_SSH, N2_body7 + O2_body7 + CO_body7)
+
+# Reaction of CO2-CO2 100->010 collision vibrational relaxation
+SSH = [0.0, 0.667, (1.94E-7, 'cm3/molec/s'), 177, 451, 0, (0.09, 'eV')]
+#vt_relaxation_reaction('CO2(100) + M => CO2(010) + M', SSH, CO2_body)
+#vt_relaxation_reaction('CO2(010) + M => CO2(100) + M', SSH, CO2_body)
+#vt_relaxation_reaction('CO2(100) + M => CO2(010) + M', SSH, N2_body7 + O2_body7 + CO_body7)
+#vt_relaxation_reaction('CO2(010) + M => CO2(100) + M', SSH, N2_body7 + O2_body7 + CO_body7)
+
+# Reaction of CO2-CO2 001->100 collision vibrational relaxation
+SSH = [0.0, 0.667, (8.57E-1, 'cm3/molec/s'), 404, 1096, 0, (0.12, 'eV')]
+#vt_relaxation_reaction('CO2(100) + M => CO2(010) + M', SSH, CO2_body)
+#vt_relaxation_reaction('CO2(010) + M => CO2(100) + M', SSH, CO2_body)
+#vt_relaxation_reaction('CO2(100) + M => CO2(010) + M', SSH, N2_body3 + O2_body4 + CO_body3)
+#vt_relaxation_reaction('CO2(010) + M => CO2(100) + M', SSH, N2_body3 + O2_body4 + CO_body3)
+
+# Reaction of CO2-CO2 001->010 collision vibrational relaxation
+SSH = [0.0, 0.667, (4.25E-1, 'cm3/molec/s'), 407, 824, 0, (0.21, 'eV')]
+#vt_relaxation_reaction('CO2(100) + M => CO2(010) + M', SSH, CO2_body)
+#vt_relaxation_reaction('CO2(010) + M => CO2(100) + M', SSH, CO2_body)
+#vt_relaxation_reaction('CO2(100) + M => CO2(010) + M', SSH, N2_body7 + O2_body7 + CO_body7)
+#vt_relaxation_reaction('CO2(010) + M => CO2(100) + M', SSH, N2_body7 + O2_body7 + CO_body7)
+
 # Reaction of CO2-CO2 collision vibrational relaxation
 CO2CO2_SSH = [1.0, 0.667, (2.89E-12, 'cm3/molec/s'), 132, 360.8, 1, (0.29, 'eV')]
 vt_relaxation_reaction('CO2(v1) + M => CO2     + M', CO2CO2_SSH, CO2_body)
 vt_relaxation_reaction('CO2(v2) + M => CO2(v1) + M', CO2CO2_SSH, CO2_body)
 vt_relaxation_reaction('CO2(v3) + M => CO2(v2) + M', CO2CO2_SSH, CO2_body)
 vt_relaxation_reaction('CO2(v4) + M => CO2(v3) + M', CO2CO2_SSH, CO2_body)
-vt_relaxation_reaction('CO2(v5) + M => CO2(v4) + M', CO2CO2_SSH, CO2_body)
-vt_relaxation_reaction('CO2(v6) + M => CO2(v5) + M', CO2CO2_SSH, CO2_body)
 vt_relaxation_reaction('CO2     + M => CO2(v1) + M', CO2CO2_SSH, CO2_body)
 vt_relaxation_reaction('CO2(v1) + M => CO2(v2) + M', CO2CO2_SSH, CO2_body)
 vt_relaxation_reaction('CO2(v2) + M => CO2(v3) + M', CO2CO2_SSH, CO2_body)
 vt_relaxation_reaction('CO2(v3) + M => CO2(v4) + M', CO2CO2_SSH, CO2_body)
-vt_relaxation_reaction('CO2(v4) + M => CO2(v5) + M', CO2CO2_SSH, CO2_body)
-vt_relaxation_reaction('CO2(v5) + M => CO2(v6) + M', CO2CO2_SSH, CO2_body)
+
 
 # Reaction of CO2-N2 collision vibrational relaxation
 CO2N2_SSH = [1.0, 0.667, (1.4E-11, 'cm3/molec/s'), 158.4, 434, 1, (0.29, 'eV')]
@@ -384,14 +409,10 @@ vt_relaxation_reaction('CO2(v1) + M => CO2     + M', CO2N2_SSH, N2_body)
 vt_relaxation_reaction('CO2(v2) + M => CO2(v1) + M', CO2N2_SSH, N2_body)
 vt_relaxation_reaction('CO2(v3) + M => CO2(v2) + M', CO2N2_SSH, N2_body)
 vt_relaxation_reaction('CO2(v4) + M => CO2(v3) + M', CO2N2_SSH, N2_body)
-vt_relaxation_reaction('CO2(v5) + M => CO2(v4) + M', CO2N2_SSH, N2_body)
-vt_relaxation_reaction('CO2(v6) + M => CO2(v5) + M', CO2N2_SSH, N2_body)
 vt_relaxation_reaction('CO2     + M => CO2(v1) + M', CO2N2_SSH, N2_body)
 vt_relaxation_reaction('CO2(v1) + M => CO2(v2) + M', CO2N2_SSH, N2_body)
 vt_relaxation_reaction('CO2(v2) + M => CO2(v3) + M', CO2N2_SSH, N2_body)
 vt_relaxation_reaction('CO2(v3) + M => CO2(v4) + M', CO2N2_SSH, N2_body)
-vt_relaxation_reaction('CO2(v4) + M => CO2(v5) + M', CO2N2_SSH, N2_body)
-vt_relaxation_reaction('CO2(v5) + M => CO2(v6) + M', CO2N2_SSH, N2_body)
 
 # Reaction of CO2-O2 collision vibrational relaxation
 CO2O2_SSH = [1.0, 0.667, (7.05E-12, 'cm3/molec/s'), 147.6, 392.3, 1, (0.29, 'eV')]
@@ -399,30 +420,21 @@ vt_relaxation_reaction('CO2(v1) + M => CO2     + M', CO2O2_SSH, O2_body)
 vt_relaxation_reaction('CO2(v2) + M => CO2(v1) + M', CO2O2_SSH, O2_body)
 vt_relaxation_reaction('CO2(v3) + M => CO2(v2) + M', CO2O2_SSH, O2_body)
 vt_relaxation_reaction('CO2(v4) + M => CO2(v3) + M', CO2O2_SSH, O2_body)
-vt_relaxation_reaction('CO2(v5) + M => CO2(v4) + M', CO2O2_SSH, O2_body)
-vt_relaxation_reaction('CO2(v6) + M => CO2(v5) + M', CO2O2_SSH, O2_body)
 vt_relaxation_reaction('CO2     + M => CO2(v1) + M', CO2O2_SSH, O2_body)
 vt_relaxation_reaction('CO2(v1) + M => CO2(v2) + M', CO2O2_SSH, O2_body)
 vt_relaxation_reaction('CO2(v2) + M => CO2(v3) + M', CO2O2_SSH, O2_body)
 vt_relaxation_reaction('CO2(v3) + M => CO2(v4) + M', CO2O2_SSH, O2_body)
-vt_relaxation_reaction('CO2(v4) + M => CO2(v5) + M', CO2O2_SSH, O2_body)
-vt_relaxation_reaction('CO2(v5) + M => CO2(v6) + M', CO2O2_SSH, O2_body)
 
 # Reaction of CO2-H2 collision vibrational relaxation
 CO2H2_SSH = [1.0, 0.667, (1.09E-13, 'cm3/molec/s'), 65.5, 331.6, 1, (0.29, 'eV')]
-
 vt_relaxation_reaction('CO2(v1) + M => CO2     + M', CO2H2_SSH, H2_body)
 vt_relaxation_reaction('CO2(v2) + M => CO2(v1) + M', CO2H2_SSH, H2_body)
 vt_relaxation_reaction('CO2(v3) + M => CO2(v2) + M', CO2H2_SSH, H2_body)
 vt_relaxation_reaction('CO2(v4) + M => CO2(v3) + M', CO2H2_SSH, H2_body)
-vt_relaxation_reaction('CO2(v5) + M => CO2(v4) + M', CO2H2_SSH, H2_body)
-vt_relaxation_reaction('CO2(v6) + M => CO2(v5) + M', CO2H2_SSH, H2_body)
 vt_relaxation_reaction('CO2     + M => CO2(v1) + M', CO2H2_SSH, H2_body)
 vt_relaxation_reaction('CO2(v1) + M => CO2(v2) + M', CO2H2_SSH, H2_body)
 vt_relaxation_reaction('CO2(v2) + M => CO2(v3) + M', CO2H2_SSH, H2_body)
 vt_relaxation_reaction('CO2(v3) + M => CO2(v4) + M', CO2H2_SSH, H2_body)
-vt_relaxation_reaction('CO2(v4) + M => CO2(v5) + M', CO2H2_SSH, H2_body)
-vt_relaxation_reaction('CO2(v5) + M => CO2(v6) + M', CO2H2_SSH, H2_body)
 
 # Reaction of CO2-CO collision vibrational relaxation
 CO2CO_SSH = [1.0, 0.667, (1.24E-12, 'cm3/molec/s'), 118.9, 280.5, 1, (0.29, 'eV')]
@@ -430,14 +442,10 @@ vt_relaxation_reaction('CO2(v1) + M => CO2     + M', CO2CO_SSH, CO_body)
 vt_relaxation_reaction('CO2(v2) + M => CO2(v1) + M', CO2CO_SSH, CO_body)
 vt_relaxation_reaction('CO2(v3) + M => CO2(v2) + M', CO2CO_SSH, CO_body)
 vt_relaxation_reaction('CO2(v4) + M => CO2(v3) + M', CO2CO_SSH, CO_body)
-vt_relaxation_reaction('CO2(v5) + M => CO2(v4) + M', CO2CO_SSH, CO_body)
-vt_relaxation_reaction('CO2(v6) + M => CO2(v5) + M', CO2CO_SSH, CO_body)
 vt_relaxation_reaction('CO2     + M => CO2(v1) + M', CO2CO_SSH, CO_body)
 vt_relaxation_reaction('CO2(v1) + M => CO2(v2) + M', CO2CO_SSH, CO_body)
 vt_relaxation_reaction('CO2(v2) + M => CO2(v3) + M', CO2CO_SSH, CO_body)
 vt_relaxation_reaction('CO2(v3) + M => CO2(v4) + M', CO2CO_SSH, CO_body)
-vt_relaxation_reaction('CO2(v4) + M => CO2(v5) + M', CO2CO_SSH, CO_body)
-vt_relaxation_reaction('CO2(v5) + M => CO2(v6) + M', CO2CO_SSH, CO_body)
 
 # Reaction of H2O-H2O a collision vibrational relaxation
 H2OH2O_010_SSH = [0.0, 0.667, (1.42E-1, 'cm3/molec/s'), 363, 1462, 0, (0.2, 'eV')]

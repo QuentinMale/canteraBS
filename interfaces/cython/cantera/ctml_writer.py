@@ -1436,11 +1436,15 @@ class vt_relaxation_reaction(reaction):
 
         if r.find('(v') >= 0:
             vibration_level_r = int(r[r.find('v')+1:r.rfind(')')])
+        elif r.find('(') >= 0:
+            vibration_level_r = 1
         else:
             vibration_level_r = 0
 
-        if p.find('v') >= 0:
+        if p.find('(v') >= 0:
             vibration_level_p = int(p[p.find('v')+1:p.rfind(')')])
+        elif p.find('(') >= 0:
+            vibration_level_p = 1
         else:
             vibration_level_p = 0
 
@@ -1449,9 +1453,7 @@ class vt_relaxation_reaction(reaction):
         elif (vibration_level_r - vibration_level_p) == -1:
             self._vibrationLevel = -vibration_level_p
         else:
-            raise CTI_Error( "In reaction '{0}', the vibration level"
-                            " is not right. The level difference can only be 1"
-                            .format(self._e))
+            self._vibrationLevel = 1
 
     def build(self, p):
         r = reaction.build(self, p)
