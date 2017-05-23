@@ -1146,6 +1146,38 @@ class SSHArrhenius(rate_expression):
         addFloat(a,'E', self._c[6], fmt = '%f', defunits = _ue)
 
 
+class vtEmpirical(rate_expression):
+    def __init__(self,
+                 A = 0.0,
+                 B = 0.0,
+                 C = 0.0,
+                 E = 0.0,
+                 v = 0):
+        self._c = [A, B, C, E, v]
+
+    def build(self, p, name='', a=None):
+        if a is None:
+            a = p.addChild('vtEmpirical')
+        if name:
+            a['name'] = name
+
+        if isnum(self._c[0]):
+            addFloat(a,'A',self._c[0]*self.unit_factor, fmt = '%14.6E')
+        elif len(self._c[0]) == 2 and self._c[0][1] == '/site':
+            addFloat(a,'A',self._c[0][0]/self.rxn_phase._sitedens,
+                     fmt = '%14.6E')
+        else:
+            addFloat(a,'A',self._c[0], fmt = '%14.6E')
+
+        addFloat(a,'B',self._c[1], fmt = '%f')
+        addFloat(a,'C',self._c[2], fmt = '%f')
+
+        # If a pure number is entered for the activation energy,
+        # add the default units, otherwise use the supplied units.
+        addFloat(a,'E', self._c[3], fmt = '%f', defunits = _ue)
+        a.addChild('v', repr(self._c[4]))
+
+
 def getPairs(s):
     toks = s.split()
     m = {}
@@ -1343,6 +1375,8 @@ class reaction(object):
             self._kf = []
         elif self._type == 'vt_relaxation':
             self._kf = [self._kf]
+        elif self._type == 'nonharmonic_vt_relaxation':
+            self._kf = [self._kf]
 
         if self._type == 'edge' or self._type == 'surface':
             if self._beta > 0:
@@ -1357,6 +1391,9 @@ class reaction(object):
                     k = SSHArrhenius(n = kf[0], m = kf[1], A = kf[2],
                                      B = kf[3], C = kf[4], D = kf[5],
                                      E = kf[6])
+                elif self._type == 'nonharmonic_vt_relaxation':
+                    k = vtEmpirical(A = kf[0], B = kf[1], C = kf[2],
+                                    E=kf[3], v = kf[4])
                 else:
                     k = Arrhenius(A = kf[0], b = kf[1], E = kf[2])
             if isinstance(kf, stick):
@@ -1436,15 +1473,11 @@ class vt_relaxation_reaction(reaction):
 
         if r.find('(v') >= 0:
             vibration_level_r = int(r[r.find('v')+1:r.rfind(')')])
-        elif r.find('(') >= 0:
-            vibration_level_r = 1
         else:
             vibration_level_r = 0
 
         if p.find('(v') >= 0:
             vibration_level_p = int(p[p.find('v')+1:p.rfind(')')])
-        elif p.find('(') >= 0:
-            vibration_level_p = 1
         else:
             vibration_level_p = 0
 
@@ -1453,7 +1486,8 @@ class vt_relaxation_reaction(reaction):
         elif (vibration_level_r - vibration_level_p) == -1:
             self._vibrationLevel = -vibration_level_p
         else:
-            self._vibrationLevel = 1
+            raise CTI_Error("In reaction '{0}', cannot find vibration level ".format(self._e))
+
 
     def build(self, p):
         r = reaction.build(self, p)
@@ -1464,6 +1498,57 @@ class vt_relaxation_reaction(reaction):
         if self._eff:
             eff = kfnode.addChild('efficiencies',self._eff)
             eff['default'] = repr(self._effm)
+
+
+class nonharmonic_vt_relaxation_reaction(reaction):
+    """ A vibrational translational relaxation reaction (nonharmonic). """
+    def __init__(self,
+                 equation = '',
+                 kf = None,
+                 efficiencies='',
+                 id='',
+                 options=[]):
+        """
+        :param equation:
+            A string specifying the chemical equation. The reaction can be
+            written in either the association or dissociation directions, and
+            may be reversible or irreversible.
+        :param kf:
+            The rate coefficient for the forward direction. If a sequence of
+            three numbers is given, these will be interpreted as [A, b, E] in
+            the modified Arrhenius function.
+        :param efficiencies:
+            A string specifying the third-body collision efficiencies.
+            The efficiencies for unspecified species are set to 1.0.
+        :param id:
+            An optional identification string. If omitted, it defaults to a
+            four-digit numeric string beginning with 0001 for the first
+            reaction in the file.
+        :param options: Processing options, as described in
+            :ref:`sec-reaction-options`.
+        """
+        reaction.__init__(self, equation, kf, id, '', options)
+        self._type = 'nonharmonic_vt_relaxation'
+        self._effm = 1.0
+        self._eff = efficiencies
+
+        # clean up reactant and product lists
+        for r in list(self._r.keys()):
+            if r == 'M' or r == 'm':
+                del self._r[r]
+        for p in list(self._p.keys()):
+            if p == 'M' or p == 'm':
+                del self._p[p]
+
+    def build(self, p):
+        r = reaction.build(self, p)
+        if r == 0: return
+        kfnode = r.child('rateCoeff')
+
+        if self._eff:
+            eff = kfnode.addChild('efficiencies',self._eff)
+            eff['default'] = repr(self._effm)
+
 
 class three_body_reaction(reaction):
     """
