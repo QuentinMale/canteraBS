@@ -10,6 +10,7 @@ cdef extern from "cantera/kinetics/reaction_defs.h" namespace "Cantera":
     cdef int CHEBYSHEV_RXN
     cdef int CHEMACT_RXN
     cdef int INTERFACE_RXN
+    cdef int NONHARM_VT_RELAXATION_RXN
 
     cdef int SIMPLE_FALLOFF
     cdef int TROE_FALLOFF
@@ -356,6 +357,11 @@ cdef wrapSSHArrhenius(CxxSSHArrhenius* rate, Reaction reaction):
     r.reaction = reaction
     return r
 
+cdef wrapVTEmpirical(CxxVTEmpirical* rate, Reaction reaction):
+    r = VTEmpirical(init=False)
+    r.rate = rate
+    r.reaction = reaction
+    return r
 
 cdef class ElementaryReaction(Reaction):
     """
@@ -399,6 +405,21 @@ cdef class VTRelaxationReaction(Reaction):
             return wrapSSHArrhenius(&(r.rate), self)
         def __set__(self, SSHArrhenius rate):
             cdef CxxVTRelaxationReaction* r = <CxxVTRelaxationReaction*>self.reaction
+            r.rate = deref(rate.rate)
+
+cdef class NonharmonicVTRelaxationReaction(Reaction):
+    """
+    A reaction of nonharmonic vibrational-translational relaxation
+    """
+    reaction_type = NONHARM_VT_RELAXATION_RXN
+
+    property rate:
+        """ Get/Set the `VTEmpirical` rate coefficient for this reaction. """
+        def __get__(self):
+            cdef CxxNonharmonicVTRelaxationReaction* r = <CxxNonharmonicVTRelaxationReaction*>self.reaction
+            return wrapVTEmpirical(&(r.rate), self)
+        def __set__(self, VTEmpirical rate):
+            cdef CxxNonharmonicVTRelaxationReaction* r = <CxxNonharmonicVTRelaxationReaction*>self.reaction
             r.rate = deref(rate.rate)
 
 
@@ -815,6 +836,8 @@ cdef Reaction wrapReaction(shared_ptr[CxxReaction] reaction):
         R = ElementaryReaction(init=False)
     elif reaction_type == VT_RELAXATION_RXN:
         R = VTRelaxationReaction(init=False)
+    elif reaction_type == NONHARM_VT_RELAXATION_RXN:
+        R = NonharmonicVTRelaxationReaction(init=False)
     elif reaction_type == THREE_BODY_RXN:
         R = ThreeBodyReaction(init=False)
     elif reaction_type == FALLOFF_RXN:
@@ -841,6 +864,8 @@ cdef CxxReaction* newReaction(int reaction_type):
         return new CxxElementaryReaction()
     elif reaction_type == VT_RELAXATION_RXN:
         return new CxxVTRelaxationReaction()
+    elif reaction_type == NONHARM_VT_RELAXATION_RXN:
+        return new CxxNonharmonicVTRelaxationReaction()
     elif reaction_type == THREE_BODY_RXN:
         return new CxxThreeBodyReaction()
     elif reaction_type == FALLOFF_RXN:

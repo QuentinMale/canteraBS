@@ -254,6 +254,14 @@ cdef extern from "cantera/kinetics/Reaction.h" namespace "Cantera":
         double temperatureExponent()
         double activationEnergy_R()
 
+    cdef cppclass CxxVTEmpirical "Cantera::VTEmpirical":
+        CxxVTEmpirical()
+        CxxVTEmpirical(double, double, double, double, int)
+        double updateRC(double, double)
+        double preExponentialFactor()
+        double temperatureExponent()
+        double activationEnergy_R()
+
     cdef cppclass CxxReaction "Cantera::Reaction":
         # Note, this default constructor doesn't actually exist. The declaration
         # is required by a Cython bug which should be resolved in Cython 0.22.
@@ -289,6 +297,11 @@ cdef extern from "cantera/kinetics/Reaction.h" namespace "Cantera":
     cdef cppclass CxxVTRelaxationReaction "Cantera::VTRelaxationReaction" (CxxReaction):
         CxxVTRelaxationReaction()
         CxxSSHArrhenius rate
+        CxxThirdBody third_body
+
+    cdef cppclass CxxNonharmonicVTRelaxationReaction "Cantera::NonharmonicVTRelaxationReaction" (CxxReaction):
+        CxxNonharmonicVTRelaxationReaction()
+        CxxVTEmpirical rate
         CxxThirdBody third_body
 
     cdef cppclass CxxThreeBodyReaction "Cantera::ThreeBodyReaction" (CxxElementaryReaction):
@@ -925,6 +938,10 @@ cdef class Arrhenius:
 
 cdef class SSHArrhenius:
     cdef CxxSSHArrhenius* rate
+    cdef Reaction reaction
+
+cdef class VTEmpirical:
+    cdef CxxVTEmpirical* rate
     cdef Reaction reaction
 
 cdef class Falloff:

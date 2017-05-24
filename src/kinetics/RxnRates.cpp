@@ -68,7 +68,7 @@ SSHArrhenius::SSHArrhenius(double n, double m, double A, double B,
     }
 }
 
-VtEmpirical::VtEmpirical():
+VTEmpirical::VTEmpirical():
     m_A(0.0),
     m_B(0.0),
     m_C(0.0),
@@ -77,7 +77,7 @@ VtEmpirical::VtEmpirical():
 {
 }
 
-VtEmpirical::VtEmpirical(double A, double B, double C, double E, int v):
+VTEmpirical::VTEmpirical(double A, double B, double C, double E, int v):
     m_A(A),
     m_B(B),
     m_C(C),

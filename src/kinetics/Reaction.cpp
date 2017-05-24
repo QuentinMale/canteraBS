@@ -143,7 +143,7 @@ NonharmonicVTRelaxationReaction::NonharmonicVTRelaxationReaction():
 
 NonharmonicVTRelaxationReaction::NonharmonicVTRelaxationReaction(const Composition& reactants_,
                                                                  const Composition products_,
-                                                                 const VtEmpirical& rate_,
+                                                                 const VTEmpirical& rate_,
                                                                  const ThirdBody& tbody):
     Reaction(NONHARM_VT_RELAXATION_RXN, reactants_, products_),
     rate(rate_),
@@ -320,13 +320,13 @@ SSHArrhenius readSSHArrhenius(const XML_Node& SSH_arrhenius_node)
                         getInteger(SSH_arrhenius_node, "v"));
 }
 
-VtEmpirical readVtEmpirical(const XML_Node& VtEmpirical_node)
+VTEmpirical readVTEmpirical(const XML_Node& VTEmpirical_node)
 {
-    return VtEmpirical(getFloat(VtEmpirical_node, "A", "toSI"),
-                       getFloat(VtEmpirical_node, "B"),
-                       getFloat(VtEmpirical_node, "C"),
-                       getFloat(VtEmpirical_node, "E", "actEnergy") / GasConstant,
-                       getInteger(VtEmpirical_node, "v"));
+    return VTEmpirical(getFloat(VTEmpirical_node, "A", "toSI"),
+                       getFloat(VTEmpirical_node, "B"),
+                       getFloat(VTEmpirical_node, "C"),
+                       getFloat(VTEmpirical_node, "E", "actEnergy") / GasConstant,
+                       getInteger(VTEmpirical_node, "v"));
 }
 
 //! Parse falloff parameters, given a rateCoeff node
@@ -439,10 +439,10 @@ void setupVTRelaxationReaction(VTRelaxationReaction& R, const XML_Node& rxn_node
 void setupNonharmonicVTRelaxationReaction(NonharmonicVTRelaxationReaction& R, const XML_Node& rxn_node)
 {
     const XML_Node& rc_node = rxn_node.child("rateCoeff");
-    if (rc_node.hasChild("VtEmpirical")) {
-        R.rate = readVtEmpirical(rc_node.child("VtEmpirical"));
+    if (rc_node.hasChild("VTEmpirical")) {
+        R.rate = readVTEmpirical(rc_node.child("VTEmpirical"));
     } else {
-        throw CanteraError("setupNonharmonicVTRelaxationReaction", "Couldn't find VtEmpirical node");
+        throw CanteraError("setupNonharmonicVTRelaxationReaction", "Couldn't find VTEmpirical node");
     }
     readEfficiencies(R.third_body, rc_node);
     setupReaction(R, rxn_node);

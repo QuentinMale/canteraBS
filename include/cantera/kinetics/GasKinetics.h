@@ -91,7 +91,7 @@ protected:
     Rate1<Plog> m_plog_rates;
     Rate1<ChebyshevRate> m_cheb_rates;
     Rate1<SSHArrhenius> m_vt_relaxation_rates;
-    Rate1<VtEmpirical> m_nonharmonic_vt_relaxation_rates;
+    Rate1<VTEmpirical> m_nonharmonic_vt_relaxation_rates;
 
     //! @name Reaction rate data
     //!@{

@@ -142,8 +142,8 @@ class NonharmonicVTRelaxationReaction : public Reaction
 public:
     NonharmonicVTRelaxationReaction();
     NonharmonicVTRelaxationReaction(const Composition& reactants, const Composition products,
-                                    const VtEmpirical& rate, const ThirdBody& tbody);
-    VtEmpirical rate;
+                                    const VTEmpirical& rate, const ThirdBody& tbody);
+    VTEmpirical rate;
 
     //! Relative efficiencies of third-body species in enhancing the reaction rate
     ThirdBody third_body;

@@ -182,7 +182,7 @@ protected:
     double m_log_v;
 };
 
-class VtEmpirical
+class VTEmpirical
 {
 public:
     //! return the rate coefficient type.
@@ -191,14 +191,14 @@ public:
     }
 
     //! Default constructor.
-    VtEmpirical();
+    VTEmpirical();
 
     /// Constructor.
     /// @param A pre-exponential. The unit system is
     ///     (kmol, m, s). The actual units depend on the reaction
     ///     order and the dimensionality (surface or bulk).
     /// @param E Activation energy in temperature units. Kelvin.
-    VtEmpirical(double A, double B, double C, double E, int v); 
+    VTEmpirical(double A, double B, double C, double E, int v); 
 
     //! Update concentration-dependent parts of the rate coefficient.
     /*!
