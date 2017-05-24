@@ -1,0 +1,175 @@
+units(length='cm', time='s', quantity='mol', act_energy='cal/mol')
+
+ideal_gas(name = "gas",
+      elements = " O  H  Ar ",
+      species = ['h2o2: H2  H  O  O2  OH  H2O  HO2  H2O2  AR',
+                 ''' O2(v1) O2(v2) O2(v3) O2(v4)
+                     H2(v1)
+                     H2O(010) H2O(100) H2O(001) '''],
+      reactions = ['h2o2: all', 'all'],
+      transport = "Mix",
+      options=['skip_undeclared_species', 'skip_undeclared_third_bodies'],
+      initial_state=state(temperature=300.0, pressure=OneAtm))
+
+#-------------------------------------------------------------------------------
+# Species data
+#-------------------------------------------------------------------------------
+oxygen_thermo = ( NASA( [  200.00,  1000.00], [  3.782456360E+00,  -2.996734160E-03, 
+                          9.847302010E-06,  -9.681295090E-09,   3.243728370E-12,
+                          -1.063943560E+03,   3.657675730E+00] ),
+                  NASA( [ 1000.00,  3500.00], [  3.282537840E+00,   1.483087540E-03, 
+                          -7.579666690E-07,   2.094705550E-10,  -2.167177940E-14,
+                          -1.088457720E+03,   5.453231290E+00] ) )
+
+oxygen_transport =  gas_transport( geom = "linear",
+                                   diam =     3.46,
+                                   well_depth =   107.40,
+                                   polar =     1.60,
+                                   rot_relax =     3.80)
+species(name = "O2(v1)",
+        atoms = " O:2 ",
+        thermo = oxygen_thermo,
+        transport = oxygen_transport)
+
+species(name = "O2(v2)",
+        atoms = " O:2 ",
+        thermo = oxygen_thermo,
+        transport = oxygen_transport)
+
+species(name = "O2(v3)",
+        atoms = " O:2 ",
+        thermo = oxygen_thermo,
+        transport = oxygen_transport)
+
+species(name = "O2(v4)",
+        atoms = " O:2 ",
+        thermo = oxygen_thermo,
+        transport = oxygen_transport)
+
+hydrogen_thermo = ( NASA( [  200.00,  1000.00], [  2.344331120E+00,   7.980520750E-03, 
+                             -1.947815100E-05,   2.015720940E-08,  -7.376117610E-12,
+                             -9.179351730E+02,   6.830102380E-01] ),
+                    NASA( [ 1000.00,  3500.00], [  3.337279200E+00,  -4.940247310E-05, 
+                            4.994567780E-07,  -1.795663940E-10,   2.002553760E-14,
+                           -9.501589220E+02,  -3.205023310E+00] ) )
+
+hydrogen_transport = gas_transport( geom = "linear",
+                                    diam =     2.92,
+                                    well_depth =    38.00,
+                                    polar =     0.79,
+                                    rot_relax =   280.00)
+species(name = "H2(v1)",
+        atoms = " H:2 ",
+        thermo = hydrogen_thermo,
+        transport = hydrogen_transport)
+
+H2O_thermo = ( NASA( [  200.00,  1000.00], [  4.198640560E+00,  -2.036434100E-03, 
+                      6.520402110E-06,  -5.487970620E-09,   1.771978170E-12,
+                      -3.029372670E+04,  -8.490322080E-01] ),
+               NASA( [ 1000.00,  3500.00], [  3.033992490E+00,   2.176918040E-03, 
+                      -1.640725180E-07,  -9.704198700E-11,   1.682009920E-14,
+                      -3.000429710E+04,   4.966770100E+00] ) )
+
+H2O_transport = gas_transport( geom = "nonlinear",
+                               diam =     2.60,
+                               well_depth =   572.40,
+                               dipole =     1.84,
+                               rot_relax =     4.00)
+species(name = "H2O(010)",
+        atoms = " H:2  O:1 ",
+        thermo = H2O_thermo,
+        transport = H2O_transport)
+species(name = "H2O(001)",
+        atoms = " H:2  O:1 ",
+       thermo = H2O_thermo,
+        transport = H2O_transport)
+species(name = "H2O(100)",
+        atoms = " H:2  O:1 ",
+        thermo = H2O_thermo,
+        transport = H2O_transport)
+
+#-------------------------------------------------------------------------------
+# Reaction data
+#-------------------------------------------------------------------------------
+# Third body groups
+O2_body = "O2:1 O2(v1):1 O2(v2):1 O2(v3):1 O2(v4):1 "
+H2_body = "H2:1 H2(v1):1 H2(v2):1 H2(v3):1 "
+H2O_body = "H2O:1 H2O(010):1 H2O(001):1 H2O(100):1 "
+
+# O2
+# Reaction of O2-O2 collision vibrational relaxation
+SSH = [1.0, 0.0, (1.35E-12, 'cm3/molec/s'), 137.9, 0.0, 1, (0.19, 'eV')]
+vt_relaxation_reaction('O2(v1) + M => O2     + M', SSH, O2_body)
+vt_relaxation_reaction('O2(v2) + M => O2(v1) + M', SSH, O2_body)
+vt_relaxation_reaction('O2(v3) + M => O2(v2) + M', SSH, O2_body)
+vt_relaxation_reaction('O2(v4) + M => O2(v3) + M', SSH, O2_body)
+vt_relaxation_reaction('O2     + M => O2(v1) + M', SSH, O2_body)
+vt_relaxation_reaction('O2(v1) + M => O2(v2) + M', SSH, O2_body)
+vt_relaxation_reaction('O2(v2) + M => O2(v3) + M', SSH, O2_body)
+vt_relaxation_reaction('O2(v3) + M => O2(v4) + M', SSH, O2_body)
+
+# Reaction of O2-H2 collision vibrational relaxation
+SSH = [1.0, 0.0, (2.69E-10, 'cm3/molec/s'), 91.5, 0.0, 1, (0.19, 'eV')]
+vt_relaxation_reaction('O2(v1) + M => O2     + M', SSH, H2_body)
+vt_relaxation_reaction('O2(v2) + M => O2(v1) + M', SSH, H2_body)
+vt_relaxation_reaction('O2(v3) + M => O2(v2) + M', SSH, H2_body)
+vt_relaxation_reaction('O2(v4) + M => O2(v3) + M', SSH, H2_body)
+vt_relaxation_reaction('O2     + M => O2(v1) + M', SSH, H2_body)
+vt_relaxation_reaction('O2(v1) + M => O2(v2) + M', SSH, H2_body)
+vt_relaxation_reaction('O2(v2) + M => O2(v3) + M', SSH, H2_body)
+vt_relaxation_reaction('O2(v3) + M => O2(v4) + M', SSH, H2_body)
+
+# H2
+# Reaction of H2-H2 collision vibrational relaxation
+SSH = [0.5, 0.00, (7.47E-12, 'cm3/molec/s'), 93.87, 0.0, 1, (0.516, 'eV')]
+vt_relaxation_reaction('H2(v1) + M => H2     + M', SSH, H2_body)
+vt_relaxation_reaction('H2     + M => H2(v1) + M', SSH, H2_body)
+
+#H2O
+#010
+# Reaction of H2O-H2O a collision vibrational relaxation
+VTE = [(1.42E-1, 'cm3/molec/s'), 363, 1462, (0.2, 'eV')]
+nonharmonic_vt_relaxation_reaction('H2O(010) + M => H2O      + M', VTE + [1], H2O_body)
+nonharmonic_vt_relaxation_reaction('H2O      + M => H2O(010) + M', VTE +[-1], H2O_body)
+
+# Reaction of H2O-O2 a collision vibrational relaxation
+VTE = [(1.92E-3, 'cm3/molec/s'), 243, 558, (0.2, 'eV')]
+nonharmonic_vt_relaxation_reaction('H2O(010) + M => H2O      + M', VTE+ [1], O2_body)
+nonharmonic_vt_relaxation_reaction('H2O      + M => H2O(010) + M', VTE+[-1], O2_body)
+
+# Reaction of H2O-H2 a collision vibrational relaxation
+VTE = [(3.22E-9, 'cm3/molec/s'), 14, 813, (0.2, 'eV')]
+nonharmonic_vt_relaxation_reaction('H2O(010) + M => H2O      + M', VTE+ [1], H2_body)
+nonharmonic_vt_relaxation_reaction('H2O      + M => H2O(010) + M', VTE+[-1], H2_body)
+
+#001
+# Reaction of H2O-H2O collision vibrational relaxation
+VTE = [(1.41E0, 'cm3/molec/s'), 522, 1999, (0.43, 'eV')]
+nonharmonic_vt_relaxation_reaction('H2O(001) + M => H2O      + M', VTE+ [1], H2O_body)
+nonharmonic_vt_relaxation_reaction('H2O      + M => H2O(001) + M', VTE+[-1], H2O_body)
+
+# Reaction of H2O-O2 collision vibrational relaxation
+VTE = [(4.25E-1, 'cm3/molec/s'), 451, 1131, (0.43, 'eV')]
+nonharmonic_vt_relaxation_reaction('H2O(001) + M => H2O      + M', VTE+ [1], O2_body)
+nonharmonic_vt_relaxation_reaction('H2O      + M => H2O(001) + M', VTE+[-1], O2_body)
+
+# Reaction of H2O-H2 collision vibrational relaxation
+VTE = [(2.60E-4, 'cm3/molec/s'), 273, 1059, (0.43, 'eV')]
+nonharmonic_vt_relaxation_reaction('H2O(001) + M => H2O      + M', VTE+ [1], H2_body)
+nonharmonic_vt_relaxation_reaction('H2O      + M => H2O(001) + M', VTE+[-1], H2_body)
+
+#100
+# Reaction of H2O-H2O collision vibrational relaxation
+VTEO = [(4.68E2, 'cm3/molec/s'), 541, 2084, (0.43, 'eV')]
+nonharmonic_vt_relaxation_reaction('H2O(100) + M => H2O     + M', VTEO+ [1], H2O_body)
+nonharmonic_vt_relaxation_reaction('H2O     + M => H2O(100) + M', VTEO+[-1], H2O_body)
+
+# Reaction of H2O-O2 collision vibrational relaxation
+VTE = [(1.72E0, 'cm3/molec/s'), 435, 1079, (0.43, 'eV')]
+nonharmonic_vt_relaxation_reaction('H2O(001) + M => H2O      + M', VTE+ [1], O2_body)
+nonharmonic_vt_relaxation_reaction('H2O      + M => H2O(001) + M', VTE+[-1], O2_body)
+
+# Reaction of H2O-H2 collision vibrational relaxation
+VTE = [(5.23E-4, 'cm3/molec/s'), 229, 821, (0.43, 'eV')]
+nonharmonic_vt_relaxation_reaction('H2O(001) + M => H2O      + M', VTE+ [1], H2_body)
+nonharmonic_vt_relaxation_reaction('H2O      + M => H2O(001) + M', VTE+[-1], H2_body)

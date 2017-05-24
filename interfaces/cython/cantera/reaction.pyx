@@ -351,6 +351,51 @@ cdef class SSHArrhenius:
         return self.rate.updateRC(logT, recipT)
 
 
+cdef class VTEmpirical:
+    r"""
+
+    """
+    def __cinit__(self, A=0.0, B=0.0, C=0.0, E=0.0, v=0, init=True):
+        if init:
+            self.rate = new CxxVTEmpirical(A, B, C, E, v)
+            self.reaction = None
+
+    def __dealloc__(self):
+        if self.reaction is None:
+            del self.rate
+
+    property pre_exponential_factor:
+        """
+        The pre-exponential factor *A* in units of m, kmol, and s raised to
+        powers depending on the reaction order.
+        """
+        def __get__(self):
+            return self.rate.preExponentialFactor()
+
+    property temperature_exponent:
+        """
+        The temperature exponent *n*.
+        """
+        def __get__(self):
+            return self.rate.temperatureExponent()
+
+    property activation_energy:
+        """
+        The activation energy *E* [J/kmol].
+        """
+        def __get__(self):
+            return self.rate.activationEnergy_R() * gas_constant
+
+    def __repr__(self):
+        return 'VTEmpirical(A={:g}, n={:g}, E={:g})'.format(
+            self.pre_exponential_factor, self.temperature_exponent,
+            self.activation_energy)
+
+    def __call__(self, float T):
+        cdef double logT = np.log(T)
+        cdef double recipT = 1/T
+        return self.rate.updateRC(logT, recipT)
+
 cdef wrapSSHArrhenius(CxxSSHArrhenius* rate, Reaction reaction):
     r = SSHArrhenius(init=False)
     r.rate = rate

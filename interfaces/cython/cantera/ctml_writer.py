@@ -1146,7 +1146,7 @@ class SSHArrhenius(rate_expression):
         addFloat(a,'E', self._c[6], fmt = '%f', defunits = _ue)
 
 
-class vtEmpirical(rate_expression):
+class VTEmpirical(rate_expression):
     def __init__(self,
                  A = 0.0,
                  B = 0.0,
@@ -1157,7 +1157,7 @@ class vtEmpirical(rate_expression):
 
     def build(self, p, name='', a=None):
         if a is None:
-            a = p.addChild('vtEmpirical')
+            a = p.addChild('VTEmpirical')
         if name:
             a['name'] = name
 
@@ -1392,7 +1392,7 @@ class reaction(object):
                                      B = kf[3], C = kf[4], D = kf[5],
                                      E = kf[6])
                 elif self._type == 'nonharmonic_vt_relaxation':
-                    k = vtEmpirical(A = kf[0], B = kf[1], C = kf[2],
+                    k = VTEmpirical(A = kf[0], B = kf[1], C = kf[2],
                                     E=kf[3], v = kf[4])
                 else:
                     k = Arrhenius(A = kf[0], b = kf[1], E = kf[2])

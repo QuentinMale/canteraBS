@@ -36,6 +36,10 @@ void GasKinetics::update_rates_T()
             m_vt_relaxation_rates.update(T, logT, m_rfn.data());
         }
 
+        if (m_nonharmonic_vt_relaxation_rates.nReactions()) {
+            m_nonharmonic_vt_relaxation_rates.update(T, logT, m_rfn.data());
+        }
+
         if (!m_rfn_low.empty()) {
             m_falloff_low_rates.update(T, logT, m_rfn_low.data());
             m_falloff_high_rates.update(T, logT, m_rfn_high.data());
@@ -75,6 +79,11 @@ void GasKinetics::update_rates_C()
     // vt reactions
     if (!concm_vt_relaxation_values.empty()) {
         m_vt_relaxation_concm.update(m_conc, ctot, concm_vt_relaxation_values.data());
+    }
+
+    // nonharmonic vt reactions
+    if (!concm_nonharmonic_vt_relaxation_values.empty()) {
+        m_nonharmonic_vt_relaxation_concm.update(m_conc, ctot, concm_nonharmonic_vt_relaxation_values.data());
     }
 
     // Falloff reactions
@@ -181,6 +190,10 @@ void GasKinetics::updateROP()
         m_vt_relaxation_concm.multiply(m_ropf.data(), concm_vt_relaxation_values.data());
     }
 
+    if (!concm_nonharmonic_vt_relaxation_values.empty()) {
+        m_nonharmonic_vt_relaxation_concm.multiply(m_ropf.data(), concm_nonharmonic_vt_relaxation_values.data());
+    }
+
     if (m_falloff_high_rates.nReactions()) {
         processFalloffReactions();
     }
@@ -233,6 +246,10 @@ void GasKinetics::getFwdRateConstants(doublereal* kfwd)
         m_vt_relaxation_concm.multiply(m_ropf.data(), concm_vt_relaxation_values.data());
     }
 
+    if (!concm_nonharmonic_vt_relaxation_values.empty()) {
+        m_nonharmonic_vt_relaxation_concm.multiply(m_ropf.data(), concm_nonharmonic_vt_relaxation_values.data());
+    }
+
     if (m_falloff_high_rates.nReactions()) {
         processFalloffReactions();
     }
@@ -261,7 +278,7 @@ bool GasKinetics::addReaction(shared_ptr<Reaction> r)
         addVTRelaxationReaction(dynamic_cast<VTRelaxationReaction&>(*r));
         break;
     case NONHARM_VT_RELAXATION_RXN:
-        addVTRelaxationReaction(dynamic_cast<VTRelaxationReaction&>(*r));
+        addNonharmonicVTRelaxationReaction(dynamic_cast<NonharmonicVTRelaxationReaction&>(*r));
         break;
     case THREE_BODY_RXN:
         addThreeBodyReaction(dynamic_cast<ThreeBodyReaction&>(*r));
