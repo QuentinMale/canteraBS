@@ -136,6 +136,19 @@ public:
     ThirdBody third_body;
 };
 
+//! A reaction of nonharmonic vibrational-translational relaxation by collision with a neutral molecule
+class NonharmonicVTRelaxationReaction : public Reaction
+{
+public:
+    NonharmonicVTRelaxationReaction();
+    NonharmonicVTRelaxationReaction(const Composition& reactants, const Composition products,
+                                    const VtEmpirical& rate, const ThirdBody& tbody);
+    VtEmpirical rate;
+
+    //! Relative efficiencies of third-body species in enhancing the reaction rate
+    ThirdBody third_body;
+};
+
 //! A reaction that is first-order in [M] at low pressure, like a third-body
 //! reaction, but zeroth-order in [M] as pressure increases.
 class FalloffReaction : public Reaction

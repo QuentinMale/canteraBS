@@ -182,6 +182,73 @@ protected:
     double m_log_v;
 };
 
+class VtEmpirical
+{
+public:
+    //! return the rate coefficient type.
+    static int type() {
+        return VT_EMPIRICAL_REACTION_RATECOEFF_TYPE;
+    }
+
+    //! Default constructor.
+    VtEmpirical();
+
+    /// Constructor.
+    /// @param A pre-exponential. The unit system is
+    ///     (kmol, m, s). The actual units depend on the reaction
+    ///     order and the dimensionality (surface or bulk).
+    /// @param E Activation energy in temperature units. Kelvin.
+    VtEmpirical(double A, double B, double C, double E, int v); 
+
+    //! Update concentration-dependent parts of the rate coefficient.
+    /*!
+     *   For this class, there are no concentration-dependent parts, so this
+     *   method does nothing.
+     */
+    void update_C(const double* c) {
+    }
+
+    /**
+     * Update the value the rate constant.
+     *
+     * This function returns the actual value of the rate constant. It can be
+     * safely called for negative values of the pre-exponential factor.
+     */
+    double updateRC(double logT, double recipT) const {
+        double Qvib = exp(-m_E*recipT);
+        double k = m_A * exp( - m_B*pow(recipT, 1.0/3.0) + m_C*pow(recipT, 2.0/3.0)) ;
+        if (m_v < 0) {
+            // reverse relaxation rate
+            k *= Qvib;
+        }
+        return k;
+    }
+
+    //! Return the pre-exponential factor *A* (in m, kmol, s to powers depending
+    //! on the reaction order)
+    double preExponentialFactor() const {
+        return m_A;
+    }
+
+    //! Return the temperature exponent *b*
+    double temperatureExponent() const {
+        return 0;
+    }
+
+    //! Return the activation energy divided by the gas constant (i.e. the
+    //! activation temperature) [K]
+    double activationEnergy_R() const {
+        return m_E;
+    }
+
+protected:
+    double m_A;
+    double m_B;
+    double m_C;
+    double m_E;
+    int m_v;
+};
+
 /**
  * An Arrhenius rate with coverage-dependent terms.
  *

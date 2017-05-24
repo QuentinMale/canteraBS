@@ -260,6 +260,9 @@ bool GasKinetics::addReaction(shared_ptr<Reaction> r)
     case VT_RELAXATION_RXN:
         addVTRelaxationReaction(dynamic_cast<VTRelaxationReaction&>(*r));
         break;
+    case NONHARM_VT_RELAXATION_RXN:
+        addVTRelaxationReaction(dynamic_cast<VTRelaxationReaction&>(*r));
+        break;
     case THREE_BODY_RXN:
         addThreeBodyReaction(dynamic_cast<ThreeBodyReaction&>(*r));
         break;
@@ -335,6 +338,26 @@ void GasKinetics::addVTRelaxationReaction(VTRelaxationReaction& r)
     concm_vt_relaxation_values.resize(m_vt_relaxation_concm.workSize());
 }
 
+void GasKinetics::addNonharmonicVTRelaxationReaction(NonharmonicVTRelaxationReaction& r)
+{
+    m_nonharmonic_vt_relaxation_rates.install(nReactions()-1, r.rate);
+    // install the enhanced third-body concentration calculator
+    map<size_t, double> efficiencies;
+    for (const auto& eff : r.third_body.efficiencies) {
+        size_t k = kineticsSpeciesIndex(eff.first);
+        if (k != npos) {
+            efficiencies[k] = eff.second;
+        } else if (!m_skipUndeclaredThirdBodies) {
+            throw CanteraError("GasKinetics::addNonharmonicVTRelaxationReaction", "Found "
+                "third-body efficiency for undefined species '" + eff.first +
+                "' while adding reaction '" + r.equation() + "'");
+        }
+    }
+    m_nonharmonic_vt_relaxation_concm.install(nReactions()-1, efficiencies,
+                       r.third_body.default_efficiency);
+    concm_nonharmonic_vt_relaxation_values.resize(m_nonharmonic_vt_relaxation_concm.workSize());
+}
+
 void GasKinetics::addThreeBodyReaction(ThreeBodyReaction& r)
 {
     m_rates.install(nReactions()-1, r.rate);
@@ -376,6 +399,9 @@ void GasKinetics::modifyReaction(size_t i, shared_ptr<Reaction> rNew)
     case VT_RELAXATION_RXN:
         modifyVTRelaxationReaction(i, dynamic_cast<VTRelaxationReaction&>(*rNew));
         break;
+    case NONHARM_VT_RELAXATION_RXN:
+        modifyNonharmonicVTRelaxationReaction(i, dynamic_cast<NonharmonicVTRelaxationReaction&>(*rNew));
+        break;
     case THREE_BODY_RXN:
         modifyThreeBodyReaction(i, dynamic_cast<ThreeBodyReaction&>(*rNew));
         break;
@@ -403,6 +429,11 @@ void GasKinetics::modifyReaction(size_t i, shared_ptr<Reaction> rNew)
 void GasKinetics::modifyVTRelaxationReaction(size_t i, VTRelaxationReaction& r)
 {
     m_vt_relaxation_rates.replace(i, r.rate);
+}
+
+void GasKinetics::modifyNonharmonicVTRelaxationReaction(size_t i, NonharmonicVTRelaxationReaction& r)
+{
+    m_nonharmonic_vt_relaxation_rates.replace(i, r.rate);
 }
 
 void GasKinetics::modifyThreeBodyReaction(size_t i, ThreeBodyReaction& r)

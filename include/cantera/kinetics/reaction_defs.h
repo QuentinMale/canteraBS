@@ -71,6 +71,12 @@ const int CHEBYSHEV_RXN = 6;
 const int CHEMACT_RXN = 8;
 
 /**
+ * A nonharmonic vibrational-translational relaxation reaction
+ * H2O(010) + M <-> H2O + M
+ */
+const int NONHARM_VT_RELAXATION_RXN = 9;
+
+/**
  * A reaction occurring on a surface.
  *  NOTE: This is a bit ambiguous, and will be taken out in the future
  *        The dimensionality of the interface is a separate concept from the type
@@ -133,6 +139,7 @@ const int EXCHANGE_CURRENT_REACTION_RATECOEFF_TYPE = 6;
 const int PLOG_REACTION_RATECOEFF_TYPE = 7;
 const int CHEBYSHEV_REACTION_RATECOEFF_TYPE = 8;
 const int SSH_ARRHENIUS_REACTION_RATECOEFF_TYPE = 9;
+const int VT_EMPIRICAL_REACTION_RATECOEFF_TYPE = 10;
 
 //@}
 

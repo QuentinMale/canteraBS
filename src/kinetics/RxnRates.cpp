@@ -68,6 +68,24 @@ SSHArrhenius::SSHArrhenius(double n, double m, double A, double B,
     }
 }
 
+VtEmpirical::VtEmpirical():
+    m_A(0.0),
+    m_B(0.0),
+    m_C(0.0),
+    m_E(0.0),
+    m_v(0)
+{
+}
+
+VtEmpirical::VtEmpirical(double A, double B, double C, double E, int v):
+    m_A(A),
+    m_B(B),
+    m_C(C),
+    m_E(E),
+    m_v(v)
+{
+}
+
 SurfaceArrhenius::SurfaceArrhenius()
     : m_b(0.0)
     , m_E(0.0)
