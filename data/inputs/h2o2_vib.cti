@@ -129,6 +129,17 @@ vt_relaxation_reaction('O2(v1) + M => O2(v2) + M', SSH, H2_body)
 vt_relaxation_reaction('O2(v2) + M => O2(v3) + M', SSH, H2_body)
 vt_relaxation_reaction('O2(v3) + M => O2(v4) + M', SSH, H2_body)
 
+# Reaction of O2-O collision vibrational relaxation
+SSH = [1.0, 0.0, (4.5E-15, 'cm3/molec/s'), 0.0, 0.0, 0.0, (0.19, 'eV')]
+vt_relaxation_reaction('O2(v1) + M => O2     + M', SSH, "O:1")
+vt_relaxation_reaction('O2(v2) + M => O2(v1) + M', SSH, "O:1")
+vt_relaxation_reaction('O2(v3) + M => O2(v2) + M', SSH, "O:1")
+vt_relaxation_reaction('O2(v4) + M => O2(v3) + M', SSH, "O:1")
+vt_relaxation_reaction('O2     + M => O2(v1) + M', SSH, "O:1")
+vt_relaxation_reaction('O2(v1) + M => O2(v2) + M', SSH, "O:1")
+vt_relaxation_reaction('O2(v2) + M => O2(v3) + M', SSH, "O:1")
+vt_relaxation_reaction('O2(v3) + M => O2(v4) + M', SSH, "O:1")
+
 # H2
 # Reaction of H2-H2 collision vibrational relaxation
 SSH = [0.5, 0.00, (7.47E-12, 'cm3/molec/s'), 93.87, 0.0, 1, (0.516, 'eV')]
