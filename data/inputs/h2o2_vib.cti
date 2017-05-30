@@ -191,10 +191,10 @@ nonharmonic_vt_relaxation_reaction('H2O     + M => H2O(100) + M', VTEO+[-1], H2O
 
 # Reaction of H2O-O2 collision vibrational relaxation
 VTE = [(1.72E0, 'cm3/molec/s'), 435, 1079, (0.43, 'eV')]
-nonharmonic_vt_relaxation_reaction('H2O(001) + M => H2O      + M', VTE+ [1], O2_body)
-nonharmonic_vt_relaxation_reaction('H2O      + M => H2O(001) + M', VTE+[-1], O2_body)
+nonharmonic_vt_relaxation_reaction('H2O(100) + M => H2O      + M', VTE+ [1], O2_body)
+nonharmonic_vt_relaxation_reaction('H2O      + M => H2O(100) + M', VTE+[-1], O2_body)
 
 # Reaction of H2O-H2 collision vibrational relaxation
 VTE = [(5.23E-4, 'cm3/molec/s'), 229, 821, (0.43, 'eV')]
-nonharmonic_vt_relaxation_reaction('H2O(001) + M => H2O      + M', VTE+ [1], H2_body)
-nonharmonic_vt_relaxation_reaction('H2O      + M => H2O(001) + M', VTE+[-1], H2_body)
+nonharmonic_vt_relaxation_reaction('H2O(100) + M => H2O      + M', VTE+ [1], H2_body)
+nonharmonic_vt_relaxation_reaction('H2O      + M => H2O(100) + M', VTE+[-1], H2_body)
