@@ -10,7 +10,7 @@ ideal_gas(name='gas',
                      H2(v1) H2(v2) H2(v3)
                      N2(v1) N2(v2) N2(v3) N2(v4)
                      CO2(v1) CO2(v2) CO2(v3) CO2(v4) CO2(v5) 
-                     CO2(010) CO2(001) CO2(100) CO2(110)
+                     CO2(010) CO2(100) CO2(110)
                      H2O(010) H2O(001) H2O(100)
                      CO(v1) CO(v2) CO(v3) CO(v4)'''],
           reactions=['gri30: all', 'all'],
@@ -205,7 +205,7 @@ species(name = "CO2(010)",
         thermo = CO2_thermo,
         transport = CO2_transport)
 
-species(name = "CO2(001)",
+species(name = "CO2(v1)",
         atoms = " C:1  O:2 ",
         thermo = CO2_thermo,
         transport = CO2_transport)
@@ -275,29 +275,33 @@ species(name = "H2O(100)",
 #-------------------------------------------------------------------------------
 # Reaction data
 #-------------------------------------------------------------------------------
-reaction('CH + O => HCO+ + E', [2.51E+11, 0.0, 1700])
-reaction('HCO+ + H2O => H3O+ + CO', [1.51E+15, 0.0, 0.0])
-reaction('H3O+ + E => H2O + H', [2.29E+18, -0.5, 0.0])
-reaction('H3O+ + E => OH + H + H', [7.95E+21, -1.4, 0.0])
-reaction('H3O+ + E => H2 + OH', [1.25E+19, -0.5, 0.0])
-reaction('H3O+ + E =>  O + H2 + H', [6.0E+17, -0.3, 0.0])
+#reaction('CH + O => HCO+ + E', [2.51E+11, 0.0, 1700])
+#reaction('HCO+ + H2O => H3O+ + CO', [1.51E+15, 0.0, 0.0])
+#reaction('H3O+ + E => H2O + H', [2.29E+18, -0.5, 0.0])
+#reaction('H3O+ + E => OH + H + H', [7.95E+21, -1.4, 0.0])
+#reaction('H3O+ + E => H2 + OH', [1.25E+19, -0.5, 0.0])
+#reaction('H3O+ + E =>  O + H2 + H', [6.0E+17, -0.3, 0.0])
 
 # Third body groups
+
 O2_body = "O2:1 O2(v1):1 O2(v2):1 O2(v3):1 O2(v4):1 "
 O2_body7 = "O2:0.7 O2(v1):0.7 O2(v2):0.7 O2(v3):0.7 O2(v4):0.7 "
 O2_body4 = "O2:0.4 O2(v1):0.4 O2(v2):0.4 O2(v3):0.4 O2(v4):0.4 "
 O2_body31 = "O2:3.1 O2(v1):3.1 O2(v2):3.1 O2(v3):3.1 O2(v4):3.1 "
+
 H2_body = "H2:1 H2(v1):1 H2(v2):1 H2(v3):1 "
 H2_body7 = "H2:0.7 H2(v1):0.7 H2(v2):0.7 H2(v3):0.7 "
 H2_body31 = "H2:3.1 H2(v1):3.1 H2(v2):3.1 H2(v3):3.1 "
+
 N2_body = "N2:1 N2(v1):1 N2(v2):1 N2(v3):1 N2(v4):1 "
 N2_body7 = "N2:0.7 N2(v1):0.7 N2(v2):0.7 N2(v3):0.7 N2(v4):0.7 "
 N2_body3 = "N2:0.3 N2(v1):0.3 N2(v2):0.3 N2(v3):0.3 N2(v4):0.3 "
 N2_body31 = "N2:3.1 N2(v1):3.1 N2(v2):3.1 N2(v3):3.1 N2(v4):3.1 "
-H2O_body = "H2O:1 H2O(a):1 H2O(b):1 H2O(c):1 "
-H2O_body7 = "H2O:0.7 H2O(a):0.7 H2O(b):0.7 H2O(c):0.7 "
-H2O_body31 = "H2O:3.1 H2O(a):3.1 H2O(b):3.1 H2O(c):3.1 "
+
+H2O_body = "H2O:1 H2O(010):1 H2O(001):1 H2O(100):1 "
+
 CO2_body = "CO2:1 CO2(v1):1 CO2(v2):1 CO2(v3):1 CO2(v4):1 "
+
 CO_body = "CO:1 CO(v1):1 CO(v2):1 CO(v3):1 CO(v4):1 "
 CO_body7 = "CO:0.7 CO(v1):0.7 CO(v2):0.7 CO(v3):0.7 CO(v4):0.7 "
 CO_body3 = "CO:0.3 CO(v1):0.3 CO(v2):0.3 CO(v3):0.3 CO(v4):0.3 "
@@ -382,7 +386,6 @@ vt_relaxation_reaction('N2(v3) + M => N2(v4) + M', SSH, CO2_body)
 
 #****************************************    H2    ****************************************
 
-# H2
 # Reaction of H2-H2 collision vibrational relaxation
 SSH = [0.5, 0.00, (7.47E-12, 'cm3/molec/s'), 93.87, 0.0, 1, (0.516, 'eV')]
 vt_relaxation_reaction('H2(v1) + M => H2     + M', SSH, H2_body)
@@ -395,7 +398,6 @@ vt_relaxation_reaction('H2(v2) + M => H2(v3) + M', SSH, H2_body)
 
 #****************************************    CO    ****************************************
 
-#CO
 # Reaction of CO-CO collision vibrational relaxation
 SSH = [1.0, 0.00, (1.00E-12, 'cm3/molec/s'), 150.7, 0.0, 0, (0.266, 'eV')]
 vt_relaxation_reaction('CO(v1) + M => CO     + M', SSH, CO_body)
@@ -409,7 +411,7 @@ vt_relaxation_reaction('CO(v3) + M => CO(v4) + M', SSH, CO_body)
 
 
 #*************************************** CO2 (n > 1) ***************************************
-
+"""
 # Reaction of CO2-CO2 collision vibrational relaxation
 SSH = [1.0, 0.667, (2.89E-12, 'cm3/molec/s'), 132, 360.8, 1, (0.29, 'eV')]
 vt_relaxation_reaction('CO2(v2) + M => CO2(v1) + M', SSH, CO2_body)
@@ -448,12 +450,22 @@ vt_relaxation_reaction('CO2(v3) + M => CO2(v4) + M', SSH, H2_body)
 
 # Reaction of CO2-CO collision vibrational relaxation
 SSH = [1.0, 0.667, (1.24E-12, 'cm3/molec/s'), 118.9, 280.5, 1, (0.29, 'eV')]
+vt_relaxation_reaction('CO2(v2) + M => CO2(v1) + M', SSH, CO_body)
 vt_relaxation_reaction('CO2(v3) + M => CO2(v2) + M', SSH, CO_body)
 vt_relaxation_reaction('CO2(v4) + M => CO2(v3) + M', SSH, CO_body)
 vt_relaxation_reaction('CO2(v1) + M => CO2(v2) + M', SSH, CO_body)
 vt_relaxation_reaction('CO2(v2) + M => CO2(v3) + M', SSH, CO_body)
 vt_relaxation_reaction('CO2(v3) + M => CO2(v4) + M', SSH, CO_body)
 
+# Reaction of CO2-H2O collision vibrational relaxation
+SSH = [1.0, 0.0, (1.86E-13, 'cm3/molec/s'), 4835.4, 0.0, 1, (0.29, 'eV')]
+vt_relaxation_reaction('CO2(v2) + M => CO2(v1) + M', SSH, H2O_body)
+vt_relaxation_reaction('CO2(v3) + M => CO2(v2) + M', SSH, H2O_body)
+vt_relaxation_reaction('CO2(v4) + M => CO2(v3) + M', SSH, H2O_body)
+vt_relaxation_reaction('CO2(v1) + M => CO2(v2) + M', SSH, H2O_body)
+vt_relaxation_reaction('CO2(v2) + M => CO2(v3) + M', SSH, H2O_body)
+vt_relaxation_reaction('CO2(v3) + M => CO2(v4) + M', SSH, H2O_body)
+"""
 
 #******************************************************************************************
 #                           CO2 nonharmonic vibrational relaxation
@@ -466,15 +478,15 @@ VTE = [(7.14E-8, 'cm3/molec/s'), 177, 451, (0.08, 'eV')]
 nonharmonic_vt_relaxation_reaction('CO2(010) + M => CO2      + M', VTE+ [1], CO2_body + N2_body7 + O2_body7 + CO_body7)
 nonharmonic_vt_relaxation_reaction('CO2      + M => CO2(010) + M', VTE+[-1], CO2_body + N2_body7 + O2_body7 + CO_body7)
 
-# Reaction of CO2-H2 (010->000) collision vibrational relaxation
-VTE = [(3.56E-10, 'cm3/molec/s'), 83, 345, (0.08, 'eV')]
-nonharmonic_vt_relaxation_reaction('CO2(010) + M => CO2      + M', VTE+ [1], H2_body7)
-nonharmonic_vt_relaxation_reaction('CO2      + M => CO2(010) + M', VTE+[-1], H2_body7)
-
 # Reaction of CO2-H2O, H (010->000) collision vibrational relaxation
 VTE = [(4.82E-11, 'cm3/molec/s'), 44.4, 242, (0.08, 'eV')]
-nonharmonic_vt_relaxation_reaction('CO2(010) + M => CO2      + M', VTE+ [1], H2O_body7 + " H:0.9 ")
-nonharmonic_vt_relaxation_reaction('CO2      + M => CO2(010) + M', VTE+[-1], H2O_body7 + " H:0.9 ")
+nonharmonic_vt_relaxation_reaction('CO2(010) + M => CO2      + M', VTE+ [1], H2O_body)
+nonharmonic_vt_relaxation_reaction('CO2      + M => CO2(010) + M', VTE+[-1], H2O_body)
+
+# Reaction of CO2-H2 (010->000) collision vibrational relaxation
+VTE = [(3.56E-10, 'cm3/molec/s'), 83, 345, (0.08, 'eV')]
+nonharmonic_vt_relaxation_reaction('CO2(010) + M => CO2      + M', VTE+ [1], H2_body+ " H:0.9 ")
+nonharmonic_vt_relaxation_reaction('CO2      + M => CO2(010) + M', VTE+[-1], H2_body+ " H:0.9 ")
 
 
 #***************************************(100 -> 010)***************************************
@@ -486,13 +498,13 @@ nonharmonic_vt_relaxation_reaction('CO2(010) + M => CO2(100) + M', VTE+[-1], CO2
 
 # Reaction of CO2-H2O (100->010) collision vibrational relaxation
 VTE = [(6.53E-12, 'cm3/molec/s'), 44.4, 242, (0.09, 'eV')]
-nonharmonic_vt_relaxation_reaction('CO2(010) + M => CO2      + M', VTE+ [1], H2O_body7)
-nonharmonic_vt_relaxation_reaction('CO2      + M => CO2(010) + M', VTE+[-1], H2O_body7)
+nonharmonic_vt_relaxation_reaction('CO2(010) + M => CO2      + M', VTE+ [1], H2O_body)
+nonharmonic_vt_relaxation_reaction('CO2      + M => CO2(010) + M', VTE+[-1], H2O_body)
 
 # Reaction of CO2-H2, H (100->010) collision vibrational relaxation
 VTE = [(3.56E-10, 'cm3/molec/s'), 83, 345, (0.09, 'eV')]
-nonharmonic_vt_relaxation_reaction('CO2(100) + M => CO2(010) + M', VTE+ [1], H2_body7 + " H:0.9 ")
-nonharmonic_vt_relaxation_reaction('CO2(010) + M => CO2(100) + M', VTE+[-1], H2_body7 + " H:0.9 ")
+nonharmonic_vt_relaxation_reaction('CO2(100) + M => CO2(010) + M', VTE+ [1], H2_body + " H:0.9 ")
+nonharmonic_vt_relaxation_reaction('CO2(010) + M => CO2(100) + M', VTE+[-1], H2_body + " H:0.9 ")
 
 
 #***************************************(100 -> 000)***************************************
@@ -502,21 +514,15 @@ VTE = [(1.07E-9, 'cm3/molec/s'), 137, 0.0, (0.17, 'eV')]
 nonharmonic_vt_relaxation_reaction('CO2(100) + M => CO2 + M', VTE+ [1], CO2_body + N2_body31 + O2_body31 + CO_body31)
 nonharmonic_vt_relaxation_reaction('CO2 + M => CO2(100) + M', VTE+[-1], CO2_body + N2_body31 + O2_body31 + CO_body31)
 
-# Reaction of CO2-H2 (100->000) collision vibrational relaxation
-VTE = [(2.37E-7, 'cm3/molec/s'), 149, 451, (0.17, 'eV')]
-nonharmonic_vt_relaxation_reaction('CO2(100) + M => CO2      + M', VTE+ [1], H2_body31)
-nonharmonic_vt_relaxation_reaction('CO2      + M => CO2(100) + M', VTE+[-1], H2_body31)
-
 # Reaction of CO2-H2O (100->000) collision vibrational relaxation
 VTE = [(7.23E-13, 'cm3/molec/s'), 44.4, 242, (0.17, 'eV')]
-nonharmonic_vt_relaxation_reaction('CO2(100) + M => CO2      + M', VTE+ [1], H2O_body31)
-nonharmonic_vt_relaxation_reaction('CO2      + M => CO2(100) + M', VTE+[-1], H2O_body31)
+nonharmonic_vt_relaxation_reaction('CO2(100) + M => CO2      + M', VTE+ [1], H2O_body)
+nonharmonic_vt_relaxation_reaction('CO2      + M => CO2(100) + M', VTE+[-1], H2O_body)
 
-# Reaction of CO2-H (100->000) collision vibrational relaxation
-VTE = [(7.89E-8, 'cm3/molec/s'), 131, 446, (0.17, 'eV')]
-nonharmonic_vt_relaxation_reaction('CO2(100) + M => CO2      + M', VTE+ [1], "H:1.6")
-nonharmonic_vt_relaxation_reaction('CO2      + M => CO2(100) + M', VTE+[-1], "H:1.6")
-
+# Reaction of CO2-H2 (100->000) collision vibrational relaxation
+VTE = [(2.37E-7, 'cm3/molec/s'), 149, 451, (0.17, 'eV')]
+nonharmonic_vt_relaxation_reaction('CO2(100) + M => CO2      + M', VTE+ [1], H2_body + "H:1.6")
+nonharmonic_vt_relaxation_reaction('CO2      + M => CO2(100) + M', VTE+[-1], H2_body + "H:1.6")
 
 
 #***************************************(110 -> 100)***************************************
@@ -526,45 +532,77 @@ VTE = [(2.90E-7, 'cm3/molec/s'), 177, 451, (0.08, 'eV')]
 nonharmonic_vt_relaxation_reaction('CO2(110) + M => CO2(100) + M', VTE+ [1], CO2_body+N2_body7+O2_body7+CO_body7)
 nonharmonic_vt_relaxation_reaction('CO2(100) + M => CO2(110) + M', VTE+[-1], CO2_body+N2_body7+O2_body7+CO_body7)
 
-# Reaction of CO2-H2 (110 -> 100) collision vibrational relaxation
-VTE = [(1.45E-9, 'cm3/molec/s'), 83, 345, (0.08, 'eV')]
-nonharmonic_vt_relaxation_reaction('CO2(110) + M => CO2(100) + M', VTE+ [1], H2_body7)
-nonharmonic_vt_relaxation_reaction('CO2(100) + M => CO2(110) + M', VTE+[-1], H2_body7)
-
 # Reaction of CO2-H2O, H (110 -> 100) collision vibrational relaxation
 VTE = [(1.96E-10, 'cm3/molec/s'), 44.4, 242, (0.08, 'eV')]
-nonharmonic_vt_relaxation_reaction('CO2(110) + M => CO2(100) + M', VTE+ [1], H2O_body7 + "H:0.9")
-nonharmonic_vt_relaxation_reaction('CO2(100) + M => CO2(110) + M', VTE+[-1], H2O_body7 + "H:0.9")
+nonharmonic_vt_relaxation_reaction('CO2(110) + M => CO2(100) + M', VTE+ [1], H2O_body)
+nonharmonic_vt_relaxation_reaction('CO2(100) + M => CO2(110) + M', VTE+[-1], H2O_body)
 
+# Reaction of CO2-H2 (110 -> 100) collision vibrational relaxation
+VTE = [(1.45E-9, 'cm3/molec/s'), 83, 345, (0.08, 'eV')]
+nonharmonic_vt_relaxation_reaction('CO2(110) + M => CO2(100) + M', VTE+ [1], H2_body + "H:0.9")
+nonharmonic_vt_relaxation_reaction('CO2(100) + M => CO2(110) + M', VTE+[-1], H2_body + "H:0.9")
 
 
 #***************************************(110 -> 010)***************************************
 
 # Reaction of CO2-CO2, N2, O2, CO (110 -> 010) collision vibrational relaxation
 VTE = [(1.07E-9, 'cm3/molec/s'), 137, 0, (0.17, 'eV')]
-nonharmonic_vt_relaxation_reaction('CO2(110) + M => CO2(100) + M', VTE+ [1], CO2_body+N2_body31+O2_body31+CO_body31)
-nonharmonic_vt_relaxation_reaction('CO2(100) + M => CO2(110) + M', VTE+[-1], CO2_body+N2_body31+O2_body31+CO_body31)
-
-# Reaction of CO2-H2 (110 -> 010) collision vibrational relaxation
-VTE = [(2.37E-7, 'cm3/molec/s'), 149, 451, (0.17, 'eV')]
-nonharmonic_vt_relaxation_reaction('CO2(110) + M => CO2(010) + M', VTE+ [1], H2_body31)
-nonharmonic_vt_relaxation_reaction('CO2(010) + M => CO2(110) + M', VTE+[-1], H2_body31)
+nonharmonic_vt_relaxation_reaction('CO2(110) + M => CO2(010) + M', VTE+ [1], CO2_body+N2_body31+O2_body31+CO_body31)
+nonharmonic_vt_relaxation_reaction('CO2(010) + M => CO2(110) + M', VTE+[-1], CO2_body+N2_body31+O2_body31+CO_body31)
 
 # Reaction of CO2-H2O (110 -> 010) collision vibrational relaxation
 VTE = [(7.85E-6, 'cm3/molec/s'), 234, 525, (0.17, 'eV')]
-nonharmonic_vt_relaxation_reaction('CO2(110) + M => CO2(010) + M', VTE+ [1], H2O_body31)
-nonharmonic_vt_relaxation_reaction('CO2(010) + M => CO2(110) + M', VTE+[-1], H2O_body31)
+nonharmonic_vt_relaxation_reaction('CO2(110) + M => CO2(010) + M', VTE+ [1], H2O_body)
+nonharmonic_vt_relaxation_reaction('CO2(010) + M => CO2(110) + M', VTE+[-1], H2O_body)
 
-# Reaction of CO2-H (110 -> 010) collision vibrational relaxation
-VTE = [(7.89E-8, 'cm3/molec/s'), 131, 446, (0.17, 'eV')]
-nonharmonic_vt_relaxation_reaction('CO2(110) + M => CO2(010) + M', VTE+ [1], "H:1.6")
-nonharmonic_vt_relaxation_reaction('CO2(010) + M => CO2(110) + M', VTE+[-1], "H:1.6")
+# Reaction of CO2-H2 (110 -> 010) collision vibrational relaxation
+VTE = [(2.37E-7, 'cm3/molec/s'), 149, 451, (0.17, 'eV')]
+nonharmonic_vt_relaxation_reaction('CO2(110) + M => CO2(010) + M', VTE+ [1], H2_body + "H:1.6")
+nonharmonic_vt_relaxation_reaction('CO2(010) + M => CO2(110) + M', VTE+[-1], H2_body + "H:1.6")
 
 
 #***************************************(001 -> 100)***************************************
 
 # Reaction of CO2-CO2, N2, O2, CO (001->100) collision vibrational relaxation
-VTE = [(8.57E-1, 'cm3/molec/s'), 404, 1096, 0, (0.12, 'eV')]
+VTE = [(8.57E-1, 'cm3/molec/s'), 404, 1096, (0.12, 'eV')]
+nonharmonic_vt_relaxation_reaction('CO2(v1) + M => CO2(100) + M', VTE+ [1], CO2_body+N2_body3+O2_body4+CO_body3)
+nonharmonic_vt_relaxation_reaction('CO2(100) + M => CO2(v1) + M', VTE+[-1], CO2_body+N2_body3+O2_body4+CO_body3)
+
+# Reaction of CO2-H2O (001 -> 100) collision vibrational relaxation
+VTE = [(2.17E-12, 'cm3/molec/s'), 18.5, -211, (0.12, 'eV')]
+nonharmonic_vt_relaxation_reaction('CO2(v1) + M => CO2(100) + M', VTE+ [1], H2O_body)
+nonharmonic_vt_relaxation_reaction('CO2(100) + M => CO2(v1) + M', VTE+[-1], H2O_body)
+
+# Reaction of CO2-H2,H (001 -> 100) collision vibrational relaxation
+VTE = [(2.61E-5, 'cm3/molec/s'), 293, 914, (0.12, 'eV')]
+nonharmonic_vt_relaxation_reaction('CO2(v1) + M => CO2(100) + M', VTE+ [1], H2_body + "H:0.8")
+nonharmonic_vt_relaxation_reaction('CO2(100) + M => CO2(v1) + M', VTE+[-1], H2_body + "H:0.8")
+
+
+#******************************(001) + (000) -> (100) + (010)******************************
+
+#VTE = [(2.13E-5, 'cm3/molec/s'), 242, 633, (0.04, 'eV')]
+#nonharmonic_vt_relaxation_reaction('CO2(v1) + CO2 => CO2(100) + CO2(010)', VTE+ [1], CO2_body)
+#nonharmonic_vt_relaxation_reaction('CO2(100) + CO2(010) => CO2(v1) + CO2', VTE+[-1], CO2_body)
+
+
+#***************************************(001 -> 010)***************************************
+
+# Reaction of CO2-CO2, N2, O2, CO (001->010) collision vibrational relaxation
+VTE = [(4.25E-1, 'cm3/molec/s'), 407, 824, (0.21, 'eV')]
+nonharmonic_vt_relaxation_reaction('CO2(v1) + M => CO2(010) + M', VTE+ [1], CO2_body+N2_body3+O2_body4+CO_body3)
+nonharmonic_vt_relaxation_reaction('CO2(010) + M => CO2(v1) + M', VTE+[-1], CO2_body+N2_body3+O2_body4+CO_body3)
+
+# Reaction of CO2-H2O (001 -> 010) collision vibrational relaxation
+VTE = [(3.57E-11, 'cm3/molec/s'), 54.7, -36, (0.21, 'eV')]
+nonharmonic_vt_relaxation_reaction('CO2(v1) + M => CO2(010) + M', VTE+ [1], H2O_body)
+nonharmonic_vt_relaxation_reaction('CO2(010) + M => CO2(v1) + M', VTE+[-1], H2O_body)
+
+# Reaction of CO2-H2,H (001 -> 010) collision vibrational relaxation
+VTE = [(1.05E-3, 'cm3/molec/s'), 324, 1053, (0.21, 'eV')]
+nonharmonic_vt_relaxation_reaction('CO2(v1) + M => CO2(010) + M', VTE+ [1], H2_body + "H:1.9")
+nonharmonic_vt_relaxation_reaction('CO2(010) + M => CO2(v1) + M', VTE+[-1], H2_body + "H:1.9")
+
 
 #******************************************************************************************
 #                           H2O nonharmonic vibrational relaxation
@@ -590,7 +628,7 @@ nonharmonic_vt_relaxation_reaction('H2O      + M => H2O(010) + M', VTE+[-1], CO2
 # Reaction of H2O-H2, H a collision vibrational relaxation
 VTE = [(3.22E-9, 'cm3/molec/s'), 14, 813, (0.2, 'eV')]
 nonharmonic_vt_relaxation_reaction('H2O(010) + M => H2O      + M', VTE+ [1], H2_body+"H:1.4")
-nonharmonic_vt_relaxation_reaction('H2O      + M => H2O(010) + M', VTE+[-1], H2_body+"H_1.4")
+nonharmonic_vt_relaxation_reaction('H2O      + M => H2O(010) + M', VTE+[-1], H2_body+"H:1.4")
 
 
 #***************************************(001 -> 000)***************************************
