@@ -12,7 +12,8 @@ ideal_gas(name='gas',
                      CO2(v1) CO2(v2) CO2(v3) CO2(v4) CO2(v5) 
                      CO2(010) CO2(100) CO2(110)
                      H2O(010) H2O(001) H2O(100)
-                     CO(v1) CO(v2) CO(v3) CO(v4)'''],
+                     CO(v1) CO(v2) CO(v3) CO(v4)
+                     CH4(v13) CH4(v24)'''],
           reactions=['gri30: all', 'all'],
           transport='Mix',
           options=['skip_undeclared_species', 'skip_undeclared_third_bodies'],
@@ -272,6 +273,28 @@ species(name = "H2O(100)",
         atoms = " H:2  O:1 ",
         thermo = H2O_thermo,
         transport = H2O_transport)
+
+CH4_thermo = (NASA( [  200.00,  1000.00], [  5.149876130E+00,   -1.367097880E-02,
+                       4.918005990E-05,     -4.847430260E-08,    1.666939560E-11,  
+                       -1.024664760E+04,  -4.641303760E+00] ),
+              NASA( [ 1000.00,  3500.00], [  7.485149500E-02,   1.339094670E-02,
+                       -5.732858090E-06,   1.222925350E-09,  -1.018152300E-13,
+                       -9.468344590E+03,   1.843731800E+01] ) )
+
+CH4_transport = gas_transport( geom = "nonlinear",
+                               diam =     3.75,
+                               well_depth =   141.40,
+                               polar =     2.60,
+                               rot_relax =    13.00)
+
+species(name = "CH4(v13)",
+        atoms = " C:1  H:4 ",
+       thermo = CH4_thermo,
+        transport = CH4_transport)
+species(name = "CH4(v24)",
+        atoms = " C:1  H:4 ",
+        thermo = CH4_thermo,
+        transport = CH4_transport)                          
 #-------------------------------------------------------------------------------
 # Reaction data
 #-------------------------------------------------------------------------------
@@ -306,6 +329,8 @@ CO_body = "CO:1 CO(v1):1 CO(v2):1 CO(v3):1 CO(v4):1 "
 CO_body7 = "CO:0.7 CO(v1):0.7 CO(v2):0.7 CO(v3):0.7 CO(v4):0.7 "
 CO_body3 = "CO:0.3 CO(v1):0.3 CO(v2):0.3 CO(v3):0.3 CO(v4):0.3 "
 CO_body31 = "CO:3.1 CO(v1):3.1 CO(v2):3.1 CO(v3):3.1 CO(v4):3.1 "
+
+CH4_body = "CH4:1 CH4(v13):1 CH4(v24):1 "
 
 #******************************************************************************************
 #                        harmonic vibrational relaxation (SSH theory)
@@ -688,6 +713,18 @@ nonharmonic_vt_relaxation_reaction('H2O      + M => H2O(100) + M', VTE+[-1], "H:
 #******************************************************************************************
 #                           CH4 vibrational relaxation in room temperature
 #******************************************************************************************
-VTE = [(3.20E-14, 'cm3/molec/s'), 0, 0, (0.159, 'eV')]
+VTE = [(3.20E-14, 'cm3/molec/s'), 0, 0, (0.16, 'eV')]
 nonharmonic_vt_relaxation_reaction('CH4(v24) + M => CH4      + M', VTE+ [1], CH4_body)
-nonharmonic_vt_relaxation_reaction('CH4      + M => CH4(v24) + M', VTE+ [1], CH4_body)
+nonharmonic_vt_relaxation_reaction('CH4      + M => CH4(v24) + M', VTE+[-1], CH4_body)
+
+VTE = [(5.70E-15, 'cm3/molec/s'), 0, 0, (0.16, 'eV')]
+nonharmonic_vt_relaxation_reaction('CH4(v24) + M => CH4      + M', VTE+ [1], O2_body)
+nonharmonic_vt_relaxation_reaction('CH4      + M => CH4(v24) + M', VTE+[-1], O2_body)
+
+VTE = [(4.60E-11, 'cm3/molec/s'), 0, 0, (0.21, 'eV')]
+nonharmonic_vt_relaxation_reaction('CH4(v13) + M => CH4(v24) + M', VTE+ [1], CH4_body)
+nonharmonic_vt_relaxation_reaction('CH4(v24) + M => CH4(v13) + M', VTE+[-1], CH4_body)
+
+VTE = [(3.53E-11, 'cm3/molec/s'), 0, 0, (0.21, 'eV')]
+nonharmonic_vt_relaxation_reaction('CH4(v13) + M => CH4(v24) + M', VTE+ [1], O2_body)
+nonharmonic_vt_relaxation_reaction('CH4(v24) + M => CH4(v13) + M', VTE+[-1], O2_body)
