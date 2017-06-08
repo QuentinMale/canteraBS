@@ -339,6 +339,14 @@ cdef extern from "cantera/kinetics/Reaction.h" namespace "Cantera":
         cbool use_motz_wise_correction
         string sticking_species
 
+cdef extern from "cantera/kinetics/PlasmaKinetics.h" namespace "Cantera":
+    cdef cppclass CxxPlasmaRate "Cantera::PlasmaRate":
+        CxxPlasmaRate()
+        double updateRC(double, double)
+
+    cdef cppclass CxxPlasmaReaction "Cantera::PlasmaReaction" (CxxReaction):
+        CxxPlasmaRate rate
+
 cdef extern from "cantera/kinetics/FalloffFactory.h" namespace "Cantera":
     cdef shared_ptr[CxxFalloff] CxxNewFalloff "Cantera::newFalloff" (int, vector[double]) except +
 

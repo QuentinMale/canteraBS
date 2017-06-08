@@ -7,6 +7,7 @@
 
 #include "cantera/kinetics/KineticsFactory.h"
 #include "cantera/kinetics/GasKinetics.h"
+#include "cantera/kinetics/PlasmaKinetics.h"
 #include "cantera/kinetics/InterfaceKinetics.h"
 #include "cantera/kinetics/EdgeKinetics.h"
 #include "cantera/kinetics/importKinetics.h"
@@ -42,6 +43,7 @@ Kinetics* KineticsFactory::newKinetics(XML_Node& phaseData,
 KineticsFactory::KineticsFactory() {
     reg("none", []() { return new Kinetics(); });
     reg("gaskinetics", []() { return new GasKinetics(); });
+    reg("plasmakinetics", []() {return new PlasmaKinetics(); });
     reg("interface", []() { return new InterfaceKinetics(); });
     reg("edge", []() { return new EdgeKinetics(); });
     reg("aqueouskinetics", []() { return new AqueousKinetics(); });

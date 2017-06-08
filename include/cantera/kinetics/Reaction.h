@@ -80,7 +80,7 @@ class ElementaryReaction : public Reaction
 {
 public:
     ElementaryReaction();
-    ElementaryReaction(const Composition& reactants, const Composition products,
+    ElementaryReaction(const Composition& reactants, const Composition& products,
                        const Arrhenius& rate);
     virtual void validate();
 

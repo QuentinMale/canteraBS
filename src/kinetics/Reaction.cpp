@@ -9,6 +9,7 @@
 #include "cantera/kinetics/FalloffFactory.h"
 #include "cantera/base/ctml.h"
 #include "cantera/base/Array.h"
+#include "cantera/kinetics/PlasmaKinetics.h"
 #include <sstream>
 
 namespace Cantera
@@ -96,7 +97,7 @@ std::string Reaction::equation() const
 }
 
 ElementaryReaction::ElementaryReaction(const Composition& reactants_,
-                                       const Composition products_,
+                                       const Composition& products_,
                                        const Arrhenius& rate_)
     : Reaction(ELEMENTARY_RXN, reactants_, products_)
     , rate(rate_)
@@ -648,6 +649,10 @@ shared_ptr<Reaction> newReaction(const XML_Node& rxn_node)
                type == "surfaceaffinity") {
         auto R = make_shared<ElectrochemicalReaction>();
         setupElectrochemicalReaction(*R, rxn_node);
+        return R;
+    } else if (type == "plasma") {
+        auto R = make_shared<PlasmaReaction>();
+        setupReaction(*R, rxn_node);
         return R;
     } else {
         throw CanteraError("newReaction",

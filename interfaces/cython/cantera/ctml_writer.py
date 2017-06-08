@@ -1295,6 +1295,8 @@ class reaction(object):
             self.ldim -= 3
         elif self._type == 'chebyshev':
             self._kf = []
+        elif self._type == 'plasma':
+            self._kf = []
 
         if self._type == 'edge' or self._type == 'surface':
             if self._beta > 0:
@@ -1331,6 +1333,20 @@ class reaction(object):
         return r
 
 #-------------------
+
+
+class plasma_reaction(reaction):
+    """
+    A plasma reaction.
+    """
+    def __init__(self,
+                 equation = '',
+                 kf = None,
+                 id = '',
+                 options = []
+                 ):
+        reaction.__init__(self, equation, kf, id, '', options)
+        self._type = 'plasma'
 
 
 class three_body_reaction(reaction):
@@ -1954,8 +1970,6 @@ class ideal_gas(phase):
             except:
                 pass
 
-
-
     def build(self, p):
         ph = phase.build(self, p)
         ph.child('thermo')['model'] = 'IdealGas'
@@ -1967,6 +1981,54 @@ class ideal_gas(phase):
     def is_ideal_gas(self):
         return 1
 
+
+class plasma(ideal_gas):
+    """An plasma gas mixture"""
+    def __init__(self,
+                 name = '',
+                 elements = '',
+                 species = '',
+                 note = '',
+                 reactions = 'none',
+                 kinetics = 'PlasmaKinetics',
+                 transport = 'None',
+                 initial_state = None,
+                 options = []):
+        """
+        The parameters correspond to those of :class:`.phase`, with the
+        following modifications:
+
+        :param kinetics:
+            The kinetics model. Usually this field is omitted, in which case
+            kinetics model GasKinetics, appropriate for reactions in ideal gas
+            mixtures, is used.
+        :param transport:
+            The transport property model. One of the strings ``'none'``,
+            ``'multi'``, or ``'mix'``. Default: ``'none'``.
+        """
+
+        phase.__init__(self, name, 3, elements, species, note, reactions,
+                       initial_state, options)
+        self._pure = 0
+        self._kin = kinetics
+        self._tr = transport
+        if self.debug:
+            _printerr('Read ideal_gas entry '+self._name)
+            try:
+                _printerr('in file '+__name__)
+            except:
+                pass
+
+    def build(self, p):
+        ph = phase.build(self, p)
+        ph.child('thermo')['model'] = 'IdealGas'
+        k = ph.addChild("kinetics")
+        k['model'] = self._kin
+        t = ph.addChild('transport')
+        t['model'] = self._tr
+
+    def is_ideal_gas(self):
+        return 1
 
 class stoichiometric_solid(phase):
     """

@@ -55,7 +55,7 @@ public:
     virtual void invalidateCache();
     //@}
 
-    void updateROP();
+    virtual void updateROP();
 
     //! Update temperature-dependent portions of reaction rates and falloff
     //! functions.

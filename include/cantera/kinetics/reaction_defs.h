@@ -106,6 +106,11 @@ const int EDGE_RXN = 22;
  */
 const int GLOBAL_RXN = 30;
 
+/**
+ * A plasma reaction.
+ */
+const int PLASMA_RXN = 40;
+
 //@}
 
 /** @name Rate Coefficient Types
@@ -126,6 +131,7 @@ const int ARRHENIUS_SUM_REACTION_RATECOEFF_TYPE = 5;
 const int EXCHANGE_CURRENT_REACTION_RATECOEFF_TYPE = 6;
 const int PLOG_REACTION_RATECOEFF_TYPE = 7;
 const int CHEBYSHEV_REACTION_RATECOEFF_TYPE = 8;
+const int PLASMA_REACTION_RATECOEFF_TYPE = 20;
 
 //@}
 

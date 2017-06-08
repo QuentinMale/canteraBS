@@ -14,6 +14,8 @@ cdef extern from "cantera/kinetics/reaction_defs.h" namespace "Cantera":
     cdef int TROE_FALLOFF
     cdef int SRI_FALLOFF
 
+    cdef int PLASMA_RXN
+
 
 cdef class Reaction:
     """
@@ -735,6 +737,13 @@ cdef class InterfaceReaction(ElementaryReaction):
             r.sticking_species = stringify(species)
 
 
+cdef class PlasmaReaction(Reaction):
+    """
+    A plasma reaction.
+    """
+    reaction_type = PLASMA_RXN
+
+
 cdef Reaction wrapReaction(shared_ptr[CxxReaction] reaction):
     """
     Wrap a C++ Reaction object with a Python object of the correct derived type.
@@ -755,6 +764,8 @@ cdef Reaction wrapReaction(shared_ptr[CxxReaction] reaction):
         R = ChebyshevReaction(init=False)
     elif reaction_type == INTERFACE_RXN:
         R = InterfaceReaction(init=False)
+    elif reaction_type == PLASMA_RXN:
+        R = PlasmaReaction(init=False)
     else:
         R = Reaction(init=False)
 
@@ -779,5 +790,7 @@ cdef CxxReaction* newReaction(int reaction_type):
         return new CxxChebyshevReaction()
     elif reaction_type == INTERFACE_RXN:
         return new CxxInterfaceReaction()
+    elif reaction_type == PLASMA_RXN:
+        return new CxxPlasmaReaction()
     else:
         return new CxxReaction(0)
