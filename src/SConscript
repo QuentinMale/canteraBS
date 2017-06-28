@@ -39,6 +39,7 @@ libs = [('base', ['cpp'], baseSetup),
 
 localenv = env.Clone()
 localenv.Prepend(CPPPATH=[Dir('#include'), Dir('#include/cantera/ext'), Dir('.')])
+localenv.Prepend(CPPPATH=[Dir('/usr/include/python2.7')])
 localenv.Append(CCFLAGS=env['warning_flags'])
 
 if env['CC'] == 'cl' and env['debug']:

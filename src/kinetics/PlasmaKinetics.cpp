@@ -6,6 +6,7 @@
 // at http://www.cantera.org/license.txt for license and copyright information.
 
 #include "cantera/kinetics/PlasmaKinetics.h"
+#include <Python.h>
 
 using namespace std;
 
@@ -14,6 +15,9 @@ namespace Cantera
 PlasmaKinetics::PlasmaKinetics(thermo_t* thermo) :
     GasKinetics(thermo)
 {
+    Py_Initialize();
+    PyRun_SimpleString("print('This is python interpreter in PlasmaKinetics')\n");
+    //Py_Finalize();
 }
 
 void PlasmaKinetics::update_rates_T()
