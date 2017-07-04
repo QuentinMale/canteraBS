@@ -43,13 +43,14 @@ public:
 
     virtual bool addReaction(shared_ptr<Reaction> r);
     virtual void modifyReaction(size_t i, shared_ptr<Reaction> rNew);
-
-    void update_rates_T();
+    virtual void updateROP();
 
 protected:
     void addPlasmaReaction(PlasmaReaction& r);
     void modifyPlasmaReaction(size_t i, PlasmaReaction& r);
     Rate1<PlasmaRate> m_plasma_rates;
+    //! Reaction index of each plasma reaction
+    std::vector<size_t> m_plasmaIndex;
 };
 
 class PlasmaRate
@@ -61,13 +62,6 @@ public:
     }
 
     PlasmaRate();
-
-    /**
-     * Update the value the rate constant.
-     *
-     * This function returns the actual value of the rate constant.
-     */
-    doublereal updateRC(doublereal logT, doublereal recipT) const;
 };
 
 class PlasmaReaction : public Reaction

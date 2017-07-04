@@ -20,16 +20,17 @@ PlasmaKinetics::PlasmaKinetics(thermo_t* thermo) :
     //Py_Finalize();
 }
 
-void PlasmaKinetics::update_rates_T()
+void PlasmaKinetics::updateROP()
 {
-    GasKinetics::update_rates_T();
-    double T = thermo().temperature();
-    //double P = thermo().pressure();
-    double logT = log(T);
-    if (m_plasma_rates.nReactions()) {
-        m_plasma_rates.update(T, logT, m_rfn.data()); //call updateRC
+    GasKinetics::updateROP();
+    vector_fp pr(m_plasma_rates.nReactions(),0.0);
+    for (size_t i = 0; i < m_plasma_rates.nReactions(); i++) {
+        pr[i] = 87;
+        AssertFinite(pr[i], "PlasmaKinetics::updateROP",
+                     "pr[{}] is not finite.", i);
     }
-    
+    scatter_copy(pr.begin(), pr.begin() + m_plasma_rates.nReactions(),
+                 m_ropf.begin(), m_plasmaIndex.begin());
 }
 
 bool PlasmaKinetics::addReaction(shared_ptr<Reaction> r)
@@ -59,6 +60,7 @@ void PlasmaKinetics::modifyReaction(size_t i, shared_ptr<Reaction> rNew)
 
 void PlasmaKinetics::addPlasmaReaction(PlasmaReaction& r)
 {
+    m_plasmaIndex.push_back(nReactions()-1);
     m_plasma_rates.install(nReactions()-1, r.rate);
 }
 
@@ -69,12 +71,8 @@ void PlasmaKinetics::modifyPlasmaReaction(size_t i, PlasmaReaction& r)
 
 // class PlasmaRate
 PlasmaRate::PlasmaRate()
+    // composition
 {
-}
-
-double PlasmaRate::updateRC(doublereal logT, doublereal recipT) const
-{
-    return 0.0;
 }
 
 // class PlasmaReaction
