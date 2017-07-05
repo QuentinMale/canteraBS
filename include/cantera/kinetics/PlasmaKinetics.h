@@ -44,16 +44,20 @@ public:
     virtual bool addReaction(shared_ptr<Reaction> r);
     virtual void modifyReaction(size_t i, shared_ptr<Reaction> rNew);
     virtual void updateROP();
+    void calculateEEDF();
+    double getPlasmaReactionRate(string equation);
+    //static const char* PLUGIN_EEDF = "eedf";
 
 protected:
     void addPlasmaReaction(PlasmaReaction& r);
     void modifyPlasmaReaction(size_t i, PlasmaReaction& r);
     Rate1<PlasmaRate> m_plasma_rates;
     //! Reaction index of each plasma reaction
-    std::vector<size_t> m_plasmaIndex;
+    vector<size_t> m_plasmaIndex;
+    vector<string> m_equations;
 };
 
-class PlasmaRate
+class PlasmaRate //not useful
 {
 public:
     //! return the rate coefficient type.

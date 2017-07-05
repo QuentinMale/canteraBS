@@ -4,9 +4,8 @@
 
 // This file is part of Cantera. See License.txt in the top-level directory or
 // at http://www.cantera.org/license.txt for license and copyright information.
-
-#include "cantera/kinetics/PlasmaKinetics.h"
 #include <Python.h>
+#include "cantera/kinetics/PlasmaKinetics.h"
 
 using namespace std;
 
@@ -16,16 +15,59 @@ PlasmaKinetics::PlasmaKinetics(thermo_t* thermo) :
     GasKinetics(thermo)
 {
     Py_Initialize();
-    PyRun_SimpleString("print('This is python interpreter in PlasmaKinetics')\n");
-    //Py_Finalize();
+    PyList_Append(PySys_GetObject((char*)"path"),
+        PyString_FromString("/home/bang/cantera/build/python2/cantera"));
+}
+
+void PlasmaKinetics::calculateEEDF()
+{
+    //gas composition
+    vector<string> name(thermo().nSpecies());
+    vector_fp x(thermo().nSpecies(), 0.0);
+    thermo().getMoleFractions(&x[0]);
+    name = thermo().speciesNames();
+
+    // python object
+    PyObject *pModule, *pFunc;
+    PyObject *pArgs;
+    const char *pathName = ".";
+    const char *fileName = "eedf";
+    const char *funcName = "eedf";
+    const char *argstr = "hello";
+
+    pModule = PyImport_Import(PyString_FromString(fileName));
+    pFunc = PyObject_GetAttrString(pModule, funcName);
+    pArgs = PyTuple_New(1);
+    PyTuple_SetItem(pArgs, 0, PyString_FromString(argstr));
+    PyObject_CallObject(pFunc, pArgs);
+
+    Py_DECREF(pModule);
+    Py_DECREF(pFunc);
+    Py_DECREF(pArgs);
+
+    vector<pair<string, int>> gas_composition;
+    for (size_t i = 0; i < thermo().nSpecies(); i++) {
+        gas_composition.push_back(make_pair(name[i], x[i]));
+    }
+
+    
+    cout << gas_composition[1].first << endl;
+}
+
+double PlasmaKinetics::getPlasmaReactionRate(string equation)
+{
+    cout << equation << endl;
+    return 87;
 }
 
 void PlasmaKinetics::updateROP()
 {
     GasKinetics::updateROP();
+    calculateEEDF();
     vector_fp pr(m_plasma_rates.nReactions(),0.0);
     for (size_t i = 0; i < m_plasma_rates.nReactions(); i++) {
-        pr[i] = 87;
+        pr[i] = getPlasmaReactionRate(m_equations[i]);
+
         AssertFinite(pr[i], "PlasmaKinetics::updateROP",
                      "pr[{}] is not finite.", i);
     }
@@ -60,6 +102,7 @@ void PlasmaKinetics::modifyReaction(size_t i, shared_ptr<Reaction> rNew)
 
 void PlasmaKinetics::addPlasmaReaction(PlasmaReaction& r)
 {
+    m_equations.push_back(r.equation());
     m_plasmaIndex.push_back(nReactions()-1);
     m_plasma_rates.install(nReactions()-1, r.rate);
 }
