@@ -17,41 +17,45 @@ PlasmaKinetics::PlasmaKinetics(thermo_t* thermo) :
     Py_Initialize();
     PyList_Append(PySys_GetObject((char*)"path"),
         PyString_FromString("/home/bang/cantera/build/python2/cantera"));
+    PyList_Append(PySys_GetObject((char*)"path"),
+        PyString_FromString("/home/chen1671/cantera/build/python2/cantera"));
 }
 
 void PlasmaKinetics::calculateEEDF()
 {
     //gas composition
-    vector<string> name(thermo().nSpecies());
+    const vector<string> name = thermo().speciesNames();
     vector_fp x(thermo().nSpecies(), 0.0);
     thermo().getMoleFractions(&x[0]);
-    name = thermo().speciesNames();
 
     // python object
     PyObject *pModule, *pFunc;
     PyObject *pArgs;
-    const char *pathName = ".";
+    PyObject *gas_species, *gas_molefraction;
+
+    gas_species = PyList_New(0);
+    gas_molefraction = PyList_New(0);
+    for (size_t i = 0; i < thermo().nSpecies(); i++) {
+        PyList_Append(gas_species,PyString_FromString(name[i].c_str()));
+        PyList_Append(gas_molefraction,PyFloat_FromDouble(x[i]));
+    }
+
     const char *fileName = "eedf";
     const char *funcName = "eedf";
-    const char *argstr = "hello";
 
     pModule = PyImport_Import(PyString_FromString(fileName));
     pFunc = PyObject_GetAttrString(pModule, funcName);
-    pArgs = PyTuple_New(1);
-    PyTuple_SetItem(pArgs, 0, PyString_FromString(argstr));
+    pArgs = PyTuple_New(3);
+    PyTuple_SetItem(pArgs, 0, gas_species);
+    PyTuple_SetItem(pArgs, 1, gas_molefraction);
+    PyTuple_SetItem(pArgs, 2, PyFloat_FromDouble(thermo().temperature()));
     PyObject_CallObject(pFunc, pArgs);
 
     Py_DECREF(pModule);
     Py_DECREF(pFunc);
     Py_DECREF(pArgs);
-
-    vector<pair<string, int>> gas_composition;
-    for (size_t i = 0; i < thermo().nSpecies(); i++) {
-        gas_composition.push_back(make_pair(name[i], x[i]));
-    }
-
-    
-    cout << gas_composition[1].first << endl;
+    Py_DECREF(gas_species);
+    Py_DECREF(gas_molefraction);
 }
 
 double PlasmaKinetics::getPlasmaReactionRate(string equation)
