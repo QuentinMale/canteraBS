@@ -16,9 +16,7 @@ PlasmaKinetics::PlasmaKinetics(thermo_t* thermo) :
 {
     Py_Initialize();
     PyList_Append(PySys_GetObject((char*)"path"),
-        PyString_FromString("/home/bang/cantera/build/python2/cantera"));
-    PyList_Append(PySys_GetObject((char*)"path"),
-        PyString_FromString("/home/chen1671/cantera/build/python2/cantera"));
+        PyString_FromString("."));
 }
 
 void PlasmaKinetics::calculateEEDF()
@@ -31,37 +29,43 @@ void PlasmaKinetics::calculateEEDF()
     // python object
     PyObject *pModule, *pFunc;
     PyObject *pArgs;
-    PyObject *gas_species, *gas_molefraction;
-
-    gas_species = PyList_New(0);
-    gas_molefraction = PyList_New(0);
-    for (size_t i = 0; i < thermo().nSpecies(); i++) {
-        PyList_Append(gas_species,PyString_FromString(name[i].c_str()));
-        PyList_Append(gas_molefraction,PyFloat_FromDouble(x[i]));
-    }
+    PyObject *pGasSpecies;
+    PyObject *pGasMoleFraction;
 
     const char *fileName = "eedf";
-    const char *funcName = "eedf";
 
     pModule = PyImport_Import(PyString_FromString(fileName));
-    pFunc = PyObject_GetAttrString(pModule, funcName);
+    if (!pModule)
+    {
+        cout << "Error importing bolos interface" << endl;
+    }
+    pFunc = PyObject_GetAttrString(pModule, "eedf");
+
+
+    pGasSpecies = PyList_New(0);
+    pGasMoleFraction = PyList_New(0);
+    for (size_t i = 0; i < thermo().nSpecies(); i++) {
+        PyList_Append(pGasSpecies, PyString_FromString(name[i].c_str()));
+        PyList_Append(pGasMoleFraction, PyFloat_FromDouble(x[i]));
+    }
+
     pArgs = PyTuple_New(3);
-    PyTuple_SetItem(pArgs, 0, gas_species);
-    PyTuple_SetItem(pArgs, 1, gas_molefraction);
-    PyTuple_SetItem(pArgs, 2, PyFloat_FromDouble(thermo().temperature()));
+    PyTuple_SetItem(pArgs, 0, pGasSpecies);
+    PyTuple_SetItem(pArgs, 1, pGasMoleFraction);
+    PyTuple_SetItem(pArgs, 2, PyFloat_FromDouble(300));
     PyObject_CallObject(pFunc, pArgs);
 
     Py_DECREF(pModule);
     Py_DECREF(pFunc);
     Py_DECREF(pArgs);
-    Py_DECREF(gas_species);
-    Py_DECREF(gas_molefraction);
+    Py_DECREF(pGasSpecies);
+    Py_DECREF(pGasMoleFraction);
 }
 
 double PlasmaKinetics::getPlasmaReactionRate(string equation)
 {
-    cout << equation << endl;
-    return 87;
+    cout << "getPlasmaReactionRate" << endl;
+    return 0;
 }
 
 void PlasmaKinetics::updateROP()

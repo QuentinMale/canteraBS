@@ -1508,10 +1508,6 @@ for xml in mglob(env, 'data/inputs', 'xml'):
     if xml.name not in convertedInputFiles:
         build(env.Command(dest, xml.path, Copy('$TARGET', '$SOURCE')))
 
-# Copy lxcat file
-dest = pjoin('build','data','bolsig_lxcat.dat')
-build(env.Command(dest, xml.path, Copy('$TARGET', '$SOURCE')))
-
 
 if addInstallActions:
     # Put headers in place
