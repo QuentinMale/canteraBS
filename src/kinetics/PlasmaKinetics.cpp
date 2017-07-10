@@ -17,6 +17,18 @@ PlasmaKinetics::PlasmaKinetics(thermo_t* thermo) :
     Py_Initialize();
     PyList_Append(PySys_GetObject((char*)"path"),
         PyString_FromString("."));
+
+    const char *fileName = "eedf";
+
+    PyObject *pModule = PyImport_Import(PyString_FromString(fileName));
+    if (!pModule)
+    {
+        cout << "Error importing bolos interface" << endl;
+    }
+    PyObject *pFunc = PyObject_GetAttrString(pModule, "initialize");
+    Py_DECREF(pModule);
+
+    m_processes = PyObject_CallObject(pFunc, NULL);
 }
 
 void PlasmaKinetics::calculateEEDF()
@@ -26,40 +38,32 @@ void PlasmaKinetics::calculateEEDF()
     vector_fp x(thermo().nSpecies(), 0.0);
     thermo().getMoleFractions(&x[0]);
 
-    // python object
-    PyObject *pModule, *pFunc;
-    PyObject *pArgs;
-    PyObject *pGasSpecies;
-    PyObject *pGasMoleFraction;
-
     const char *fileName = "eedf";
 
-    pModule = PyImport_Import(PyString_FromString(fileName));
+    PyObject *pModule = PyImport_Import(PyString_FromString(fileName));
     if (!pModule)
     {
         cout << "Error importing bolos interface" << endl;
     }
-    pFunc = PyObject_GetAttrString(pModule, "eedf");
+    PyObject *pFunc = PyObject_GetAttrString(pModule, "eedf");
+    Py_DECREF(pModule);
 
-
-    pGasSpecies = PyList_New(0);
-    pGasMoleFraction = PyList_New(0);
+    PyObject *pGasSpecies = PyList_New(0);
+    PyObject *pGasMoleFraction = PyList_New(0);
     for (size_t i = 0; i < thermo().nSpecies(); i++) {
         PyList_Append(pGasSpecies, PyString_FromString(name[i].c_str()));
         PyList_Append(pGasMoleFraction, PyFloat_FromDouble(x[i]));
     }
 
-    pArgs = PyTuple_New(3);
-    PyTuple_SetItem(pArgs, 0, pGasSpecies);
-    PyTuple_SetItem(pArgs, 1, pGasMoleFraction);
-    PyTuple_SetItem(pArgs, 2, PyFloat_FromDouble(300));
+    PyObject *pArgs = PyTuple_New(4);
+    PyTuple_SetItem(pArgs, 0, m_processes);
+    PyTuple_SetItem(pArgs, 1, pGasSpecies);
+    PyTuple_SetItem(pArgs, 2, pGasMoleFraction);
+    PyTuple_SetItem(pArgs, 3, PyFloat_FromDouble(300));
     PyObject_CallObject(pFunc, pArgs);
 
-    Py_DECREF(pModule);
     Py_DECREF(pFunc);
     Py_DECREF(pArgs);
-    Py_DECREF(pGasSpecies);
-    Py_DECREF(pGasMoleFraction);
 }
 
 double PlasmaKinetics::getPlasmaReactionRate(string equation)
@@ -71,7 +75,7 @@ double PlasmaKinetics::getPlasmaReactionRate(string equation)
 void PlasmaKinetics::updateROP()
 {
     GasKinetics::updateROP();
-    calculateEEDF();
+    //calculateEEDF();
     vector_fp pr(m_plasma_rates.nReactions(),0.0);
     for (size_t i = 0; i < m_plasma_rates.nReactions(); i++) {
         pr[i] = getPlasmaReactionRate(m_equations[i]);

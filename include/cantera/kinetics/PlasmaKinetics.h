@@ -9,6 +9,7 @@
 #ifndef CT_PLASMAKINETICS_H
 #define CT_PLASMAKINETICS_H
 
+#include <Python.h>
 #include "GasKinetics.h"
 #include "RxnRates.h"
 #include "Reaction.h"
@@ -36,7 +37,10 @@ public:
      *  @param thermo  Pointer to the gas ThermoPhase (optional)
      */
     PlasmaKinetics(thermo_t* thermo = 0);
-
+    ~PlasmaKinetics(){
+        //Py_DECREF(m_boltzmann);
+        //Py_DECREF(m_eedf);
+    }
     virtual std::string kineticsType() const {
         return "Plasma";
     };
@@ -46,7 +50,6 @@ public:
     virtual void updateROP();
     void calculateEEDF();
     double getPlasmaReactionRate(string equation);
-    //static const char* PLUGIN_EEDF = "eedf";
 
 protected:
     void addPlasmaReaction(PlasmaReaction& r);
@@ -55,6 +58,9 @@ protected:
     //! Reaction index of each plasma reaction
     vector<size_t> m_plasmaIndex;
     vector<string> m_equations;
+    PyObject *m_processes;
+    PyObject *m_boltzmann;
+    PyObject *m_eedf;
 };
 
 class PlasmaRate //not useful
