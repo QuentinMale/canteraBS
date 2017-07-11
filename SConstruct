@@ -1540,6 +1540,11 @@ if env['system_fmt']:
     linkLibs.append('fmt')
     linkSharedLibs.append('fmt')
 
+# Python Reference leak Debug use
+#env.Prepend(CPPPATH=[Dir('/usr/include/python2.7')])
+#linkLibs.append('python2.7_d')
+#env.Append(CPPDEFINES=['Py_DEBUG'])
+
 # Store the list of needed static link libraries in the environment
 env['cantera_libs'] = linkLibs
 env['cantera_shared_libs'] = linkSharedLibs

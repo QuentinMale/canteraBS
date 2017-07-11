@@ -41,6 +41,7 @@ localenv = env.Clone()
 localenv.Prepend(CPPPATH=[Dir('#include'), Dir('#include/cantera/ext'), Dir('.')])
 localenv.Prepend(CPPPATH=[Dir('/usr/include/python2.7')])
 localenv.Append(CCFLAGS=env['warning_flags'])
+#localenv.Append(CPPDEFINES=['Py_DEBUG'])
 
 if env['CC'] == 'cl' and env['debug']:
     env['use_pch'] = False # PCH doesn't work with per-file PDB

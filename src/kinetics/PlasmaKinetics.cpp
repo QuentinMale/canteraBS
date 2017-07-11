@@ -14,71 +14,90 @@ namespace Cantera
 PlasmaKinetics::PlasmaKinetics(thermo_t* thermo) :
     GasKinetics(thermo)
 {
+    // Dangerous! don't touch anything!
     Py_Initialize();
     PyList_Append(PySys_GetObject((char*)"path"),
         PyString_FromString("."));
 
-    const char *fileName = "eedf";
-
-    PyObject *pModule = PyImport_Import(PyString_FromString(fileName));
-    if (!pModule)
+    m_module = PyImport_Import(Py_BuildValue("s","eedf"));
+    if (!m_module)
     {
         cout << "Error importing bolos interface" << endl;
     }
-    PyObject *pFunc = PyObject_GetAttrString(pModule, "initialize");
-    Py_DECREF(pModule);
+    PyObject *pFunc = PyObject_GetAttrString(m_module, "initialize");
 
     m_processes = PyObject_CallObject(pFunc, NULL);
+    Py_DECREF(pFunc);
 }
 
-void PlasmaKinetics::calculateEEDF()
+void PlasmaKinetics::update_EEDF()
 {
+    // Dangerous! don't touch anything!
     //gas composition
     const vector<string> name = thermo().speciesNames();
     vector_fp x(thermo().nSpecies(), 0.0);
     thermo().getMoleFractions(&x[0]);
 
-    const char *fileName = "eedf";
-
-    PyObject *pModule = PyImport_Import(PyString_FromString(fileName));
-    if (!pModule)
-    {
-        cout << "Error importing bolos interface" << endl;
-    }
-    PyObject *pFunc = PyObject_GetAttrString(pModule, "eedf");
-    Py_DECREF(pModule);
-
     PyObject *pGasSpecies = PyList_New(0);
     PyObject *pGasMoleFraction = PyList_New(0);
     for (size_t i = 0; i < thermo().nSpecies(); i++) {
-        PyList_Append(pGasSpecies, PyString_FromString(name[i].c_str()));
-        PyList_Append(pGasMoleFraction, PyFloat_FromDouble(x[i]));
+        PyObject *pName = Py_BuildValue("s",name[i].c_str());
+        PyList_Append(pGasSpecies, pName);
+        Py_DECREF(pName);
+        PyObject *pX = Py_BuildValue("d",x[i]);
+        PyList_Append(pGasMoleFraction, pX);
+        Py_DECREF(pX);
     }
-
-    PyObject *pArgs = PyTuple_New(4);
-    PyTuple_SetItem(pArgs, 0, m_processes);
-    PyTuple_SetItem(pArgs, 1, pGasSpecies);
-    PyTuple_SetItem(pArgs, 2, pGasMoleFraction);
-    PyTuple_SetItem(pArgs, 3, PyFloat_FromDouble(300));
-    PyObject_CallObject(pFunc, pArgs);
-
+    PyObject *pTemp = Py_BuildValue("d",thermo().temperature());
+    PyObject *pFunc = PyObject_GetAttrString(m_module, "eedf");
+    PyObject *ptuple = PyObject_CallFunctionObjArgs(pFunc, 
+                                                    m_processes,
+                                                    pGasSpecies, 
+                                                    pGasMoleFraction, 
+                                                    pTemp,
+                                                    NULL);
     Py_DECREF(pFunc);
-    Py_DECREF(pArgs);
+    Py_DECREF(pGasSpecies);
+    Py_DECREF(pGasMoleFraction);
+    Py_DECREF(pTemp);
+    m_eedf = Py_BuildValue("O", PyTuple_GetItem(ptuple, 0));
+    m_boltzmann = Py_BuildValue("O", PyTuple_GetItem(ptuple, 1));
+    Py_DECREF(ptuple);
 }
 
-double PlasmaKinetics::getPlasmaReactionRate(string equation)
+double PlasmaKinetics::getPlasmaReactionRate(size_t i)
 {
-    cout << "getPlasmaReactionRate" << endl;
-    return 0;
+    // Dangerous! don't touch anything!
+    PyObject *pEquation = Py_BuildValue("s",m_equations[i].c_str());
+    PyObject *pFunc = PyObject_GetAttrString(m_module, "getReactionRate");
+    PyObject *pK = PyObject_CallFunctionObjArgs(pFunc, 
+                                                m_eedf, 
+                                                m_boltzmann,
+                                                pEquation,
+                                                NULL);
+    Py_DECREF(pFunc);
+    Py_DECREF(pEquation);
+    double k = PyFloat_AsDouble(pK);
+    Py_DECREF(pK);
+    return k;
 }
-
+/*
+void PlasmaKinetics::PrintTotalRefCount()
+{
+#ifdef Py_REF_DEBUG
+    PyObject* refCount = PyObject_CallObject(PySys_GetObject((char*)"gettotalrefcount"), NULL);
+    std::clog << "total refcount = " << PyInt_AsSsize_t(refCount) << std::endl;
+    Py_DECREF(refCount);
+#endif
+}
+*/
 void PlasmaKinetics::updateROP()
 {
     GasKinetics::updateROP();
-    //calculateEEDF();
+    update_EEDF();
     vector_fp pr(m_plasma_rates.nReactions(),0.0);
     for (size_t i = 0; i < m_plasma_rates.nReactions(); i++) {
-        pr[i] = getPlasmaReactionRate(m_equations[i]);
+        pr[i] = getPlasmaReactionRate(i);
 
         AssertFinite(pr[i], "PlasmaKinetics::updateROP",
                      "pr[{}] is not finite.", i);

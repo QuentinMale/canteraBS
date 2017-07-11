@@ -38,8 +38,10 @@ public:
      */
     PlasmaKinetics(thermo_t* thermo = 0);
     ~PlasmaKinetics(){
-        //Py_DECREF(m_boltzmann);
-        //Py_DECREF(m_eedf);
+        Py_DECREF(m_processes);
+        Py_DECREF(m_module);
+        Py_DECREF(m_boltzmann);
+        Py_DECREF(m_eedf);
     }
     virtual std::string kineticsType() const {
         return "Plasma";
@@ -48,8 +50,9 @@ public:
     virtual bool addReaction(shared_ptr<Reaction> r);
     virtual void modifyReaction(size_t i, shared_ptr<Reaction> rNew);
     virtual void updateROP();
-    void calculateEEDF();
-    double getPlasmaReactionRate(string equation);
+    void update_EEDF();
+    double getPlasmaReactionRate(size_t i);
+    void PrintTotalRefCount();
 
 protected:
     void addPlasmaReaction(PlasmaReaction& r);
@@ -61,6 +64,7 @@ protected:
     PyObject *m_processes;
     PyObject *m_boltzmann;
     PyObject *m_eedf;
+    PyObject *m_module;
 };
 
 class PlasmaRate //not useful
