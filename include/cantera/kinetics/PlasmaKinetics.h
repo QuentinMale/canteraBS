@@ -55,6 +55,7 @@ public:
     void update_EEDF();
     double getPlasmaReactionRate(size_t i);
     void PrintTotalRefCount();
+    void solvePlasmaRates(bool doPlasma);
 
 protected:
     void addPlasmaReaction(PlasmaReaction& r);
@@ -65,6 +66,7 @@ protected:
     vector<string> m_equations;
     vector<size_t> m_list;
     vector<double> m_x;
+    bool m_do_plasma;
 
     PyObject *m_processes;
     PyObject *m_boltzmann;

@@ -12,7 +12,8 @@ using namespace std;
 namespace Cantera
 {
 PlasmaKinetics::PlasmaKinetics(thermo_t* thermo) :
-    GasKinetics(thermo)
+    GasKinetics(thermo),
+    m_do_plasma(true)
 {
     // Dangerous! don't touch anything!
     Py_Initialize();
@@ -66,12 +67,12 @@ void PlasmaKinetics::update_EEDF()
     size_t count = 1;
 
     for (size_t i : m_list) {
-        if (x[i] != m_x[i]) {
+        if (abs(x[i] - m_x[i]) > 0.0001) {
             count = 0;
         }
     }
 
-    if (count == 0) {
+    if (m_do_plasma && count == 0) {
         PyObject *pGasDict = PyDict_New();
         for (size_t i : m_list) {
             PyObject *pName = Py_BuildValue("s",name[i].c_str());
@@ -82,9 +83,9 @@ void PlasmaKinetics::update_EEDF()
         }
         PyObject *pTemp = Py_BuildValue("d",thermo().temperature());
         PyObject *pFunc = PyObject_GetAttrString(m_module, "eedf");
-        PyObject *ptuple = PyObject_CallFunctionObjArgs(pFunc, 
+        PyObject *ptuple = PyObject_CallFunctionObjArgs(pFunc,
                                                         m_processes,
-                                                        pGasDict, 
+                                                        pGasDict,
                                                         pTemp,
                                                         NULL);
         Py_DECREF(pFunc);
@@ -92,25 +93,31 @@ void PlasmaKinetics::update_EEDF()
         Py_DECREF(pTemp);
         m_eedf = Py_BuildValue("O", PyTuple_GetItem(ptuple, 0));
         m_boltzmann = Py_BuildValue("O", PyTuple_GetItem(ptuple, 1));
-        Py_DECREF(ptuple);        
+        Py_DECREF(ptuple);
+    } else {
+        //m_eedf = NULL;
+        //m_boltzmann = NULL;
     }
     m_x = x;
 }
 
 double PlasmaKinetics::getPlasmaReactionRate(size_t i)
 {
-    // Dangerous! don't touch anything!
-    PyObject *pEquation = Py_BuildValue("s",m_equations[i].c_str());
-    PyObject *pFunc = PyObject_GetAttrString(m_module, "getReactionRate");
-    PyObject *pK = PyObject_CallFunctionObjArgs(pFunc, 
-                                                m_eedf, 
-                                                m_boltzmann,
-                                                pEquation,
-                                                NULL);
-    Py_DECREF(pFunc);
-    Py_DECREF(pEquation);
-    double k = PyFloat_AsDouble(pK);
-    Py_DECREF(pK);
+    double k = 0.0;
+    if (m_do_plasma) {
+        // Dangerous! don't touch anything!
+        PyObject *pEquation = Py_BuildValue("s",m_equations[i].c_str());
+        PyObject *pFunc = PyObject_GetAttrString(m_module, "getReactionRate");
+        PyObject *pK = PyObject_CallFunctionObjArgs(pFunc,
+                                                    m_eedf,
+                                                    m_boltzmann,
+                                                    pEquation,
+                                                    NULL);
+        Py_DECREF(pFunc);
+        Py_DECREF(pEquation);
+        k = PyFloat_AsDouble(pK);
+        Py_DECREF(pK);
+    } 
     return k;
 }
 /*
@@ -123,6 +130,11 @@ void PlasmaKinetics::PrintTotalRefCount()
 #endif
 }
 */
+void PlasmaKinetics::solvePlasmaRates(bool doPlasma)
+{
+    m_do_plasma = doPlasma;
+}
+
 void PlasmaKinetics::updateROP()
 {
     GasKinetics::updateROP();

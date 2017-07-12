@@ -335,6 +335,9 @@ cdef class Kinetics(_SolutionBase):
         def __get__(self):
             return get_reaction_array(self, kin_getDeltaSSEntropy)
 
+    def solvePlasmaRates(self, cbool doPlasma):
+        (<CxxPlasmaKinetics*>self.kinetics).solvePlasmaRates(doPlasma)
+
 
 cdef class InterfaceKinetics(Kinetics):
     """

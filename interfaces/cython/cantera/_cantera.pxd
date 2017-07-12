@@ -340,6 +340,10 @@ cdef extern from "cantera/kinetics/Reaction.h" namespace "Cantera":
         string sticking_species
 
 cdef extern from "cantera/kinetics/PlasmaKinetics.h" namespace "Cantera":
+    cdef cppclass CxxPlasmaKinetics "Cantera::PlasmaKinetics":
+        CxxPlasmaKinetics()
+        void solvePlasmaRates(cbool)
+
     cdef cppclass CxxPlasmaRate "Cantera::PlasmaRate":
         CxxPlasmaRate()
         double updateRC(double, double)
