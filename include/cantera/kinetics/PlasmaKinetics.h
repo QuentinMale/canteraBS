@@ -50,6 +50,8 @@ public:
     virtual bool addReaction(shared_ptr<Reaction> r);
     virtual void modifyReaction(size_t i, shared_ptr<Reaction> rNew);
     virtual void updateROP();
+    virtual void init();
+
     void update_EEDF();
     double getPlasmaReactionRate(size_t i);
     void PrintTotalRefCount();
@@ -61,6 +63,8 @@ protected:
     //! Reaction index of each plasma reaction
     vector<size_t> m_plasmaIndex;
     vector<string> m_equations;
+    vector<size_t> m_list;
+
     PyObject *m_processes;
     PyObject *m_boltzmann;
     PyObject *m_eedf;
