@@ -1,9 +1,9 @@
 units(length='cm', time='s', quantity='mol', act_energy='cal/mol')
 
 plasma(name='ohmech',
-       elements=' O  H  Ar  E ',
+       elements=' O  H  Ar  E',
        species=['''h2o2: H2  H  O  O2  OH  H2O  HO2  H2O2  AR ''',
-                'O2+   E'],
+                'O2(a1)'],
        reactions=['h2o2: all', 'all'],
        transport='Mix',
        options=['skip_undeclared_species', 'skip_undeclared_third_bodies'],
@@ -12,7 +12,7 @@ plasma(name='ohmech',
 #-------------------------------------------------------------------------------
 # Species data
 #-------------------------------------------------------------------------------
-species(name = "O2+",
+species(name = "O2(a1)",
     atoms = " O:2  E:-1",
     thermo = (
        NASA( [  200.00,  1000.00], [  3.782456360E+00,  -2.996734160E-03, 
@@ -51,7 +51,11 @@ species(name = 'E',
 #-------------------------------------------------------------------------------
 # Reaction data
 #-------------------------------------------------------------------------------
-plasma_reaction( "O2 => O2+ + E")
+#reaction("O2(a1) + H => OH + O", [1.1E+14, 0, (3188, 'K')])
+#reaction("H2 + O2(a1) => OH + OH", [1.7E+15, 0, (17906, 'K')])
+#reaction("H2 + O2(a1) => H + HO2", [2.1E+13, 0, (18216, 'K')])
+#plasma_reaction( "O2 => O2(a1)")
+
 
 
 

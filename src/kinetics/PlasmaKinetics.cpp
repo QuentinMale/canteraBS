@@ -15,8 +15,11 @@ PlasmaKinetics::PlasmaKinetics(thermo_t* thermo) :
     GasKinetics(thermo),
     m_do_plasma(true)
 {
-    // Dangerous! don't touch anything!
+    // initialize PyObject
     Py_Initialize();
+    m_equations = PyList_New(0);
+
+    // Dangerous! don't touch anything!
     PyList_Append(PySys_GetObject((char*)"path"),
         PyString_FromString("."));
 
@@ -35,16 +38,16 @@ void PlasmaKinetics::init()
 {
     GasKinetics::init();
     vector<string> list;
-    list.push_back("N2");
-    list.push_back("N");
+    //list.push_back("N2");
+    //list.push_back("N");
     list.push_back("O2");
-    list.push_back("O");
+    //list.push_back("O");
     list.push_back("H2");
-    list.push_back("H");
-    list.push_back("CO2");
-    list.push_back("CO");
+    //list.push_back("H");
+    //list.push_back("CO2");
+    //list.push_back("CO");
     list.push_back("H2O");
-    list.push_back("CH4");
+    //list.push_back("CH4");
     // check valid index 
     for (size_t i = 0; i < list.size(); i++) {
         size_t k = kineticsSpeciesIndex(list[i]);
@@ -67,12 +70,12 @@ void PlasmaKinetics::update_EEDF()
     size_t count = 1;
 
     for (size_t i : m_list) {
-        if (abs(x[i] - m_x[i]) > 0.0001) {
+        if (abs(x[i]/m_x[i] - 1) > 0.1) {
             count = 0;
         }
     }
 
-    if (m_do_plasma && count == 0) {
+    if (count == 0) {
         PyObject *pGasDict = PyDict_New();
         for (size_t i : m_list) {
             PyObject *pName = Py_BuildValue("s",name[i].c_str());
@@ -82,44 +85,26 @@ void PlasmaKinetics::update_EEDF()
             Py_DECREF(pX);
         }
         PyObject *pTemp = Py_BuildValue("d",thermo().temperature());
-        PyObject *pFunc = PyObject_GetAttrString(m_module, "eedf");
-        PyObject *ptuple = PyObject_CallFunctionObjArgs(pFunc,
+        PyObject *pFunc = PyObject_GetAttrString(m_module, "updatePlasmaRates");
+        PyObject *pRates = PyObject_CallFunctionObjArgs(pFunc,
                                                         m_processes,
                                                         pGasDict,
                                                         pTemp,
+                                                        m_equations,
                                                         NULL);
         Py_DECREF(pFunc);
         Py_DECREF(pGasDict);
         Py_DECREF(pTemp);
-        m_eedf = Py_BuildValue("O", PyTuple_GetItem(ptuple, 0));
-        m_boltzmann = Py_BuildValue("O", PyTuple_GetItem(ptuple, 1));
-        Py_DECREF(ptuple);
-    } else {
-        //m_eedf = NULL;
-        //m_boltzmann = NULL;
+        for (size_t i = 0; i < m_plasma_rates.nReactions(); i++) {
+            PyObject *pRate = Py_BuildValue("O", PyList_GetItem(pRates, i));
+            m_plasma_rate_coeffs.push_back(PyFloat_AsDouble(pRate));
+            Py_DECREF(pRate);
+        }
+        Py_DECREF(pRates);
     }
     m_x = x;
 }
 
-double PlasmaKinetics::getPlasmaReactionRate(size_t i)
-{
-    double k = 0.0;
-    if (m_do_plasma) {
-        // Dangerous! don't touch anything!
-        PyObject *pEquation = Py_BuildValue("s",m_equations[i].c_str());
-        PyObject *pFunc = PyObject_GetAttrString(m_module, "getReactionRate");
-        PyObject *pK = PyObject_CallFunctionObjArgs(pFunc,
-                                                    m_eedf,
-                                                    m_boltzmann,
-                                                    pEquation,
-                                                    NULL);
-        Py_DECREF(pFunc);
-        Py_DECREF(pEquation);
-        k = PyFloat_AsDouble(pK);
-        Py_DECREF(pK);
-    } 
-    return k;
-}
 /*
 void PlasmaKinetics::PrintTotalRefCount()
 {
@@ -138,16 +123,18 @@ void PlasmaKinetics::solvePlasmaRates(bool doPlasma)
 void PlasmaKinetics::updateROP()
 {
     GasKinetics::updateROP();
-    update_EEDF();
-    vector_fp pr(m_plasma_rates.nReactions(),0.0);
-    for (size_t i = 0; i < m_plasma_rates.nReactions(); i++) {
-        pr[i] = getPlasmaReactionRate(i);
+    if (m_do_plasma) {
+        update_EEDF();
+        vector_fp pr(m_plasma_rates.nReactions(),0.0);
+        for (size_t i = 0; i < m_plasma_rates.nReactions(); i++) {
+            pr[i] = m_plasma_rate_coeffs[i];
 
-        AssertFinite(pr[i], "PlasmaKinetics::updateROP",
-                     "pr[{}] is not finite.", i);
+            AssertFinite(pr[i], "PlasmaKinetics::updateROP",
+                         "pr[{}] is not finite.", i);
+        }
+        scatter_copy(pr.begin(), pr.begin() + m_plasma_rates.nReactions(),
+                     m_ropf.begin(), m_plasmaIndex.begin());
     }
-    scatter_copy(pr.begin(), pr.begin() + m_plasma_rates.nReactions(),
-                 m_ropf.begin(), m_plasmaIndex.begin());
     //scatter_copy(pr.begin(), pr.begin() + m_plasma_rates.nReactions(),
     //             m_rfn.begin(), m_plasmaIndex.begin());
     //GasKinetics::updateROP();
@@ -180,7 +167,12 @@ void PlasmaKinetics::modifyReaction(size_t i, shared_ptr<Reaction> rNew)
 
 void PlasmaKinetics::addPlasmaReaction(PlasmaReaction& r)
 {
-    m_equations.push_back(r.equation());
+    PyObject *pEquation = Py_BuildValue("s", r.equation().c_str());
+    PyList_Append(m_equations, pEquation);
+    //cout << "test" << endl;
+    Py_DECREF(pEquation);
+    //cout << "test" << endl;
+    //m_equations.push_back(r.equation());
     m_plasmaIndex.push_back(nReactions()-1);
     m_plasma_rates.install(nReactions()-1, r.rate);
 }

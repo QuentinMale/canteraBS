@@ -40,8 +40,7 @@ public:
     ~PlasmaKinetics(){
         Py_DECREF(m_processes);
         Py_DECREF(m_module);
-        Py_DECREF(m_boltzmann);
-        Py_DECREF(m_eedf);
+        Py_DECREF(m_equations);
     }
     virtual std::string kineticsType() const {
         return "Plasma";
@@ -53,7 +52,6 @@ public:
     virtual void init();
 
     void update_EEDF();
-    double getPlasmaReactionRate(size_t i);
     void PrintTotalRefCount();
     void solvePlasmaRates(bool doPlasma);
 
@@ -63,15 +61,14 @@ protected:
     Rate1<PlasmaRate> m_plasma_rates;
     //! Reaction index of each plasma reaction
     vector<size_t> m_plasmaIndex;
-    vector<string> m_equations;
+    vector<double> m_plasma_rate_coeffs;
     vector<size_t> m_list;
     vector<double> m_x;
     bool m_do_plasma;
 
     PyObject *m_processes;
-    PyObject *m_boltzmann;
-    PyObject *m_eedf;
     PyObject *m_module;
+    PyObject *m_equations;
 };
 
 class PlasmaRate //not useful
