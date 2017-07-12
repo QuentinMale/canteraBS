@@ -64,6 +64,7 @@ protected:
     vector<size_t> m_plasmaIndex;
     vector<string> m_equations;
     vector<size_t> m_list;
+    vector<double> m_x;
 
     PyObject *m_processes;
     PyObject *m_boltzmann;

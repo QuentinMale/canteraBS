@@ -33,23 +33,26 @@ PlasmaKinetics::PlasmaKinetics(thermo_t* thermo) :
 void PlasmaKinetics::init()
 {
     GasKinetics::init();
-    vector<size_t> list;
-    list.push_back(thermo().speciesIndex("N2"));
-    list.push_back(thermo().speciesIndex("N"));
-    list.push_back(thermo().speciesIndex("O2"));
-    list.push_back(thermo().speciesIndex("O"));
-    list.push_back(thermo().speciesIndex("H2"));
-    list.push_back(thermo().speciesIndex("H"));
-    list.push_back(thermo().speciesIndex("CO2"));
-    list.push_back(thermo().speciesIndex("CO"));
-    list.push_back(thermo().speciesIndex("H2O"));
-    list.push_back(thermo().speciesIndex("CH4"));
+    vector<string> list;
+    list.push_back("N2");
+    list.push_back("N");
+    list.push_back("O2");
+    list.push_back("O");
+    list.push_back("H2");
+    list.push_back("H");
+    list.push_back("CO2");
+    list.push_back("CO");
+    list.push_back("H2O");
+    list.push_back("CH4");
     // check valid index 
     for (size_t i = 0; i < list.size(); i++) {
-        if (list[i] != npos) {
-            m_list.push_back(list[i]);
+        size_t k = kineticsSpeciesIndex(list[i]);
+        if (k != npos) {
+            m_list.push_back(k);
         }
     }
+
+    m_x.resize(thermo().nSpecies(), 0.0);
 }
 
 void PlasmaKinetics::update_EEDF()
@@ -60,27 +63,38 @@ void PlasmaKinetics::update_EEDF()
     vector_fp x(thermo().nSpecies(), 0.0);
     thermo().getMoleFractions(&x[0]);
 
-    PyObject *pGasDict = PyDict_New();
+    size_t count = 1;
+
     for (size_t i : m_list) {
-        PyObject *pName = Py_BuildValue("s",name[i].c_str());
-        PyObject *pX = Py_BuildValue("d",x[i]);
-        PyDict_SetItem(pGasDict, pName, pX);
-        Py_DECREF(pName);
-        Py_DECREF(pX);
+        if (x[i] != m_x[i]) {
+            count = 0;
+        }
     }
-    PyObject *pTemp = Py_BuildValue("d",thermo().temperature());
-    PyObject *pFunc = PyObject_GetAttrString(m_module, "eedf");
-    PyObject *ptuple = PyObject_CallFunctionObjArgs(pFunc, 
-                                                    m_processes,
-                                                    pGasDict, 
-                                                    pTemp,
-                                                    NULL);
-    Py_DECREF(pFunc);
-    Py_DECREF(pGasDict);
-    Py_DECREF(pTemp);
-    m_eedf = Py_BuildValue("O", PyTuple_GetItem(ptuple, 0));
-    m_boltzmann = Py_BuildValue("O", PyTuple_GetItem(ptuple, 1));
-    Py_DECREF(ptuple);
+
+    if (count == 0) {
+        PyObject *pGasDict = PyDict_New();
+        for (size_t i : m_list) {
+            PyObject *pName = Py_BuildValue("s",name[i].c_str());
+            PyObject *pX = Py_BuildValue("d",x[i]);
+            PyDict_SetItem(pGasDict, pName, pX);
+            Py_DECREF(pName);
+            Py_DECREF(pX);
+        }
+        PyObject *pTemp = Py_BuildValue("d",thermo().temperature());
+        PyObject *pFunc = PyObject_GetAttrString(m_module, "eedf");
+        PyObject *ptuple = PyObject_CallFunctionObjArgs(pFunc, 
+                                                        m_processes,
+                                                        pGasDict, 
+                                                        pTemp,
+                                                        NULL);
+        Py_DECREF(pFunc);
+        Py_DECREF(pGasDict);
+        Py_DECREF(pTemp);
+        m_eedf = Py_BuildValue("O", PyTuple_GetItem(ptuple, 0));
+        m_boltzmann = Py_BuildValue("O", PyTuple_GetItem(ptuple, 1));
+        Py_DECREF(ptuple);        
+    }
+    m_x = x;
 }
 
 double PlasmaKinetics::getPlasmaReactionRate(size_t i)
