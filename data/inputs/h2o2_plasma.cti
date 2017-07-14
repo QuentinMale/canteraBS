@@ -1,9 +1,9 @@
-units(length='cm', time='s', quantity='mol', act_energy='cal/mol')
+units(length='cm', time='s', quantity='mol', act_energy='K')
 
 plasma(name='ohmech',
        elements=' O  H  Ar  E',
        species=['''h2o2: H2  H  O  O2  OH  H2O  HO2  H2O2  AR ''',
-                'O2(a1)'],
+                'O2(X3)  O2(a1)  O2(b1)  O3'],
        reactions=['h2o2: all', 'all'],
        transport='Mix',
        options=['skip_undeclared_species', 'skip_undeclared_third_bodies'],
@@ -51,10 +51,18 @@ species(name = 'E',
 #-------------------------------------------------------------------------------
 # Reaction data
 #-------------------------------------------------------------------------------
-#reaction("O2(a1) + H => OH + O", [1.1E+14, 0, (3188, 'K')])
-#reaction("H2 + O2(a1) => OH + OH", [1.7E+15, 0, (17906, 'K')])
-#reaction("H2 + O2(a1) => H + HO2", [2.1E+13, 0, (18216, 'K')])
-#plasma_reaction( "O2 => O2(a1)")
+#reaction 1
+reaction("O2(X3) + M => O + O + M", [5.4E18, -1, 59000])
+
+#reaction 2
+#reaction("O2(a1) + M = 2 O + M", [])
+
+
+
+reaction("O2(a1) + H => OH + O", [1.1E+14, 0, 3188])
+reaction("H2 + O2(a1) => OH + OH", [1.7E+15, 0, 17906])
+reaction("H2 + O2(a1) => H + HO2", [2.1E+13, 0, 18216])
+
 
 
 
