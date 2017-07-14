@@ -8,6 +8,8 @@
 
 #include "cantera/oneD/StFlow.h"
 
+using namespace std;
+
 namespace Cantera
 {
 /**
@@ -46,9 +48,6 @@ public:
     //! set electric voltage at inlet and outlet
     virtual void setElectricPotential(const double v1, const double v2);
 
-    virtual void eval(size_t jg, double* xg,
-              double* rg, integer* diagg, double rdt);
-
     virtual void resize(size_t components, size_t points);
 
     virtual void _finalize(const double* x);
@@ -68,40 +67,56 @@ public:
     }
 
     /**
-     * Sometimes it is desired to carry out the simulation using a specified
-     * electron transport profile, rather than assuming it as a constant (0.4).
-     * Reference:
-     * Bisetti, Fabrizio, and Mbark El Morsli.
-     * "Calculation and analysis of the mobility and diffusion coefficient
-     * of thermal electrons in methane/air premixed flames."
-     * Combustion and flame 159.12 (2012): 3518-3521.
-     * If in the future the class GasTranport is improved, this method may
-     * be discard. This method specifies this profile.
     */
-    void setElectronTransport(vector_fp& zfixed, vector_fp& diff_e_fixed,
-                              vector_fp& mobi_e_fixed);
+    void solvePlasma(size_t j=npos);
+    bool doPlasma(size_t j) {
+        return m_do_plasma[j];
+    }
+    void enableElecHeat(bool withElecHeat);
+    void enablePlasmaCouple(bool withCouple);
+    void enableTransportCorrection(bool withTransCorr);
+    void setTransverseElecField(double elec_field, double elec_freq);
+    void setPlasmaSourceMultiplier(double multiplier);
+    void setElectronTransportMultiplier(double multiplier);
+    void setPlasmaLocation(double z1, double z2);
+    double getElecMobility(size_t j);
+    double getElecDiffCoeff(size_t j);
+    double getElecTemperature(size_t j);
+    double getElecCollisionHeat(size_t j);
+    double getElecField(size_t j);
 
 protected:
+    virtual void evalResidual(double* x, double* rsd, int* diag,
+                              double rdt, size_t jmin, size_t jmax);
     virtual void updateTransport(double* x, size_t j0, size_t j1);
+    void updatePlasmaProperties(const double* x);
     virtual void updateDiffFluxes(const double* x, size_t j0, size_t j1);
-    //! evaluate the residual for Poisson's equation
-    virtual void evalPoisson(size_t j, double* x, double* r, integer* diag, double rdt);
     //! Solving phase one: the fluxes of charged species are turned off
     virtual void frozenIonMethod(const double* x, size_t j0, size_t j1);
     //! Solving phase two: the Prager's ambipolar-diffusion model is used
     virtual void chargeNeutralityModel(const double* x, size_t j0, size_t j1);
     //! Solving phase three: the Poisson's equation is added coupled by the electrical drift
     virtual void poissonEqnMethod(const double* x, size_t j0, size_t j1);
+
+    double maxwellian(double energy, double temperature) {
+        return std::exp(-energy*ElectronCharge / (Boltzmann * temperature));
+    }
     //! flag for solving poisson's equation or not
     std::vector<bool> m_do_poisson;
     //! flag for solving the velocity or not
     std::vector<bool> m_do_velocity;
 
-    //! flag for importing transport of electron
-    bool m_import_electron_transport;
+    //! flag for solving plasma
+    std::vector<bool> m_do_plasma;
 
-    //! flag for overwrite transport of electron or not
-    bool m_overwrite_eTransport;
+    //! flag for ohmic heating
+    bool m_do_elec_heat;
+
+    //! flag for coupling plasma
+    bool m_couple_plasma;
+
+    //! Transport correct for LJ model
+    bool m_transport_correct;
 
     //! electrical properties
     vector_int m_speciesCharge;
@@ -112,9 +127,14 @@ protected:
     //! index of neutral species
     std::vector<size_t> m_kNeutral;
 
-    //! fixed transport profile of electron
-    vector_fp m_elecMobility;
-    vector_fp m_elecDiffCoeff;
+    //! index of plasma species
+    vector<size_t> m_kPlasmaSpecies;
+
+    //! index of major species
+    vector<size_t> m_kMajorSpecies;
+
+    //! activation energy of vibration state of major species
+    vector<double> m_energyLevel;
 
     //! mobility
     vector_fp m_mobility;
@@ -126,8 +146,15 @@ protected:
     double m_inletVoltage;
     double m_outletVoltage;
 
+    //! 
+    double m_plasmaLocation;
+    double m_plasmaRange;
+
     //! index of electron
     size_t m_kElectron;
+
+    //! index of collision species
+    vector<size_t> m_kCollision;
 
     //! fixed electric potential value
     vector_fp m_fixedElecPoten;
@@ -168,6 +195,67 @@ protected:
     double ND(const double* x, size_t k, size_t j) const {
         return Avogadro * m_rho[j] * Y(x,k,j) / m_wt[k];
     }
+
+    double ND_prev(size_t k, size_t j) const {
+        return Avogadro * m_rho[j] * prevSoln(c_offset_Y + k, j) / m_wt[k];
+    }
+
+    //! total number density
+    double ND_t(size_t j) const {
+        return Avogadro * m_rho[j] / m_wtm[j];
+    }
+
+    //!
+    double uc(const double* x, size_t k, size_t j) const {
+        return u(x,j) + E_center(x,j) * m_speciesCharge[k] * m_mobility[k+m_nsp*j];
+    }
+
+    double uc_mid(const double* x, size_t k, size_t j) const {
+        double u_mid = 0.5 * (u(x,j) + u(x,j+1));
+        return u_mid + E(x,j) * m_speciesCharge[k] * m_mobility[k+m_nsp*j];
+    }
+
+    double Y_mid(const double* x, size_t k, size_t j) const {
+        return 0.5 * (Y(x,k,j) + Y(x,k,j+1));
+    }
+    //! electric field
+    double E_center(const double* x, size_t j) const {
+        return -(phi(x,j+1)-phi(x,j-1))/(z(j+1)-z(j-1));
+    }
+
+    //! conductivity
+    double sigma(const double* x, size_t j) const {
+        double conductivity = 0.0;
+        for (size_t k : m_kCharge) {
+            conductivity += ElectronCharge * abs(m_speciesCharge[k]) * ND_t(j)
+                            * 0.5 * (X(x,k,j) + X(x,k,j+1))* m_mobility[k+m_nsp*j];
+        }
+        return conductivity;
+    }
+
+    //! charge density
+    double rho_e(const double* x, size_t j) const {
+        double charge_density = 0.0;
+        for (size_t k : m_kCharge) {
+            charge_density += ElectronCharge * m_speciesCharge[k] * ND(x,k,j);
+        }
+        return charge_density;
+    }
+
+    int s_k(size_t k) const {
+        return m_speciesCharge[k] / abs(m_speciesCharge[k]);
+    }
+    //! a copy of number density
+    vector<double> m_electronTemperature;
+    double m_elec_field;
+    double m_elec_frequency;
+    double m_plasma_multiplier;
+    double m_electron_multiplier;
+    vector<double> m_electronPower;
+    vector<double> m_electronMobility;
+    vector<double> m_electronDiff;
+    vector<double> m_Eambi;
+    Array2D m_wdotPlasma;
 };
 
 }

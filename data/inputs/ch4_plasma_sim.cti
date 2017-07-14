@@ -1,0 +1,43 @@
+units(length='cm', time='s', quantity='molec', act_energy='K')
+ideal_gas(name='ch4_plasma',
+          elements='O H C N E Ar',
+          species=['''gri30: H2      H       O       O2      OH      H2O     HO2
+                     H2O2    C       CH      CH2     CH2(S)  CH3     CH4
+                     CO      CO2     HCO     CH2O    CH3O    N2''',
+                   '''ch4_ion_sim: E  HCO^+   H3O^+  O2^-''',
+                   '''ch4_starik_reduce: O2(a1dg)  O2(b1sg)'''],
+          reactions=['gri30: all', 'ch4_ion_sim: all', 'ch4_starik_reduce: all', 'all'],
+          transport='Mix',
+          options=['skip_undeclared_species', 'skip_undeclared_third_bodies'],
+          initial_state=state(temperature=300.0, pressure=OneAtm))
+
+#-------------------------------------------------------------------------------
+# Species data
+#-------------------------------------------------------------------------------
+species(name = "O2^+",
+    atoms = " O:2  E:-1 ",
+    thermo = (
+       NASA( [  298.15,  1000.00], [  4.610171670E+00,  -6.359519520E-03, 
+                1.424256240E-05,  -1.209979230E-08,   3.709568780E-12,
+                1.397422290E+05,  -2.013268740E-01] ),
+       NASA( [ 1000.00,  6000.00], [  3.316759220E+00,   1.115222440E-03, 
+               -3.834925560E-07,   5.727846870E-11,  -2.776483810E-15,
+                1.398768230E+05,   5.447264760E+00] )
+             ),
+    transport = gas_transport(
+                     geom = "linear",
+                     diam =     3.46,
+                     well_depth =   107.40,
+                     polar =     1.60,
+                     rot_relax =     3.80),
+    # note = "L 4/89"
+       )
+#-------------------------------------------------------------------------------
+# Reaction data
+#-------------------------------------------------------------------------------
+#reaction('E + O2 => E + O2(a1dg)', [7.59E-11, 0.0, 12466])
+#reaction('E + O2 => E + O2(b1sg)', [9.31E-11, 0.0, 20579])
+
+
+
+

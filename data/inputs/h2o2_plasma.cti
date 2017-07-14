@@ -1,0 +1,136 @@
+units(length='cm', time='s', quantity='molec', act_energy='K')
+
+ideal_gas(name='gas',
+          elements='O H N E',
+          species=['''gri30: H2  H  O  O2  OH  H2O  HO2  H2O2  N2''',
+                   '''E  O2^-'''],
+          reactions=['gri30: all', 'all'],
+          transport='Mix',
+          options=['skip_undeclared_species', 'skip_undeclared_third_bodies'],
+          initial_state=state(temperature=300.0, pressure=OneAtm))
+
+#-------------------------------------------------------------------------------
+# Species data
+#-------------------------------------------------------------------------------
+species(name = 'E',
+    atoms = ' E:1 ',
+    thermo = (
+       NASA( [  200.00,  1000.00], [  2.500000000E+00,   0.000000000E+00, 
+                0.000000000E+00,   0.000000000E+00,   0.000000000E+00,
+               -7.453750000E+02,  -1.172469020E+01] ),
+       NASA( [ 1000.00,  6000.00], [  2.500000000E+00,   0.000000000E+00, 
+                0.000000000E+00,   0.000000000E+00,   0.000000000E+00,
+               -7.453750000E+02,  -1.172469020E+01] )
+             ),
+        transport=gas_transport(geom='atom',
+                                diam=2.05,
+                                well_depth=145.0,
+                                polar=0.667,
+                                rot_relax=0.0),
+     note = 'gas L10/92')
+
+species(name = "O2(b1sg)",
+    atoms = " O:2 ",
+    thermo = (
+       NASA( [  298.15,  1000.00], [  4.610171670E+00,  -6.359519520E-03, 
+                1.424256240E-05,  -1.209979230E-08,   3.709568780E-12,
+                1.397422290E+05,  -2.013268740E-01] ),
+       NASA( [ 1000.00,  6000.00], [  3.316759220E+00,   1.115222440E-03, 
+               -3.834925560E-07,   5.727846870E-11,  -2.776483810E-15,
+                1.398768230E+05,   5.447264760E+00] )
+             ),
+    transport = gas_transport(
+                     geom = "linear",
+                     diam =     3.46,
+                     well_depth =   107.40,
+                     polar =     1.60,
+                     rot_relax =     3.80),
+    # note = "TPIS89"
+       )
+
+species(name = "O2^+",
+    atoms = " O:2  E:-1 ",
+    thermo = (
+       NASA( [  298.15,  1000.00], [  4.610171670E+00,  -6.359519520E-03, 
+                1.424256240E-05,  -1.209979230E-08,   3.709568780E-12,
+                1.397422290E+05,  -2.013268740E-01] ),
+       NASA( [ 1000.00,  6000.00], [  3.316759220E+00,   1.115222440E-03, 
+               -3.834925560E-07,   5.727846870E-11,  -2.776483810E-15,
+                1.398768230E+05,   5.447264760E+00] )
+             ),
+    transport = gas_transport(
+                     geom = "linear",
+                     diam =     3.46,
+                     well_depth =   107.40,
+                     polar =     1.60,
+                     rot_relax =     3.80),
+    # note = "L 4/89"
+       )
+
+species(name = "O2^-",
+    atoms = " O:2  E:1 ",
+    thermo = (
+       NASA( [  298.15,  1000.00], [  3.664425220E+00,  -9.287411380E-04, 
+                6.454770820E-06,  -7.747033800E-09,   2.933326620E-12,
+               -6.870769830E+03,   4.351406740E+00] ),
+       NASA( [ 1000.00,  6000.00], [  3.956662940E+00,   5.981418230E-04, 
+               -2.121339050E-07,   3.632675810E-11,  -2.249892280E-15,
+               -7.062872290E+03,   2.278710100E+00] )
+             ),
+    transport = gas_transport(
+                     geom = "linear",
+                     diam =     3.46,
+                     well_depth =   107.40,
+                     polar =     1.60,
+                     rot_relax =     3.80),
+    # note = "L 4/89"
+       )
+#-------------------------------------------------------------------------------
+# Reaction data
+#-------------------------------------------------------------------------------
+reaction('O2 + E + O <=> O2^- + O',     [3.63E+16, 0.0, 0.0])
+
+reaction('O2 + E + H2O <=> O2^- + H2O', [5.08E+18, 0.0, 0.0])
+
+
+#reaction('O2 + E <=> O2^+ + E + E', [2.51E+10,   0.0, 1000])
+#reaction('O2^+ + E + E <=> O2 + E', [5.42E+10, -2.0, 0.0])
+#reaction('O2^+ + E + N2 <=> N2 + O2', [5.63E+03, -2.5, 0.0])
+#reaction('O2^+ + E + O2 <=> O2 + O2', [5.63E+03, -2.5, 0.0])
+#reaction('O2^+ + E + H2O <=> H2O + O2', [1.39E+03, -2.0, 0.0])
+
+#reaction('O2^+ + E <=> O + O', [5.96E+18, -0.7, 0.0])
+#reaction('O2^+ + E => O(T) + O(T)', [1.93E+18, -0.7, 0.0])
+#reaction('O2^+ + E => O(T) + O(1d)', [2.59E+18, -0.7, 0.0])
+#reaction('O2^+ + E => O(1d) + O(1d)', [1.20E+18, -0.7, 0.0])
+#reaction('O2^+ + E => O(1d) + O(1s)', [2.41E+17, -0.7, 0.0])
+
+# electron excited states
+#reaction('E + O2 => e + O2(a1dg)', [4.57E+13, 0.0, 12466])
+#reaction('E + O2 => e + O2(b1sg)', [5.61E+13, 0.0, 20578])
+
+
+# additional reactions correspond to plasma (Starik 2015)
+#reaction('H2 + O2 <=> H + HO2',       [7.39E+05, 2.43, 26926])
+#reaction('H2 + O2(a1dg) <=> H + HO2', [1.11E+08, 1.88, 17070])
+#reaction('H2 + O2(b1sg) <=> H + HO2', [2.10E+13, 0.0, 20500])
+# reaction('H + O2 <=> OH + O',        [1.04E+14, 0.0, 7705])
+
+# falloff_reaction( 'H + O2 (+ M) <=> HO2 (+ M)', 
+#          kLow= = [3.50E+16, -0.41, -565],
+#          kHigh   = [1.48E+12, 0.6, 0.0],
+#          efficiencies = " H2O:12  H2:2.5 ")
+
+#reaction('H + O2(a1dg) <=> OH + O', [3.85E+10, 1.0, 2480], options = 'duplicate')
+#reaction('H + O2(a1dg) <=> OH + O', [1.17E+07, 1.56, 630], options = 'duplicate')
+
+# falloff_reaction( 'H + O2(a1dg) (+ M) <=> HO2 (+ M)', 
+#          kLow= = [9.89E+09, 2.03, 1690],
+#          kHigh   = [1.16E+07, 1.62, 663],
+#          efficiencies = " H2O:12  H2:2.5 ")
+
+#reaction('O2(a1dg) + H <=> O2 + H',      [5.29E+10, 0.68, 2825], options = 'duplicate')
+#reaction('O2(a1dg) + H <=> O2 + H',      [5.36E+06, 1.4, 810], options = 'duplicate')
+#reaction('H + O2(b1sg) <=> OH + O',  [2.64E+14, -0.03, 16210])
+
+

@@ -700,9 +700,23 @@ cdef extern from "cantera/oneD/IonFlow.h":
         void solvePoissonEqn()
         void fixElectricPotential()
         cbool doPoisson(size_t)
+        void enableElecHeat(cbool)
+        void enablePlasmaCouple(cbool)
+        void enableTransportCorrection(cbool)
         void solveVelocity()
         void fixVelocity()
         cbool doVelocity(size_t)
+        cbool doPlasma(size_t)
+        void solvePlasma()
+        void setTransverseElecField(double, double)
+        void setPlasmaSourceMultiplier(double)
+        void setElectronTransportMultiplier(double)
+        void setPlasmaLocation(double, double)
+        double getElecMobility(size_t)
+        double getElecDiffCoeff(size_t)
+        double getElecTemperature(size_t)
+        double getElecCollisionHeat(size_t)
+        double getElecField(size_t)
 
 
 cdef extern from "cantera/oneD/Sim1D.h":
@@ -1038,6 +1052,9 @@ cdef class FreeFlow(_FlowBase):
     pass
 
 cdef class IonFlow(_FlowBase):
+    pass
+
+cdef class PlasmaFlow(_FlowBase):
     pass
 
 cdef class AxisymmetricStagnationFlow(_FlowBase):

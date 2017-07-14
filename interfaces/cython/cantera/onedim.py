@@ -490,7 +490,9 @@ class IonFlame(FreeFlame):
     __slots__ = ('inlet', 'outlet', 'flame')
 
     def __init__(self, gas, grid=None, width=None):
-        self.flame = IonFlow(gas, name='flame')
+        if not hasattr(self, 'flame'):
+            # Create flame domain if not already instantiated by a child class
+            self.flame = IonFlow(gas, name='flame')
         super(IonFlame, self).__init__(gas, grid, width)
 
     def solve(self, loglevel=1, refine_grid=True, auto=False, stage=1, enable_energy=True):
@@ -531,12 +533,48 @@ class IonFlame(FreeFlame):
 
         csvfile = open(filename, 'w')
         writer = _csv.writer(csvfile)
-        writer.writerow(['z (m)', 'u (m/s)', 'V (1/s)', 'T (K)',
-                         'phi (V)', 'E (V/m)', 'rho (kg/m3)'] + self.gas.species_names)
+        writer.writerow(['z (m)', 'u (m/s)', 'V (1/s)', 'T (K)', 'Te[K]', 'De[m^2/s]', 'mu_e[m^2/s-V]',
+                         'phi (V)', 'E (V/m)', 'rho (kmol/m3)'] + self.gas.species_names)
         for n in range(self.flame.n_points):
             self.set_gas_state(n)
-            writer.writerow([z[n], u[n], V[n], T[n], phi[n], E[n], self.gas.density] +
+            Te = self.flame.get_elecTemperature(n)
+            De = self.flame.get_elecDiffCoeff(n)
+            mu_e = self.flame.get_elecMobility(n)
+            writer.writerow([z[n], u[n], V[n], T[n], Te, De, mu_e, phi[n], E[n], self.gas.density_mole] +
                             list(getattr(self.gas, species)))
+        csvfile.close()
+        if not quiet:
+            print("Solution saved to '{0}'.".format(filename))
+
+    def write_csv_ND(self, filename, species='X', quiet=True):
+        """
+        Write the velocity, temperature, density, electric potential,
+        , electric field stregth, and species profiles to a CSV file.
+
+        :param filename:
+            Output file name
+        :param species:
+            Attribute to use obtaining species profiles, e.g. ``X`` for
+            mole fractions or ``Y`` for mass fractions.
+        """
+        z = self.grid
+        T = self.T
+        u = self.u
+        V = self.V
+        phi = self.phi
+        E = self.E
+
+        csvfile = open(filename, 'w')
+        writer = _csv.writer(csvfile)
+        writer.writerow(['z (m)', 'u (m/s)', 'V (1/s)', 'T (K)', 'Te[K]', 'De[m^2/s]', 'mu_e[m^2/s-V]',
+                         'phi (V)', 'E (V/m)'] + self.gas.species_names)
+        for n in range(self.flame.n_points):
+            self.set_gas_state(n)
+            Te = self.flame.get_elecTemperature(n)
+            De = self.flame.get_elecDiffCoeff(n)
+            mu_e = self.flame.get_elecMobility(n)
+            writer.writerow([z[n], u[n], V[n], T[n], Te, De, mu_e, phi[n], E[n]] +
+                            list(getattr(self.gas, species)*self.gas.density_mole*6.022e26))
         csvfile.close()
         if not quiet:
             print("Solution saved to '{0}'.".format(filename))
@@ -558,6 +596,15 @@ class IonFlame(FreeFlame):
     @velocity_enabled.setter
     def velocity_enabled(self, enable):
         self.flame.velocity_enabled = enable
+
+    @property
+    def plasma_enabled(self):
+        """ Get/Set whether or not to solve the Plasma reaction."""
+        return self.flame.plasma_enabled
+
+    @plasma_enabled.setter
+    def plasma_enabled(self, enable):
+        self.flame.plasma_enabled = enable
 
     @property
     def phi(self):

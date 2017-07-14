@@ -496,6 +496,42 @@ cdef class IonFlow(_FlowBase):
     def set_electricPotential(self, v_inlet, v_outlet):
         (<CxxIonFlow*>self.flow).setElectricPotential(v_inlet, v_outlet)
 
+    def set_transversElecField(self, E, Ef):
+        (<CxxIonFlow*>self.flow).setTransverseElecField(E, Ef)
+
+    def set_plasmaSourceMultiplier(self, multiplier):
+        (<CxxIonFlow*>self.flow).setPlasmaSourceMultiplier(multiplier)
+
+    def set_electronTransportMultiplier(self, multiplier):
+        (<CxxIonFlow*>self.flow).setElectronTransportMultiplier(multiplier)
+
+    def enable_elecHeat(self, withElecHeat):
+        (<CxxIonFlow*>self.flow).enableElecHeat(withElecHeat)
+
+    def enable_plasma_couple(self, withCouple):
+        (<CxxIonFlow*>self.flow).enablePlasmaCouple(withCouple)
+
+    def enable_transport_correction(self, withTransCorr):
+        (<CxxIonFlow*>self.flow).enableTransportCorrection(withTransCorr)
+
+    def get_elecMobility(self, j):
+        return (<CxxIonFlow*>self.flow).getElecMobility(j)
+
+    def get_elecDiffCoeff(self, j):
+        return (<CxxIonFlow*>self.flow).getElecDiffCoeff(j)
+
+    def get_elecTemperature(self, j):
+        return (<CxxIonFlow*>self.flow).getElecTemperature(j)
+
+    def get_elecCollisionHeat(self, j):
+        return (<CxxIonFlow*>self.flow).getElecCollisionHeat(j)
+
+    def get_elecField(self, j):
+        return (<CxxIonFlow*>self.flow).getElecField(j)  
+
+    def set_plasmaLocation(self, z1, z2):
+        return (<CxxIonFlow*>self.flow).setPlasmaLocation(z1, z2)
+
     property poisson_enabled:
         """ Determines whether or not to solve the energy equation."""
         def __get__(self):
@@ -515,6 +551,14 @@ cdef class IonFlow(_FlowBase):
                 (<CxxIonFlow*>self.flow).solveVelocity()
             else:
                 (<CxxIonFlow*>self.flow).fixVelocity()
+
+    property plasma_enabled:
+        """ Determines whether or not to solve plasma"""
+        def __get__(self):
+            return (<CxxIonFlow*>self.flow).doPlasma(0)
+        def __set__(self, enable):
+            if enable:
+                (<CxxIonFlow*>self.flow).solvePlasma()
 
 
 cdef class AxisymmetricStagnationFlow(_FlowBase):

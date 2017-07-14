@@ -35,11 +35,14 @@ libs = [('base', ['cpp'], baseSetup),
         ('oneD', ['cpp'], defaultSetup),
         ('zeroD', ['cpp'], defaultSetup),
         ('clib', ['cpp'], defaultSetup),
+        ('zdplaskin',['f90'], defaultSetup)
         ]
 
 localenv = env.Clone()
 localenv.Prepend(CPPPATH=[Dir('#include'), Dir('#include/cantera/ext'), Dir('.')])
+localenv.Prepend(F90PATH=[Dir('.'+'/zdplaskin'),])
 localenv.Append(CCFLAGS=env['warning_flags'])
+localenv.Append(CCFLAGS=env['openmp_flag'])
 
 if env['CC'] == 'cl' and env['debug']:
     env['use_pch'] = False # PCH doesn't work with per-file PDB
@@ -72,10 +75,15 @@ for subdir, extensions, setup in libs:
 
 
 # build the Cantera static library
-lib = build(localenv.StaticLibrary('../lib/cantera', libraryTargets,
+mods = [o for o in libraryTargets if o.path.endswith('.mod')]
+objects = [o for o in libraryTargets if o.path.endswith('.os')]
+lib = build(localenv.StaticLibrary('../lib/cantera',
+                                   source=objects,
                                    SPAWN=getSpawn(localenv)))
 localenv.Depends(lib, localenv['config_h_target'])
 install('$inst_libdir', lib)
+install('$inst_incdir', mods)
+
 env['cantera_staticlib'] = lib
 
 if (localenv['system_sundials'] == 'y'):
@@ -84,6 +92,10 @@ if (localenv['system_sundials'] == 'y'):
 if localenv['blas_lapack_libs']:
     localenv.Append(LIBS=localenv['blas_lapack_libs'],
                     LIBPATH=localenv['blas_lapack_dir'])
+# add bolsig lib
+localenv.Append(LIBS=localenv['bolsig_lib'],
+                LIBPATH=localenv['bolsig_libdir'])
+
 if localenv['system_fmt']:
     localenv.Append(LIBS='fmt')
 
@@ -95,13 +107,16 @@ if localenv['layout'] != 'debian':
         sharedName = '../lib/cantera'
 
     if localenv['versioned_shared_library']:
-        lib = build(localenv.SharedLibrary(sharedName, libraryTargets,
+        lib = build(localenv.SharedLibrary(sharedName,
+                                           source=objects,
                                            SPAWN=getSpawn(localenv),
                                            SHLIBVERSION=localenv['cantera_pure_version']))
         install(localenv.InstallVersionedLib, '$inst_libdir', lib)
     else:
-        lib = build(localenv.SharedLibrary(sharedName, libraryTargets,
+        lib = build(localenv.SharedLibrary(sharedName, 
+                                           source=objects,
                                            SPAWN=getSpawn(localenv)))
         install('$inst_libdir', lib)
+        install('$inst_incdir', mods)
     env['cantera_shlib'] = lib
     localenv.Depends(lib, localenv['config_h_target'])
