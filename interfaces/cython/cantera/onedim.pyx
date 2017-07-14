@@ -517,6 +517,17 @@ cdef class IonFlow(_FlowBase):
                 (<CxxIonFlow*>self.flow).fixVelocity()
 
 
+cdef class PlasmaFlow(_FlowBase):
+    """
+    An plasma flow domain.
+
+    In an ion flow dommain, the electric drift is added to the diffusion flux
+    """
+    def __cinit__(self, _SolutionBase thermo, *args, **kwargs):
+        gas = getIdealGasPhase(thermo)
+        self.flow = <CxxStFlow*>(new CxxPlasmaFlow(gas, thermo.n_species, 2))
+
+
 cdef class AxisymmetricStagnationFlow(_FlowBase):
     """
     An axisymmetric flow domain.

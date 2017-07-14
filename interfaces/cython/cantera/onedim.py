@@ -583,6 +583,14 @@ class IonFlame(FreeFlame):
         return Efield
 
 
+class PlasmaFlame(IonFlame):
+    __slots__ = ('inlet', 'outlet', 'flame')
+
+    def __init__(self, gas, grid=None, width=None):
+        self.flame = PlasmaFlow(gas, name='flame')
+        super(PlasmaFlame, self).__init__(gas, grid, width)
+
+
 class BurnerFlame(FlameBase):
     """A burner-stabilized flat flame."""
     __slots__ = ('burner', 'flame', 'outlet')

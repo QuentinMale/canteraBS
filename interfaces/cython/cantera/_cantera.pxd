@@ -705,6 +705,11 @@ cdef extern from "cantera/oneD/IonFlow.h":
         cbool doVelocity(size_t)
 
 
+cdef extern from "cantera/oneD/PlasmaFlow.h":
+    cdef cppclass CxxPlasmaFlow "Cantera::PlasmaFlow":
+        CxxPlasmaFlow(CxxIdealGasPhase*, int, int)
+
+
 cdef extern from "cantera/oneD/Sim1D.h":
     cdef cppclass CxxSim1D "Cantera::Sim1D":
         CxxSim1D(vector[CxxDomain1D*]&) except +translate_exception
@@ -1038,6 +1043,9 @@ cdef class FreeFlow(_FlowBase):
     pass
 
 cdef class IonFlow(_FlowBase):
+    pass
+
+cdef class PlasmaFlow(_FlowBase):
     pass
 
 cdef class AxisymmetricStagnationFlow(_FlowBase):
