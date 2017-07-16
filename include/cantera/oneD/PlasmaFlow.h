@@ -23,6 +23,7 @@ public:
     virtual void eval(size_t jg, double* xg,
               double* rg, integer* diagg, double rdt);
     virtual void resize(size_t components, size_t points);
+    void evalEEDF(size_t j, double* x, double* rsd, integer* diag, double rdt);
 
 protected:
     virtual void updateTransport(double* x, size_t j0, size_t j1);
