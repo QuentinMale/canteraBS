@@ -73,13 +73,14 @@ for subdir, extensions, setup in libs:
 
 # build the Cantera static library
 mods = [o for o in libraryTargets if o.path.endswith('.mod')]
-objects = [o for o in libraryTargets if not o.path.endswith('.mod')]
+objects = [o for o in libraryTargets if o.path.endswith('.os')]
 lib = build(localenv.StaticLibrary('../lib/cantera',
                                    source=objects,
                                    SPAWN=getSpawn(localenv)))
 localenv.Depends(lib, localenv['config_h_target'])
 install('$inst_libdir', lib)
 install('$inst_incdir', mods)
+
 env['cantera_staticlib'] = lib
 
 if (localenv['system_sundials'] == 'y'):
