@@ -485,6 +485,12 @@ config_options = [
            libraries are lowercase or uppercase. If you don't know, run 'nm' on
            the library file (e.g., 'nm libblas.a').""",
         'lower', ('lower','upper')),
+    PathVariable(
+        'bolsig_libdir',
+        """The directory where the SUNDIALS static libraries are installed.
+           Not needed if the libraries are installed in a standard location,
+           e.g., '/usr/lib'.""",
+        '', PathVariable.PathAccept),
     BoolVariable(
         'lapack_ftn_trailing_underscore',
         """Controls whether the LAPACK functions have a trailing underscore
@@ -746,6 +752,9 @@ elif env['OS'] == 'Darwin':
 else:
     env['blas_lapack_libs'] = []
     env['use_lapack'] = False
+
+# Bolsig configuration
+env.Append(LIBPATH=[env['bolsig_libdir']])
 
 # ************************************
 # *** Compiler Configuration Tests ***
@@ -1542,6 +1551,11 @@ else:
 if env['blas_lapack_libs']:
     linkLibs.extend(env['blas_lapack_libs'])
     linkSharedLibs.extend(env['blas_lapack_libs'])
+
+# Add bolsig library. Need to have a switch.
+env['bolsig_lib'] = ['bolsig']
+linkLibs.extend(('bolsig',))
+linkSharedLibs.extend(('bolsig',))
 
 if env['system_fmt']:
     linkLibs.append('fmt')

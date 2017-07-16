@@ -9,7 +9,7 @@ using namespace std;
 
 extern "C"
 {
-    double __math_MOD_getradius(double *degree);
+    void __zdplaskin_MOD_zdplaskin_init();
 }
 
 namespace Cantera
@@ -18,9 +18,7 @@ namespace Cantera
 PlasmaFlow::PlasmaFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
     IonFlow(ph, nsp, points)
 {
-    double degree = 90.0;
-    double result = __math_MOD_getradius(&degree);
-    cout << result << endl;
+    __zdplaskin_MOD_zdplaskin_init();
 }
 
 void PlasmaFlow::resize(size_t components, size_t points){

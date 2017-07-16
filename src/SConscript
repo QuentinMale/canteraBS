@@ -74,7 +74,8 @@ for subdir, extensions, setup in libs:
 # build the Cantera static library
 mods = [o for o in libraryTargets if o.path.endswith('.mod')]
 objects = [o for o in libraryTargets if not o.path.endswith('.mod')]
-lib = build(localenv.StaticLibrary('../lib/cantera', source=objects,
+lib = build(localenv.StaticLibrary('../lib/cantera',
+                                   source=objects,
                                    SPAWN=getSpawn(localenv)))
 localenv.Depends(lib, localenv['config_h_target'])
 install('$inst_libdir', lib)
@@ -87,6 +88,10 @@ if (localenv['system_sundials'] == 'y'):
 if localenv['blas_lapack_libs']:
     localenv.Append(LIBS=localenv['blas_lapack_libs'],
                     LIBPATH=localenv['blas_lapack_dir'])
+# add bolsig lib
+localenv.Append(LIBS=localenv['bolsig_lib'],
+                LIBPATH=localenv['bolsig_libdir'])
+
 if localenv['system_fmt']:
     localenv.Append(LIBS='fmt')
 
@@ -98,12 +103,14 @@ if localenv['layout'] != 'debian':
         sharedName = '../lib/cantera'
 
     if localenv['versioned_shared_library']:
-        lib = build(localenv.SharedLibrary(sharedName, source=objects,
+        lib = build(localenv.SharedLibrary(sharedName,
+                                           source=objects,
                                            SPAWN=getSpawn(localenv),
                                            SHLIBVERSION=localenv['cantera_pure_version']))
         install(localenv.InstallVersionedLib, '$inst_libdir', lib)
     else:
-        lib = build(localenv.SharedLibrary(sharedName, libraryTargets,
+        lib = build(localenv.SharedLibrary(sharedName, 
+                                           source=objects,
                                            SPAWN=getSpawn(localenv)))
         install('$inst_libdir', lib)
         install('$inst_incdir', mods)
