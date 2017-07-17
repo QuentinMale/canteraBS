@@ -221,6 +221,11 @@ public:
     virtual void evalContinuity(size_t j, doublereal* x, doublereal* r,
                                 integer* diag, doublereal rdt) = 0;
 
+    //! Define boundary indexes and diag
+    void getBoundaryIndexes(size_t jg,
+                            size_t &jmin, size_t &jmax,
+                            size_t &j0, size_t &j1);
+
     //! Index of the species on the left boundary with the largest mass fraction
     size_t leftExcessSpecies() const {
         return m_kExcessLeft;

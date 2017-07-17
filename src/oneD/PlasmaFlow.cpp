@@ -33,7 +33,7 @@ void PlasmaFlow::updateTransport(double* x, size_t j0, size_t j1)
 void PlasmaFlow::eval(size_t jg, double* xg,
                   double* rg, integer* diagg, double rdt)
 {
-    IonFlow::eval(jg, xg, rg, diagg, rdt);
+
 }
 
 void PlasmaFlow::evalEEDF(size_t j, double* x, double* rsd, integer* diag, double rdt)

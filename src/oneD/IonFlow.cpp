@@ -253,19 +253,14 @@ void IonFlow::eval(size_t jg, double* xg,
     if (m_stage != 3) {
         return;
     }
-    // start of local part of global arrays
-    double* x = xg + loc();
-    double* rsd = rg + loc();
+     // start of local part of global arrays
+    doublereal* x = xg + loc();
+    doublereal* rsd = rg + loc();
     integer* diag = diagg + loc();
-    size_t jmin, jmax;
-    if (jg == npos) { // evaluate all points
-        jmin = 0;
-        jmax = m_points - 1;
-    } else { // evaluate points for Jacobian
-        size_t jpt = (jg == 0) ? 0 : jg - firstPoint();
-        jmin = std::max<size_t>(jpt, 1) - 1;
-        jmax = std::min(jpt+1,m_points-1);
-    }
+
+    // Define boundary Indexes
+    size_t jmin, jmax, j0, j1;
+    getBoundaryIndexes(jg, jmin, jmax, j0, j1);
 
     for (size_t j = jmin; j <= jmax; j++) {
         if (j == 0) {
