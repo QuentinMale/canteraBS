@@ -708,7 +708,14 @@ cdef extern from "cantera/oneD/IonFlow.h":
 cdef extern from "cantera/oneD/PlasmaFlow.h":
     cdef cppclass CxxPlasmaFlow "Cantera::PlasmaFlow":
         CxxPlasmaFlow(CxxIdealGasPhase*, int, int)
-
+        void setSolvingStage(int)
+        void setElectricPotential(const double, const double)
+        void solvePoissonEqn()
+        void fixElectricPotential()
+        cbool doPoisson(size_t)
+        void solveVelocity()
+        void fixVelocity()
+        cbool doVelocity(size_t)
 
 cdef extern from "cantera/oneD/Sim1D.h":
     cdef cppclass CxxSim1D "Cantera::Sim1D":

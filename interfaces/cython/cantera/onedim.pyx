@@ -527,6 +527,32 @@ cdef class PlasmaFlow(_FlowBase):
         gas = getIdealGasPhase(thermo)
         self.flow = <CxxStFlow*>(new CxxPlasmaFlow(gas, thermo.n_species, 2))
 
+    def set_solvingStage(self, stage):
+        (<CxxPlasmaFlow*>self.flow).setSolvingStage(stage)
+
+    def set_electricPotential(self, v_inlet, v_outlet):
+        (<CxxPlasmaFlow*>self.flow).setElectricPotential(v_inlet, v_outlet)
+
+    property poisson_enabled:
+        """ Determines whether or not to solve the energy equation."""
+        def __get__(self):
+            return (<CxxPlasmaFlow*>self.flow).doPoisson(0)
+        def __set__(self, enable):
+            if enable:
+                (<CxxPlasmaFlow*>self.flow).solvePoissonEqn()
+            else:
+                (<CxxPlasmaFlow*>self.flow).fixElectricPotential()
+
+    property velocity_enabled:
+        """ Determines whether or not to solve the velocity."""
+        def __get__(self):
+            return (<CxxPlasmaFlow*>self.flow).doVelocity(0)
+        def __set__(self, enable):
+            if enable:
+                (<CxxPlasmaFlow*>self.flow).solveVelocity()
+            else:
+                (<CxxPlasmaFlow*>self.flow).fixVelocity()
+
 
 cdef class AxisymmetricStagnationFlow(_FlowBase):
     """

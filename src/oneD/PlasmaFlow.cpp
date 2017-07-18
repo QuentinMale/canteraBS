@@ -49,7 +49,8 @@ void PlasmaFlow::eval(size_t jg, double* xg,
                   double* rg, integer* diagg, double rdt)
 {
     IonFlow::eval(jg, xg, rg, diagg, rdt);
-     // start of local part of global arrays
+    /*
+    // start of local part of global arrays
     double* x = xg + loc();
     //double* rsd = rg + loc();
     //integer* diag = diagg + loc();
@@ -61,7 +62,7 @@ void PlasmaFlow::eval(size_t jg, double* xg,
         for (size_t k : m_collisionSpeciesIndex) {
             zdplaskin_set_density(m_thermo->speciesName(k), X(x, k, j));
         }
-    }
+    }*/
 }
 
 void PlasmaFlow::evalEEDF(size_t j, double* x, double* rsd, integer* diag, double rdt)
