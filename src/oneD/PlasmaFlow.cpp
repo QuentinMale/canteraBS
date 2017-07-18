@@ -56,7 +56,6 @@ void PlasmaFlow::eval(size_t jg, double* xg,
     // Define boundary Indexes
     size_t jmin, jmax, j0, j1;
     getBoundaryIndexes(jg, jmin, jmax, j0, j1);
-    cout << jmax << endl;
     for (size_t j = jmin; j <= jmax; j++) {
         zdplaskin_set_conditions(T(x, j), 0.0);
         for (size_t k : m_collisionSpeciesIndex) {

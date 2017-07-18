@@ -490,7 +490,9 @@ class IonFlame(FreeFlame):
     __slots__ = ('inlet', 'outlet', 'flame')
 
     def __init__(self, gas, grid=None, width=None):
-        self.flame = IonFlow(gas, name='flame')
+        if not hasattr(self, 'flame'):
+            # Create flame domain if not already instantiated by a child class
+            self.flame = IonFlow(gas, name='flame')
         super(IonFlame, self).__init__(gas, grid, width)
 
     def solve(self, loglevel=1, refine_grid=True, auto=False, stage=1, enable_energy=True):
@@ -587,7 +589,9 @@ class PlasmaFlame(IonFlame):
     __slots__ = ('inlet', 'outlet', 'flame')
 
     def __init__(self, gas, grid=None, width=None):
-        self.flame = PlasmaFlow(gas, name='flame')
+        if not hasattr(self, 'flame'):
+            # Create flame domain if not already instantiated by a child class
+            self.flame = PlasmaFlow(gas, name='flame')
         super(PlasmaFlame, self).__init__(gas, grid, width)
 
 
