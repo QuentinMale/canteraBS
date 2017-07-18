@@ -38,6 +38,13 @@ extern "C"
                                                   double* ELEC_POWER_ELASTIC_N,
                                                   double* ELEC_POWER_INELASTIC_N,
                                                   double* ELEC_EEDF);
+    void __zdplaskin_MOD_zdplaskin_get_rates(double* SOURCE_TERMS,
+                                             double* REACTION_RATES,
+                                             double* SOURCE_TERMS_MATRIX,
+                                             double* MEAN_DENSITY,
+                                             double* MEAN_SOURCE_TERMS,
+                                             double* MEAN_REACTION_RATES,
+                                             double* MEAN_SOURCE_TERMS_MATRIX);
 }
 namespace Cantera
 {
@@ -106,33 +113,41 @@ protected:
         return *ELEC_DIFF_COEFF * 1e-4;
     };
 
-    double getElectronMobility(const double* x, size_t j) {
+    double getElectronMobility(double number_density) {
         double* ELEC_MOBILITY_N;
         __zdplaskin_MOD_zdplaskin_get_conditions(NULL, NULL, NULL, NULL, NULL,
                                                  ELEC_MOBILITY_N,
                                                  NULL, NULL, NULL, NULL,
                                                  NULL, NULL, NULL, NULL);
-        return *ELEC_MOBILITY_N * 1e2 / ND_t(x,j);
+        return *ELEC_MOBILITY_N * 1e2 / number_density;
     };
 
-    double getElectronPowerElastic(const double* x, size_t j) {
+    double getElectronPowerElastic(double number_density) {
         double* ELEC_POWER_ELASTIC_N;
         __zdplaskin_MOD_zdplaskin_get_conditions(NULL, NULL, NULL, NULL,
                                                  NULL, NULL, NULL, NULL,
                                                  NULL, NULL, NULL,
                                                  ELEC_POWER_ELASTIC_N,
                                                  NULL, NULL);
-        return *ELEC_POWER_ELASTIC_N * 1e-6 * ElectronCharge * ND_t(x,j);
+        return *ELEC_POWER_ELASTIC_N * 1e-6 * ElectronCharge * number_density;
     };
 
-    double getElectronPowerInelastic(const double* x, size_t j) {
+    double getElectronPowerInelastic(double number_density) {
         double* ELEC_POWER_INELASTIC_N;
         __zdplaskin_MOD_zdplaskin_get_conditions(NULL, NULL, NULL, NULL,
                                                  NULL, NULL, NULL, NULL,
                                                  NULL, NULL, NULL, NULL,
                                                  ELEC_POWER_INELASTIC_N,
                                                  NULL);
-        return *ELEC_POWER_INELASTIC_N * 1e-6 * ElectronCharge * ND_t(x,j);
+        return *ELEC_POWER_INELASTIC_N * 1e-6 * ElectronCharge * number_density;
+    };
+
+    double* getPlasmaSourceRates() {
+        double* SOURCE_TERMS;
+        __zdplaskin_MOD_zdplaskin_get_rates(SOURCE_TERMS,
+                                            NULL, NULL, NULL, NULL,
+                                            NULL, NULL);
+        return SOURCE_TERMS;
     };
 };
 

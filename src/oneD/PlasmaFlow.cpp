@@ -32,6 +32,8 @@ PlasmaFlow::PlasmaFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
         }
     }
     zdplaskin_init();
+    //zdplaskin_set_density("O2", 0.0000001);
+    //cout << getElectronTemperature() << endl;
 }
 
 void PlasmaFlow::resize(size_t components, size_t points){
@@ -54,6 +56,7 @@ void PlasmaFlow::eval(size_t jg, double* xg,
     // Define boundary Indexes
     size_t jmin, jmax, j0, j1;
     getBoundaryIndexes(jg, jmin, jmax, j0, j1);
+    cout << jmax << endl;
     for (size_t j = jmin; j <= jmax; j++) {
         zdplaskin_set_conditions(T(x, j), 0.0);
         for (size_t k : m_collisionSpeciesIndex) {
