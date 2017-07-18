@@ -8,6 +8,37 @@
 
 #include "cantera/oneD/IonFlow.h"
 
+using namespace std;
+
+extern "C"
+{
+    void __zdplaskin_MOD_zdplaskin_init();
+    void __zdplaskin_MOD_zdplaskin_set_density(const char* string,
+                                               const double* DENS,
+                                               const int* LDENS_CONST);
+    void __zdplaskin_MOD_zdplaskin_set_conditions(const double* GAS_TEMPERATURE,
+                                                  const double* REDUCED_FREQUENCY,
+                                                  const double* REDUCED_FIELD,
+                                                  const double* ELEC_TEMPERATURE,
+                                                  const int* GAS_HEATING,
+                                                  const double* SPEC_HEAT_RATIO,
+                                                  const double* HEAT_SOURCE,
+                                                  const int* SOFT_RESET);
+    void __zdplaskin_MOD_zdplaskin_get_conditions(double* GAS_TEMPERATURE,
+                                                  double* REDUCED_FREQUENCY,
+                                                  double* REDUCED_FIELD,
+                                                  double* ELEC_TEMPERATURE,
+                                                  double* ELEC_DRIFT_VELOCITY,
+                                                  double* ELEC_DIFF_COEFF,
+                                                  double* ELEC_MOBILITY_N,
+                                                  double* ELEC_MU_EPS_N,
+                                                  double* ELEC_DIFF_EPS_N,
+                                                  double* ELEC_FREQUENCY_N,
+                                                  double* ELEC_POWER_N,
+                                                  double* ELEC_POWER_ELASTIC_N,
+                                                  double* ELEC_POWER_INELASTIC_N,
+                                                  double* ELEC_EEDF);
+}
 namespace Cantera
 {
 /**
@@ -27,7 +58,82 @@ public:
 
 protected:
     virtual void updateTransport(double* x, size_t j0, size_t j1);
+    vector<size_t> m_collisionSpeciesIndex;
 
+    // ZDPlasKin wrapper
+    void zdplaskin_init() {
+        __zdplaskin_MOD_zdplaskin_init();
+    };
+
+    void zdplaskin_set_density(const char* speciesName,
+                               const double* density,
+                               const int* keepConst) {
+        __zdplaskin_MOD_zdplaskin_set_density(speciesName,
+                                              density,
+                                              keepConst);
+    };
+
+    void zdplaskin_set_density(string speciesName, double density) {
+        const double* DENS = &density;
+        __zdplaskin_MOD_zdplaskin_set_density(speciesName.c_str(), DENS, NULL);
+    };
+
+    void zdplaskin_set_conditions(double gas_temperature, double reduced_field) {
+        const double* GAS_TEMPERATURE = &gas_temperature;
+        const double* REDUCED_FIELD = &reduced_field;
+        __zdplaskin_MOD_zdplaskin_set_conditions(GAS_TEMPERATURE,
+                                                 NULL, REDUCED_FIELD,
+                                                 NULL, NULL, NULL, NULL, NULL);
+    };
+
+    double getElectronTemperature() {
+        double* ELEC_TEMPERATURE;
+        __zdplaskin_MOD_zdplaskin_get_conditions(NULL, NULL, NULL,
+                                                 ELEC_TEMPERATURE,
+                                                 NULL, NULL, NULL, NULL,
+                                                 NULL, NULL, NULL, NULL,
+                                                 NULL, NULL);
+        return *ELEC_TEMPERATURE;
+    };
+
+    double getElectronDiffusionCoeff() {
+        double* ELEC_DIFF_COEFF;
+        __zdplaskin_MOD_zdplaskin_get_conditions(NULL, NULL, NULL, NULL,
+                                                 ELEC_DIFF_COEFF,
+                                                 NULL, NULL, NULL, NULL,
+                                                 NULL, NULL, NULL, NULL,
+                                                 NULL);
+        return *ELEC_DIFF_COEFF * 1e-4;
+    };
+
+    double getElectronMobility(const double* x, size_t j) {
+        double* ELEC_MOBILITY_N;
+        __zdplaskin_MOD_zdplaskin_get_conditions(NULL, NULL, NULL, NULL, NULL,
+                                                 ELEC_MOBILITY_N,
+                                                 NULL, NULL, NULL, NULL,
+                                                 NULL, NULL, NULL, NULL);
+        return *ELEC_MOBILITY_N * 1e2 / ND_t(x,j);
+    };
+
+    double getElectronPowerElastic(const double* x, size_t j) {
+        double* ELEC_POWER_ELASTIC_N;
+        __zdplaskin_MOD_zdplaskin_get_conditions(NULL, NULL, NULL, NULL,
+                                                 NULL, NULL, NULL, NULL,
+                                                 NULL, NULL, NULL,
+                                                 ELEC_POWER_ELASTIC_N,
+                                                 NULL, NULL);
+        return *ELEC_POWER_ELASTIC_N * 1e-6 * ElectronCharge * ND_t(x,j);
+    };
+
+    double getElectronPowerInelastic(const double* x, size_t j) {
+        double* ELEC_POWER_INELASTIC_N;
+        __zdplaskin_MOD_zdplaskin_get_conditions(NULL, NULL, NULL, NULL,
+                                                 NULL, NULL, NULL, NULL,
+                                                 NULL, NULL, NULL, NULL,
+                                                 ELEC_POWER_INELASTIC_N,
+                                                 NULL);
+        return *ELEC_POWER_INELASTIC_N * 1e-6 * ElectronCharge * ND_t(x,j);
+    };
 };
 
 }

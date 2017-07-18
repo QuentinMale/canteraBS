@@ -168,6 +168,11 @@ protected:
     double ND(const double* x, size_t k, size_t j) const {
         return Avogadro * m_rho[j] * Y(x,k,j) / m_wt[k];
     }
+
+    //! total number density
+    double ND_t(const double* x, size_t j) const {
+        return Avogadro * m_rho[j] / m_wtm[j];
+    }
 };
 
 }
