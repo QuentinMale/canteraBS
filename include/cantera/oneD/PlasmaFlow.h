@@ -13,9 +13,8 @@ using namespace std;
 extern "C"
 {
     void __zdplaskin_MOD_zdplaskin_init();
-    void __zdplaskin_MOD_zdplaskin_set_density(const char* string,
-                                               const double* DENS,
-                                               const int* LDENS_CONST);
+    void setDensity(const char **cstring, const double* DENS);
+
     void __zdplaskin_MOD_zdplaskin_set_conditions(const double* GAS_TEMPERATURE,
                                                   const double* REDUCED_FREQUENCY,
                                                   const double* REDUCED_FIELD,
@@ -70,19 +69,6 @@ protected:
     // ZDPlasKin wrapper
     void zdplaskin_init() {
         __zdplaskin_MOD_zdplaskin_init();
-    };
-
-    void zdplaskin_set_density(const char* speciesName,
-                               const double* density,
-                               const int* keepConst) {
-        __zdplaskin_MOD_zdplaskin_set_density(speciesName,
-                                              density,
-                                              keepConst);
-    };
-
-    void zdplaskin_set_density(string speciesName, double density) {
-        const double* DENS = &density;
-        __zdplaskin_MOD_zdplaskin_set_density(speciesName.c_str(), DENS, NULL);
     };
 
     void zdplaskin_set_conditions(double gas_temperature, double reduced_field) {
@@ -149,6 +135,8 @@ protected:
                                             NULL, NULL);
         return SOURCE_TERMS;
     };
+
+
 };
 
 }

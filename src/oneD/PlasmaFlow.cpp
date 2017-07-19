@@ -32,7 +32,11 @@ PlasmaFlow::PlasmaFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
         }
     }
     zdplaskin_init();
-    //zdplaskin_set_density("O2", 0.0000001);
+    //zdplaskin_set_conditions(300.0, 0.0);
+    const char *a[] = {"Hello World"};
+    double DENS = 1.0e-15;
+    const double* ptr_dens = &DENS;
+    setDensity(a, ptr_dens);
     //cout << getElectronTemperature() << endl;
 }
 
