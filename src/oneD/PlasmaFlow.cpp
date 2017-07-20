@@ -31,13 +31,15 @@ PlasmaFlow::PlasmaFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
             m_collisionSpeciesIndex.push_back(k);
         }
     }
-    zdplaskin_init();
-    //zdplaskin_set_conditions(300.0, 0.0);
-    const char *a[] = {"Hello World"};
-    double DENS = 1.0e-15;
-    const double* ptr_dens = &DENS;
-    setDensity(a, ptr_dens);
-    //cout << getElectronTemperature() << endl;
+    zdplaskinInit();
+    const char* species[] = {m_thermo->speciesName(0).c_str()};
+    const double density = 1e-15;
+    zdplaskinSetDensity(species, &density);
+    const double temperature = 300; 
+    const double ruduced_field = 10.0;
+    zdplaskinSetConditions(&temperature, &ruduced_field);
+    double eTemperature = getElectronTemperature();
+    cout << eTemperature << endl;
 }
 
 void PlasmaFlow::resize(size_t components, size_t points){
