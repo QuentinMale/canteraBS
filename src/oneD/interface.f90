@@ -47,3 +47,22 @@ function getElectronTemperature() bind(C,name='getElectronTemperature') result(e
   real(c_double) :: eTemperature
   call ZDPlasKin_get_conditions(ELEC_TEMPERATURE=eTemperature)
 end function getElectronTemperature
+
+function getElecDiffCoeff() bind(C,name='getElecDiffCoeff') result(De)
+  use, intrinsic :: iso_c_binding
+  use ZDPlasKin
+  real(c_double) :: De
+  call ZDPlasKin_get_conditions(ELEC_DIFF_COEFF=De)
+  ! convert to SI
+  De = 1e-4 * De
+end function getElecDiffCoeff
+
+function getElecMobility(ND) bind(C,name='getElecMobility') result(De)
+  use, intrinsic :: iso_c_binding
+  use ZDPlasKin
+  real(c_double) :: mu
+  real(c_double), intent(in) :: ND
+  call ZDPlasKin_get_conditions(ELEC_MOBILITY_N=mu)
+  ! convert to SI
+  mu = 100 * mu / ND
+end function getElecMobility
