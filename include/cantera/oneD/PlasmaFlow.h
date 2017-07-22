@@ -42,6 +42,8 @@ protected:
     virtual void updateTransport(double* x, size_t j0, size_t j1);
     vector<size_t> m_collisionSpeciesIndex;
 
+    virtual void getWdot(doublereal* x, size_t j);
+
     // ZDPlasKin wrapper
 
 };

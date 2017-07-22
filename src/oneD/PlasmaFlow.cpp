@@ -77,6 +77,13 @@ void PlasmaFlow::eval(size_t jg, double* xg,
     */
 }
 
+void PlasmaFlow::getWdot(doublereal* x, size_t j)
+{
+    setGas(x,j);
+    updateEEDF();
+    m_kin->getNetProductionRates(&m_wdot(0,j));
+}
+
 void PlasmaFlow::updateEEDF()
 {
     for (size_t k : m_collisionSpeciesIndex) {
