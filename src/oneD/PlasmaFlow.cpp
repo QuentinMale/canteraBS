@@ -5,6 +5,7 @@
 
 #include "cantera/oneD/PlasmaFlow.h"
 #include "cantera/transport/TransportBase.h"
+#include "cantera/zdplaskin.h"
 
 using namespace std;
 

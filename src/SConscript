@@ -32,9 +32,10 @@ libs = [('base', ['cpp'], baseSetup),
         ('numerics', ['cpp'], defaultSetup),
         ('kinetics', ['cpp'], defaultSetup),
         ('transport', ['cpp'], defaultSetup),
-        ('oneD', ['cpp','f90'], defaultSetup),
+        ('oneD', ['cpp'], defaultSetup),
         ('zeroD', ['cpp'], defaultSetup),
         ('clib', ['cpp'], defaultSetup),
+        ('zdplaskin',['f90'], defaultSetup)
         ]
 
 localenv = env.Clone()

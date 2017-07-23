@@ -10,17 +10,6 @@
 
 using namespace std;
 
-extern "C"
-{
-    void zdplaskinInit();
-    void zdplaskinSetDensity(const char **cstring, const double* DENS);
-
-    void zdplaskinSetConditions(const double* GAS_TEMPERATURE,
-                                const double* REDUCED_FIELD);
-    double getElectronTemperature();
-    double getElecDiffCoeff();
-    double getElecMobility(const double*);
-}
 namespace Cantera
 {
 /**

@@ -57,7 +57,7 @@ void PlasmaKinetics::update_rates_C()
                          "pr[{}] is not finite.", i);
         }
         scatter_copy(pr.begin(), pr.begin() + m_plasma_rates.nReactions(),
-                     m_rfn.begin(), m_plasmaIndex.begin());
+                     m_ropnet.begin(), m_plasmaIndex.begin());
     }
 }
 
