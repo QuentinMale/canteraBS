@@ -43,7 +43,7 @@ public:
 
     virtual bool addReaction(shared_ptr<Reaction> r);
     virtual void modifyReaction(size_t i, shared_ptr<Reaction> rNew);
-    virtual void update_rates_C();
+    virtual void updateROP();
     virtual void init();
 
     void solvePlasmaRates(bool doPlasma);

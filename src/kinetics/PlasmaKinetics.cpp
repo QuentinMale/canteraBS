@@ -5,6 +5,7 @@
 // This file is part of Cantera. See License.txt in the top-level directory or
 // at http://www.cantera.org/license.txt for license and copyright information.
 #include "cantera/kinetics/PlasmaKinetics.h"
+#include "cantera/zdplaskin.h"
 
 using namespace std;
 
@@ -19,31 +20,11 @@ PlasmaKinetics::PlasmaKinetics(thermo_t* thermo) :
 void PlasmaKinetics::init()
 {
     GasKinetics::init();
-    vector<string> list;
-    list.push_back("N2");
-    list.push_back("N");
-    list.push_back("O2");
-    list.push_back("O");
-    list.push_back("H2");
-    list.push_back("H");
-    list.push_back("CO2");
-    list.push_back("CO");
-    list.push_back("H2O");
-    list.push_back("CH4");
-    // check valid index 
-    for (size_t i = 0; i < list.size(); i++) {
-        size_t k = kineticsSpeciesIndex(list[i]);
-        if (k != npos) {
-            m_list.push_back(k);
-        }
-    }
-
-    m_x.resize(thermo().nSpecies(), 0.0);
 }
 
-void PlasmaKinetics::update_rates_C()
+void PlasmaKinetics::updateROP()
 {
-    GasKinetics::update_rates_C();
+    GasKinetics::updateROP();
     // update plasma reaction rates
     if (m_do_plasma) {
         // need to update eedf somewhere

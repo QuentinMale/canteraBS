@@ -47,8 +47,8 @@ void PlasmaFlow::updateTransport(double* x, size_t j0, size_t j1)
             if (m_import_electron_transport) {
                 updateEEDF();
                 const double number_density = ND_t(x,j);
-                m_mobility[m_kElectron+m_nsp*j] = getElecMobility(&number_density);
-                m_diff[m_kElectron+m_nsp*j] = getElecDiffCoeff();
+                m_mobility[m_kElectron+m_nsp*j] = zdplaskinGetElecMobility(&number_density);
+                m_diff[m_kElectron+m_nsp*j] = zdplaskinGetElecDiffCoeff();
             } else {
                 m_mobility[m_kElectron+m_nsp*j] = 0.4;
                 m_diff[m_kElectron+m_nsp*j] = 0.4*(Boltzmann * T(x,j)) / ElectronCharge;

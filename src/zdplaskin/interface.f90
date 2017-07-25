@@ -41,23 +41,23 @@ subroutine zdplaskinSetConditions(gasTemperature, reduced_field) bind(C,name='zd
   call ZDPlasKin_set_conditions(GAS_TEMPERATURE=gasTemperature, REDUCED_FIELD=reduced_field)
 end subroutine zdplaskinSetConditions
 
-function getElectronTemperature() bind(C,name='getElectronTemperature') result(eTemperature)
+function zdplaskinGetElecTemp() bind(C,name='zdplaskinGetElecTemp') result(eTemperature)
   use, intrinsic :: iso_c_binding
   use ZDPlasKin
   real(c_double) :: eTemperature
   call ZDPlasKin_get_conditions(ELEC_TEMPERATURE=eTemperature)
-end function getElectronTemperature
+end function zdplaskinGetElecTemp
 
-function getElecDiffCoeff() bind(C,name='getElecDiffCoeff') result(De)
+function zdplaskinGetElecDiffCoeff() bind(C,name='zdplaskinGetElecDiffCoeff') result(De)
   use, intrinsic :: iso_c_binding
   use ZDPlasKin
   real(c_double) :: De
   call ZDPlasKin_get_conditions(ELEC_DIFF_COEFF=De)
   ! convert to SI
   De = 1e-4 * De
-end function getElecDiffCoeff
+end function zdplaskinGetElecDiffCoeff
 
-function getElecMobility(ND) bind(C,name='getElecMobility') result(De)
+function zdplaskinGetElecMobility(ND) bind(C,name='zdplaskinGetElecMobility') result(De)
   use, intrinsic :: iso_c_binding
   use ZDPlasKin
   real(c_double) :: mu
@@ -65,4 +65,11 @@ function getElecMobility(ND) bind(C,name='getElecMobility') result(De)
   call ZDPlasKin_get_conditions(ELEC_MOBILITY_N=mu)
   ! convert to SI
   mu = 100 * mu / ND
-end function getElecMobility
+end function zdplaskinGetElecMobility
+
+subroutine zdplaskinGetplasmaRates(rates) bind(C,name='zdplaskinGetplasmaRate')
+  use, intrinsic :: iso_c_binding
+  use ZDPlasKin
+  real(c_double), intent(out) :: rates(:)
+  call ZDPlasKin_get_rates(REACTION_RATES=rates)
+end subroutine zdplaskinGetplasmaRates
