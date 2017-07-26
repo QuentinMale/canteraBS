@@ -20,9 +20,9 @@ PlasmaFlow::PlasmaFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
     list.push_back("O2");
     list.push_back("H2");
     list.push_back("H2O");
-    list.push_back("CO2");
-    list.push_back("CO");
-    list.push_back("CH4");
+    //list.push_back("CO2");
+    //list.push_back("CO");
+    //list.push_back("CH4");
     // check valid index 
     for (size_t i = 0; i < list.size(); i++) {
         size_t k = m_thermo->speciesIndex(list[i]);
@@ -31,6 +31,13 @@ PlasmaFlow::PlasmaFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
         }
     }
     zdplaskinInit();
+    for (size_t i = 0; i < zdplaskinNSpecies(); i++) {
+        char* cstring[1];
+        //const size_t index = i;
+        zdplaskinGetSpeciesName(cstring, &i);
+        string k = string(cstring[0]);
+        cout << k << endl;
+    }
 }
 
 void PlasmaFlow::resize(size_t components, size_t points){
@@ -81,8 +88,10 @@ void PlasmaFlow::eval(size_t jg, double* xg,
 void PlasmaFlow::getWdot(doublereal* x, size_t j)
 {
     setGas(x,j);
-    updateEEDF();
     m_kin->getNetProductionRates(&m_wdot(0,j));
+    updateEEDF();
+    double* array[zdplaskinNSpecies()];
+    zdplaskinGetPlasmaSource(array);
 }
 
 void PlasmaFlow::updateEEDF()
@@ -92,7 +101,7 @@ void PlasmaFlow::updateEEDF()
         const double density = m_thermo->moleFraction(k);
         zdplaskinSetDensity(species, &density);
     }
-    const double temperature = m_thermo->temperature(); 
+    const double temperature = m_thermo->temperature();
     const double ruduced_field = 0.0;
     zdplaskinSetConditions(&temperature, &ruduced_field);
 }
