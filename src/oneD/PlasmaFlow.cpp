@@ -30,13 +30,15 @@ PlasmaFlow::PlasmaFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
             m_collisionSpeciesIndex.push_back(k);
         }
     }
+
     zdplaskinInit();
+
     for (size_t i = 0; i < zdplaskinNSpecies(); i++) {
-        char* cstring[1];
-        //const size_t index = i;
+        char* cstring[20];
         zdplaskinGetSpeciesName(cstring, &i);
-        string k = string(cstring[0]);
-        cout << k << endl;
+        string speciesName(*cstring);
+        size_t k = m_thermo->speciesIndex(speciesName);
+        m_plasmaSpeciesIndex.push_back(k);
     }
 }
 
@@ -90,14 +92,19 @@ void PlasmaFlow::getWdot(doublereal* x, size_t j)
     setGas(x,j);
     m_kin->getNetProductionRates(&m_wdot(0,j));
     updateEEDF();
-    double* array[zdplaskinNSpecies()];
-    zdplaskinGetPlasmaSource(array);
+    
+    zdplaskinGetPlasmaSource(&m_wdot_plasma);
+    size_t i = 0;
+    for (size_t k : m_plasmaSpeciesIndex) {
+        i++;
+        m_wdot(k,j) += m_wdot_plasma[i];
+    }
 }
 
 void PlasmaFlow::updateEEDF()
 {
     for (size_t k : m_collisionSpeciesIndex) {
-        const char* species[] = {m_thermo->speciesName(k).c_str()};
+        const char* species[10] = {m_thermo->speciesName(k).c_str()};
         const double density = m_thermo->moleFraction(k);
         zdplaskinSetDensity(species, &density);
     }

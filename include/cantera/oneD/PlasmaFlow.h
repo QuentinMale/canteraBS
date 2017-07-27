@@ -30,10 +30,11 @@ public:
 protected:
     virtual void updateTransport(double* x, size_t j0, size_t j1);
     vector<size_t> m_collisionSpeciesIndex;
+    vector<size_t> m_plasmaSpeciesIndex;
 
     virtual void getWdot(doublereal* x, size_t j);
-
-    // ZDPlasKin wrapper
+    double* m_wdot_plasma = NULL;
+    // ZDPlasKin wrappe
 
 };
 

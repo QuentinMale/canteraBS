@@ -5,35 +5,26 @@ subroutine zdplaskinInit() bind(C, name='zdplaskinInit')
 end subroutine zdplaskinInit
 
 subroutine zdplaskinSetDensity(cstring, DENS) bind(C, name='zdplaskinSetDensity')
-  use, intrinsic :: iso_c_binding
+  use C_interface_module
   use ZDPlasKin
   implicit none
-  type(c_ptr), target, intent(in) :: cstring
-  character(kind=c_char), pointer :: fstring(:)
-  character(10) :: string
-  integer length, i
+  TYPE(C_PTR), intent(inout) :: cstring
+  character(10) :: fstring
   real(c_double), intent(in) :: DENS
-
-  interface
-   function strlen(s) bind(C, name='strlen')
-     use, intrinsic :: iso_c_binding, only: c_ptr, c_size_t
-     implicit none
-     type(c_ptr), intent(in), value :: s
-     integer(c_size_t) :: strlen
-   end function strlen
-  end interface
-
-  length = strlen(cstring)
-  call c_f_pointer(cstring, fstring, [length])
-  string = fstring(1)
-
-  do i=2,size(fstring(:))
-    string = trim(string)//fstring(i)
-  enddo
-
-  string = trim(string)
-  call ZDPlasKin_set_density(string, DENS)
+  call C_F_string_ptr(cstring, fstring)
+  call ZDPlasKin_set_density(trim(fstring), DENS)
 end subroutine zdplaskinSetDensity
+
+subroutine zdplaskinGetDensity(cstring, DENS) bind(C, name='zdplaskinGetDensity')
+  use C_interface_module
+  use ZDPlasKin
+  implicit none
+  TYPE(C_PTR), intent(inout) :: cstring
+  character(10) :: fstring
+  real(c_double), intent(out) :: DENS
+  call C_F_string_ptr(cstring, fstring)
+  call ZDPlasKin_get_density(trim(fstring),DENS)
+end subroutine zdplaskinGetDensity
 
 subroutine zdplaskinSetConditions(gasTemperature, reduced_field) bind(C,name='zdplaskinSetConditions')
   use, intrinsic :: iso_c_binding
@@ -73,16 +64,18 @@ function zdplaskinGetElecMobility(ND) bind(C,name='zdplaskinGetElecMobility') re
   mu = 100 * mu / ND
 end function zdplaskinGetElecMobility
 
-subroutine zdplaskinGetPlasmaSource(array) bind(C,name='zdplaskinGetPlasmaSource')
+subroutine zdplaskinGetPlasmaSource(carray) bind(C,name='zdplaskinGetPlasmaSource')
   use, intrinsic :: iso_c_binding
   use ZDPlasKin
   implicit none
-  type(c_ptr), intent(inout) :: array
-  real(c_double), target, save :: source(0:species_max-1)
-
-  call ZDPlasKin_get_rates(SOURCE_TERMS=source)
-  ! Allocate an array and make it available in C
-  array = c_loc(source)
+  type(c_ptr), intent(inout) :: carray
+  real(c_double), target :: farray(species_max)
+  integer i
+  call ZDPlasKin_get_rates(SOURCE_TERMS=farray)
+  do i = 1, species_max
+    farray(i) = farray(i) * 1e6
+  enddo
+  carray = c_loc(farray)
 end subroutine zdplaskinGetPlasmaSource
 
 function zdplaskinNSpecies() bind(C,name='zdplaskinNSpecies') result(nSpecies)
@@ -93,14 +86,12 @@ function zdplaskinNSpecies() bind(C,name='zdplaskinNSpecies') result(nSpecies)
 end function zdplaskinNSpecies
 
 subroutine zdplaskinGetSpeciesName(cstring, index) bind(C, name='zdplaskinGetSpeciesName')
-  use iso_c_binding
   use ZDPlasKin
+  use C_interface_module
   implicit none
   integer, intent(in) :: index
-  CHARACTER(10), TARGET :: fstring = ''
-  TYPE(C_PTR) :: cstring
-  fstring = species_name(index+1)
-  cstring = c_loc(fstring)
+  TYPE(C_PTR), intent(inout) :: cstring
+  call F_C_string_ptr(trim(species_name(index+1)), cstring)
 end subroutine zdplaskinGetSpeciesName
 
 
