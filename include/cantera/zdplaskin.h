@@ -6,8 +6,6 @@
 #ifndef CT_ZDPLASKIN_H
 #define CT_ZDPLASKIN_H
 
-using namespace std;
-
 extern "C"
 {
     void zdplaskinInit();

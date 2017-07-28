@@ -1525,6 +1525,10 @@ for xml in mglob(env, 'data/inputs', 'xml'):
     if xml.name not in convertedInputFiles:
         build(env.Command(dest, xml.path, Copy('$TARGET', '$SOURCE')))
 
+# Copy lxcat data
+for lxcat in mglob(env, 'data/inputs', 'lxcat'):
+    build(env.Command('build/data/%s' % lxcat.name, lxcat.path, Copy('$TARGET', '$SOURCE')))
+
 if addInstallActions:
     # Put headers in place
     headerBase = 'include/cantera'
