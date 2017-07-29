@@ -101,6 +101,11 @@ module ZDPlasKin
       integer, intent(out) :: i
       double precision, dimension(:,:), intent(out) :: a
     end subroutine ZDPlasKin_bolsig_GetEEDF
+    subroutine findInputFileChar(filename, filepath) bind(C, name='findInputFileChar')
+      use, intrinsic :: iso_c_binding
+      TYPE(C_PTR), intent(in) :: filename
+      TYPE(C_PTR), intent(out) :: filepath
+    end subroutine findInputFileChar
   end interface
 
 !
@@ -138,7 +143,7 @@ subroutine ZDPlasKin_init()
   write(string,*) reactions_max
   write(*,"(2x,A)")  "reactions      ... " // trim(adjustl(string))
   if(species_max<=0 .or. reactions_max<=0) call ZDPlasKin_stop("   ERROR: wrong preconfig data")
-  call findInputFile(bolsigfile)
+  !call findInputFile(bolsigfile)
   write(*,"(2x,A,$)") "BOLSIG+ loader ... " // trim(adjustl(bolsigfile)) // " : "
   call ZDPlasKin_bolsig_Init(bolsigfile)
   do i = 1, bolsig_species_max
@@ -1311,26 +1316,16 @@ end subroutine ZDPlasKin_reac_rates
 ! find input files
 !
 !-----------------------------------------------------------------------------------------------------------------------------------
-subroutine findinputfile(filepath)
-  use C_interface_module
-  character(100) :: fileName = "h2air.lxcat"
-  character(200), intent(out) :: filepath
-  TYPE(C_PTR) :: cfilename
-  TYPE(C_PTR) :: cfilepath
-
-  interface 
-    subroutine findInputFileChar(filename, filepath) bind(C, name='findInputFileChar')
-      use, intrinsic :: iso_c_binding
-      implicit none
-      TYPE(C_PTR), intent(in) :: filename
-      TYPE(C_PTR), intent(out) :: filepath
-    end subroutine findInputFileChar
-  end interface
-
-  call F_C_string_ptr(fileName, cfilename)
-  call findInputFileChar(cfilename, cfilepath)
-  call C_F_string_ptr(cfilepath, filepath)
-end subroutine findinputfile
+!subroutine findinputfile(filepath)
+!  use C_interface_module
+!  character(100) :: fileName = "h2air.lxcat"
+!  character(200), intent(out) :: filepath
+!  TYPE(C_PTR) :: cfilename
+!  TYPE(C_PTR) :: cfilepath
+!  call F_C_string_ptr(fileName, cfilename)
+!  call findInputFileChar(cfilename, cfilepath)
+!  call C_F_string_ptr(cfilepath, filepath)
+!end subroutine findinputfile
 !-----------------------------------------------------------------------------------------------------------------------------------
 !
 ! END OF FILE
