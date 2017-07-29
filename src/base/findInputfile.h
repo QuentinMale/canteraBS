@@ -9,7 +9,7 @@
 #include "application.h"
 
 extern "C" {
-    void findInputFileChar(const char* name, const char* fileName) {
+    void findInputFileChar(const char* name[], char* fileName[]) {
         const std::string nameString = std::string(name);
         fileName = Cantera::Application::findInputFile(nameString).c_str();
     };

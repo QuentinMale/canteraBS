@@ -68,7 +68,7 @@ module ZDPlasKin
                                                bolsig_eecol_frac_def = 1.00D-05
   double precision, private                 :: bolsig_eecol_frac
   integer, parameter, private               :: bolsig_species_max = 4, bolsig_species_length = 3, bolsig_rates_max = 26 
-  character(*), parameter, private          :: bolsigfile = "/home/bang/cantera/data/inputs/h2air.lxcat"
+  character(200), private                   :: bolsigfile = "/home/bang/cantera/data/inputs/h2air.lxcat"
   integer                                   :: bolsig_pointer(bolsig_rates_max) = -1
   integer, private                          :: bolsig_species_index(bolsig_species_max) = -1, bolsig_collisions_max = 0 
   logical, private                          :: lbolsig_ignore_gas_temp, lbolsig_Maxwell_EEDF
@@ -102,6 +102,7 @@ module ZDPlasKin
       double precision, dimension(:,:), intent(out) :: a
     end subroutine ZDPlasKin_bolsig_GetEEDF
   end interface
+
 !
 ! data section
 !
@@ -137,6 +138,7 @@ subroutine ZDPlasKin_init()
   write(string,*) reactions_max
   write(*,"(2x,A)")  "reactions      ... " // trim(adjustl(string))
   if(species_max<=0 .or. reactions_max<=0) call ZDPlasKin_stop("   ERROR: wrong preconfig data")
+  call findInputFile(bolsigfile)
   write(*,"(2x,A,$)") "BOLSIG+ loader ... " // trim(adjustl(bolsigfile)) // " : "
   call ZDPlasKin_bolsig_Init(bolsigfile)
   do i = 1, bolsig_species_max
@@ -1304,6 +1306,31 @@ subroutine ZDPlasKin_reac_rates(Time)
   where( lreaction_block(:) ) rrt(:) = 0.0d0
   return
 end subroutine ZDPlasKin_reac_rates
+!-----------------------------------------------------------------------------------------------------------------------------------
+!
+! find input files
+!
+!-----------------------------------------------------------------------------------------------------------------------------------
+subroutine findinputfile(filepath)
+  use C_interface_module
+  character(100) :: fileName = "h2air.lxcat"
+  character(200), intent(out) :: filepath
+  TYPE(C_PTR) :: cfilename
+  TYPE(C_PTR) :: cfilepath
+
+  interface 
+    subroutine findInputFileChar(filename, filepath) bind(C, name='findInputFileChar')
+      use, intrinsic :: iso_c_binding
+      implicit none
+      TYPE(C_PTR), intent(in) :: filename
+      TYPE(C_PTR), intent(out) :: filepath
+    end subroutine findInputFileChar
+  end interface
+
+  call F_C_string_ptr(fileName, cfilename)
+  call findInputFileChar(cfilename, cfilepath)
+  call C_F_string_ptr(cfilepath, filepath)
+end subroutine findinputfile
 !-----------------------------------------------------------------------------------------------------------------------------------
 !
 ! END OF FILE

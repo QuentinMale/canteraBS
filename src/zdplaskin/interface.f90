@@ -93,12 +93,3 @@ subroutine zdplaskinGetSpeciesName(cstring, index) bind(C, name='zdplaskinGetSpe
   TYPE(C_PTR), intent(inout) :: cstring
   call F_C_string_ptr(trim(species_name(index+1)), cstring)
 end subroutine zdplaskinGetSpeciesName
-
-!subroutine findInputFileChar(cstring, fstring) bind(C, name='findInputFileChar')
-!  use, intrinsic :: iso_c_binding
-!  implicit none
-!  TYPE(C_PTR), intent(in) :: cstring
-!  character, pointer, intent(out) :: fstring(:)
-!end subroutine findInputFileChar
-
-
