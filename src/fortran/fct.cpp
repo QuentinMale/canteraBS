@@ -77,7 +77,6 @@ std::string f2string(const char* s, ftnlen n)
  * Exported functions.
  */
 extern "C" {
-
     status_t cantera_error_(const char* proc, const char* msg,
                             ftnlen proclen, ftnlen msglen)
     {
@@ -1002,6 +1001,18 @@ extern "C" {
     }
 
     //-------------------- Functions ---------------------------
+
+    status_t ctfindinputfilechar_(const char* filename[], char* filepath[],
+                                  ftnlen filenamelen)
+    {
+        try {
+            std::string sname = f2string(filename, filenamelen);
+            filePath = findInputFile(sname).c_str();
+            return 0;
+        } catch (...) {
+            return handleAllExceptions(-1, ERR);
+        }
+    }
 
     status_t ctphase_report_(const integer* nth,
                              char* buf, integer* show_thermo, ftnlen buflen)

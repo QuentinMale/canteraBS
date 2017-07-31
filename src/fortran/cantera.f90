@@ -96,6 +96,10 @@ MODULE CANTERA
      MODULE PROCEDURE ctthermo_equilibrate
   END INTERFACE equilibrate
 
+  INTERFACE findInputFileChar
+    MODULE PROCEDURE ctfunc_findInputFileChar
+  END INTERFACE findInputFileChar
+
   INTERFACE getAtomicWeights
      MODULE PROCEDURE ctthermo_getAtomicWeights
   END INTERFACE getAtomicWeights
