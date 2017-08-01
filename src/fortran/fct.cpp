@@ -1002,12 +1002,16 @@ extern "C" {
 
     //-------------------- Functions ---------------------------
 
-    status_t ctfindinputfilechar_(const char* filename[], char* filepath[],
-                                  ftnlen filenamelen)
+    status_t ctfindinputfilechar_(const char* filename, char* filepath,
+                                  ftnlen filenamelen, ftnlen filepathlen)
     {
         try {
             std::string sname = f2string(filename, filenamelen);
-            filePath = findInputFile(sname).c_str();
+            std::string spath = findInputFile(sname);
+            copy(spath.begin(), spath.end(), filepath);
+            for (int nn = spath.size(); nn < filepathlen; nn++) {
+                filepath[nn] = ' ';
+            }
             return 0;
         } catch (...) {
             return handleAllExceptions(-1, ERR);

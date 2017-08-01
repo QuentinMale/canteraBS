@@ -71,13 +71,14 @@ module cantera_funcs
       return
     end function ctfunc_importInterface
 
-    subroutine ctfunc_findInputFileChar(filename, filepath, filenamelen)
+    subroutine ctfunc_findInputFileChar(filename, filepath, filenamelen, filepathlen)
       implicit none
       integer :: ierr
       character*(*), intent(in) :: filename
       integer, intent(in) :: filenamelen
       character*(*), intent(out) :: filepath
-      ierr = ctfindInputFileChar(filename, filepath, filenamelen)
+      integer, intent(out) :: filepathlen
+      ierr = ctfindInputFileChar(filename, filepath, filenamelen, filepathlen)
     end subroutine ctfunc_findInputFileChar
 
     subroutine ctfunc_phase_report(self, buf, show_thermo)

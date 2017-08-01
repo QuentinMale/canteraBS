@@ -431,6 +431,13 @@ interface
         double precision, intent(in) :: d(*)
     end function trans_setParameters
 
+    integer function ctfindInputFileChar(filename, filepath, filenamelen, filepathlen)
+        character*(*), intent(in) :: filename
+        integer, intent(in) :: filenamelen
+        character*(*), intent(out) :: filepath
+        integer, intent(out) :: filepathlen
+    end function ctfindInputFileChar
+
     integer function ctphase_report(nth, buf, show_thermo)
         integer, intent(in) :: nth
         character*(*), intent(out) :: buf
