@@ -24,6 +24,7 @@ PlasmaFlow::PlasmaFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
     list.push_back("CO2");
     list.push_back("CO");
     list.push_back("CH4");
+    list.push_back("E");
     // check valid index 
     for (size_t i = 0; i < list.size(); i++) {
         size_t k = m_thermo->speciesIndex(list[i]);
@@ -40,6 +41,8 @@ PlasmaFlow::PlasmaFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
         string speciesName(*cstring);
         size_t k = m_thermo->speciesIndex(speciesName);
         m_plasmaSpeciesIndex.push_back(k);
+        cout << speciesName << endl;
+        cout << k << endl;
     }
 }
 
@@ -56,7 +59,7 @@ void PlasmaFlow::updateTransport(double* x, size_t j0, size_t j1)
         if (m_overwrite_eTransport && (m_kElectron != npos)) {
             if (m_import_electron_transport) {
                 updateEEDF(x,j);
-                const double number_density = ND_t(x,j);
+                const double number_density = ND_t(j);
                 m_mobility[m_kElectron+m_nsp*j] = zdplaskinGetElecMobility(&number_density);
                 m_diff[m_kElectron+m_nsp*j] = zdplaskinGetElecDiffCoeff();
             } else {
@@ -108,14 +111,16 @@ void PlasmaFlow::getWdot(doublereal* x, size_t j)
 {
     setGas(x,j);
     m_kin->getNetProductionRates(&m_wdot(0,j));
-    if (m_do_plasma) {
-        updateEEDF(x, j);
-        zdplaskinGetPlasmaSource(&m_wdot_plasma);
-        size_t i = 0;
-        for (size_t k : m_plasmaSpeciesIndex) {
-            i++;
-            m_wdot(k,j) += m_wdot_plasma[i];
-        }  
+    if (j != 0 && j < 4) {
+        if (m_do_plasma) {
+            updateEEDF(x, j);
+            zdplaskinGetPlasmaSource(&m_wdot_plasma);
+            size_t i = 0;
+            for (size_t k : m_plasmaSpeciesIndex) {
+                i++;
+                m_wdot(k,j) += m_wdot_plasma[i];
+            }  
+        }       
     }
 }
 
@@ -123,11 +128,17 @@ void PlasmaFlow::updateEEDF(double* x, size_t j)
 {
     for (size_t k : m_collisionSpeciesIndex) {
         const char* species[10] = {m_thermo->speciesName(k).c_str()};
-        const double num_density = ND(x,k,j);
-        zdplaskinSetDensity(species, &num_density);
+        if ( k == m_kElectron) {
+            //const double num_density = 1e17;
+            const double num_density = ND(x,k,j);
+            zdplaskinSetDensity(species, &num_density);
+        } else {
+            const double num_density = ND(x,k,j);
+            zdplaskinSetDensity(species, &num_density);
+        }
     }
     const double temperature = T(x,j);
-    const double ruduced_field = 10.0;
+    const double ruduced_field = 200.0;
     zdplaskinSetConditions(&temperature, &ruduced_field);
 }
 

@@ -170,7 +170,7 @@ protected:
     }
 
     //! total number density
-    double ND_t(const double* x, size_t j) const {
+    double ND_t(size_t j) const {
         return Avogadro * m_rho[j] / m_wtm[j];
     }
 };

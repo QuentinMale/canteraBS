@@ -74,10 +74,11 @@ subroutine zdplaskinGetPlasmaSource(carray) bind(C,name='zdplaskinGetPlasmaSourc
   implicit none
   type(c_ptr), intent(inout) :: carray
   real(c_double), target :: farray(species_max)
+  real(c_double) :: Avogadro = 6.02214129e26
   integer i
   call ZDPlasKin_get_rates(SOURCE_TERMS=farray)
   do i = 1, species_max
-    farray(i) = farray(i) * 1e6
+    farray(i) = farray(i) * 1e6 / Avogadro
   enddo
   carray = c_loc(farray)
 end subroutine zdplaskinGetPlasmaSource
