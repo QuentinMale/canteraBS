@@ -12,7 +12,7 @@
 !
 !-----------------------------------------------------------------------------------------------------------------------------------
 !
-! Mon Jul 24 21:38:44 2017
+! Thu Aug  3 17:44:13 2017
 !
 !-----------------------------------------------------------------------------------------------------------------------------------
 !
@@ -30,7 +30,7 @@ module ZDPlasKin
 !
 ! config
 !
-  integer, parameter :: species_max = 20, species_electrons = 9, species_length = 8, reactions_max = 26, reactions_length = 26
+  integer, parameter :: species_max = 17, species_electrons = 11, species_length = 8, reactions_max = 17, reactions_length = 22
   double precision                          :: density(species_max)
   integer                                   :: species_charge(species_max)
   character(species_length)                 :: species_name(species_max)
@@ -67,8 +67,8 @@ module ZDPlasKin
                                                bolsig_field_min = 1.00D-01, bolsig_field_max = 1.00D+03, &
                                                bolsig_eecol_frac_def = 1.00D-05
   double precision, private                 :: bolsig_eecol_frac
-  integer, parameter, private               :: bolsig_species_max = 4, bolsig_species_length = 3, bolsig_rates_max = 26 
-  character(200), private                   :: bolsigfile = "h2air.lxcat"
+  integer, parameter, private               :: bolsig_species_max = 4, bolsig_species_length = 3, bolsig_rates_max = 17 
+  character(*), parameter, private          :: bolsigfile = "bolsigdb.dat"
   integer                                   :: bolsig_pointer(bolsig_rates_max) = -1
   integer, private                          :: bolsig_species_index(bolsig_species_max) = -1, bolsig_collisions_max = 0 
   logical, private                          :: lbolsig_ignore_gas_temp, lbolsig_Maxwell_EEDF
@@ -101,29 +101,20 @@ module ZDPlasKin
       integer, intent(out) :: i
       double precision, dimension(:,:), intent(out) :: a
     end subroutine ZDPlasKin_bolsig_GetEEDF
-    subroutine findInputFileChar(filename, filepath) bind(C, name='findInputFileChar')
-      use, intrinsic :: iso_c_binding
-      TYPE(C_PTR), intent(in) :: filename
-      TYPE(C_PTR), intent(out) :: filepath
-    end subroutine findInputFileChar
   end interface
-
 !
 ! data section
 !
   data species_charge(1:species_max) &
-  / 0, 0, 0, 0, 0, 0, 0, 0,-1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 1/
+  / 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,-1, 0, 0, 0, 1, 1, 1/
   data species_name(1:species_max) &
-  /"O2      ","N2      ","N2(A3SU)","N2(B3)  ","N2(A1)  ","N2(C3)  ","H2      ","H2O     ","E       ","O       ","O(1D)   ",&
-   "O(1S)   ","O2^+    ","N       ","N(2D)   ","N2^+    ","H       ","H2^+    ","OH      ","H2O^+   "/
+  /"O2      ","N2      ","N2(B3PG)","N2(C3PU)","H2      ","H2(B1SU)","H2(A3SG)","H2(C1PU)","H2(B3SU)","H2O     ","E       ",&
+   "H(T)    ","O(T)    ","O(1D)   ","O2^+    ","N2^+    ","H2^+    "/
   data reaction_sign(1:reactions_max) &
-  /"bolsig:N2->N2[A3SU+(V0-4)]","bolsig:N2->N2[A3SU+(V5-9)]","bolsig:N2->N2[A3SU+(V>9)] ","bolsig:N2->N2(B3SU-)      ",&
-   "bolsig:N2->N2(B3PG)       ","bolsig:N2->N2(W3DU)       ","bolsig:N2->N2(A1SU-)      ","bolsig:N2->N2(A1PG)       ",&
-   "bolsig:N2->N2(W1DU)       ","bolsig:N2->N2(C3PU)       ","bolsig:N2->N2(E3SG+)      ","bolsig:N2->N2(A1SG+)      ",&
-   "bolsig:O2->O2(6.0EV)      ","bolsig:O2->O2(8.4EV)      ","bolsig:O2->O2(9.97EV)     ","bolsig:N2->N2-HIGHER      ",&
-   "bolsig:H2O->H+OH          ","bolsig:H2->H(1S)+H(2P)    ","bolsig:H2->H(1S)+H(2S)    ","bolsig:H2->H(1S)+H(3)     ",&
-   "bolsig:H2->H(1S)+H(4)     ","bolsig:H2->H(1S)+H(5)     ","bolsig:O2->O2+            ","bolsig:N2->N2+            ",&
-   "bolsig:H2->H2+            ","bolsig:H2O->H2O+          "/
+  /"bolsig:N2->N2(B3PG)   ","bolsig:N2->N2(C3PU)   ","bolsig:H2->H2(B1SU)   ","bolsig:H2->H2(B'1SU)  ","bolsig:H2->H2(B''1SU) ",&
+   "bolsig:H2->H2(C1PU)   ","bolsig:H2->H2(B3SU)   ","bolsig:H2->H2(A3SG)   ","bolsig:O2->O2(8.4EV)  ","bolsig:H2->H(1S)+H(2P)",&
+   "bolsig:H2->H(1S)+H(2S)","bolsig:H2->H(1S)+H(3) ","bolsig:H2->H(1S)+H(4) ","bolsig:H2->H(1S)+H(5) ","bolsig:O2->O2+        ",&
+   "bolsig:N2->N2+        ","bolsig:H2->H2+        "/
   data bolsig_species(1:bolsig_species_max) &
   /"O2 ","N2 ","H2 ","H2O"/
 contains
@@ -830,7 +821,7 @@ subroutine ZDPlasKin_write_file(FILE_SPECIES,FILE_REACTIONS,FILE_SOURCE_MATRIX,F
 200 if( lerror ) call ZDPlasKin_stop("ZDPlasKin ERROR: cannot write to file <" &
                                     // trim(adjustl(FILE_REACTIONS)) // "> (subroutine ZDPlasKin_write_file)")
     close(ifile_unit)
-211 format(i2,1x,A26)
+211 format(i2,1x,A22)
   endif
   if( present(FILE_SOURCE_MATRIX) ) then
     if( lstat_accum ) then
@@ -850,9 +841,9 @@ subroutine ZDPlasKin_write_file(FILE_SPECIES,FILE_REACTIONS,FILE_SOURCE_MATRIX,F
 300 if( lerror ) call ZDPlasKin_stop("ZDPlasKin ERROR: cannot write to file <" &
                                     // trim(adjustl(FILE_SOURCE_MATRIX)) // "> (subroutine ZDPlasKin_write_file)")
     close(ifile_unit)
-311 format(301x,20(1x,i9))
-312 format(A2,1x,A26,1x,20(1x,A9))
-313 format(i2,1x,A26,1x,20(1x,1pd9.2))
+311 format(261x,17(1x,i9))
+312 format(A2,1x,A22,1x,17(1x,A9))
+313 format(i2,1x,A22,1x,17(1x,1pd9.2))
   endif
   return
 end subroutine ZDPlasKin_write_file
@@ -910,14 +901,14 @@ subroutine ZDPlasKin_write_qtplaskin(time,LFORCE_WRITE)
     call ZDPlasKin_reac_source_matrix(rrt(:),mrtm(:,:))
     open(ifile_unit,file="qt_matrix.txt",action="write",err=200)
     do i = 1, species_max
-      write(ifile_unit,"(26(i3))",err=200) int(mrtm(i,:))
+      write(ifile_unit,"(17(i3))",err=200) int(mrtm(i,:))
     enddo
     lerror = .false.
 200 if( lerror ) call ZDPlasKin_stop("ZDPlasKin ERROR: cannot write to file " // &
                                      "<qt_matrix.txt> (subroutine writer_save_qtplaskin)")
     close(ifile_unit)
     open(ifile_unit,file="qt_densities.txt",action="write",err=300)
-    write(ifile_unit,"(1x,A12,20(111x,i2.2))",err=300) "Time_s", ( i, i = 1, species_max )
+    write(ifile_unit,"(1x,A12,17(111x,i2.2))",err=300) "Time_s", ( i, i = 1, species_max )
     lerror = .false.
 300 if( lerror ) call ZDPlasKin_stop("ZDPlasKin ERROR: cannot write to file " // &
                                      "<qt_densities.txt> (subroutine writer_save_qtplaskin)")
@@ -933,7 +924,7 @@ subroutine ZDPlasKin_write_qtplaskin(time,LFORCE_WRITE)
                                      "<qt_conditions.txt> (subroutine writer_save_qtplaskin)")
     close(ifile_unit)
     open(ifile_unit,file="qt_rates.txt",action="write",err=500)
-    write(ifile_unit,"(1x,A12,26(111x,i2.2))",err=500) "Time_s", ( i, i = 1, reactions_max )
+    write(ifile_unit,"(1x,A12,17(111x,i2.2))",err=500) "Time_s", ( i, i = 1, reactions_max )
     lerror = .false.
 500 if( lerror ) call ZDPlasKin_stop("ZDPlasKin ERROR: cannot write to file " // &
                                      "<qt_rates.txt> (subroutine writer_save_qtplaskin)")
@@ -954,7 +945,7 @@ subroutine ZDPlasKin_write_qtplaskin(time,LFORCE_WRITE)
     endif
     if( rtol > qtplaskin_rtol .or. lfirst ) then
       open(ifile_unit,file="qt_densities.txt",access="append")
-      write(ifile_unit,"(21(1pe13.4))") densav(:,2)
+      write(ifile_unit,"(18(1pe13.4))") densav(:,2)
       close(ifile_unit)
       open(ifile_unit,file="qt_conditions.txt",access="append")
       cond(1) = ZDPlasKin_cfg(3)
@@ -975,7 +966,7 @@ subroutine ZDPlasKin_write_qtplaskin(time,LFORCE_WRITE)
       call ZDPlasKin_get_rates(REACTION_RATES=rrt_loc)
       where( abs(rrt_loc(:)) < 1.0d-99 ) rrt_loc(:) = 0.0d0
       open(ifile_unit,file="qt_rates.txt",access="append")
-      write(ifile_unit,"(27(1pe13.4))") densav(0,2), rrt_loc(:)
+      write(ifile_unit,"(18(1pe13.4))") densav(0,2), rrt_loc(:)
       close(ifile_unit)
       densav(:,1) = densav(:,2)
     endif
@@ -997,63 +988,41 @@ subroutine ZDPlasKin_reac_source_matrix(reac_rate_local,reac_source_local)
   reac_source_local(02,01) = - reac_rate_local(01) 
   reac_source_local(03,01) = + reac_rate_local(01) 
   reac_source_local(02,02) = - reac_rate_local(02) 
-  reac_source_local(03,02) = + reac_rate_local(02) 
-  reac_source_local(02,03) = - reac_rate_local(03) 
-  reac_source_local(03,03) = + reac_rate_local(03) 
-  reac_source_local(02,04) = - reac_rate_local(04) 
-  reac_source_local(04,04) = + reac_rate_local(04) 
-  reac_source_local(02,05) = - reac_rate_local(05) 
-  reac_source_local(04,05) = + reac_rate_local(05) 
-  reac_source_local(02,06) = - reac_rate_local(06) 
-  reac_source_local(04,06) = + reac_rate_local(06) 
-  reac_source_local(02,07) = - reac_rate_local(07) 
-  reac_source_local(05,07) = + reac_rate_local(07) 
-  reac_source_local(02,08) = - reac_rate_local(08) 
-  reac_source_local(05,08) = + reac_rate_local(08) 
-  reac_source_local(02,09) = - reac_rate_local(09) 
-  reac_source_local(05,09) = + reac_rate_local(09) 
-  reac_source_local(02,10) = - reac_rate_local(10) 
-  reac_source_local(06,10) = + reac_rate_local(10) 
-  reac_source_local(02,11) = - reac_rate_local(11) 
-  reac_source_local(06,11) = + reac_rate_local(11) 
-  reac_source_local(02,12) = - reac_rate_local(12) 
-  reac_source_local(06,12) = + reac_rate_local(12) 
-  reac_source_local(01,13) = - reac_rate_local(13) 
-  reac_source_local(10,13) = + reac_rate_local(13) * 2.d0
-  reac_source_local(01,14) = - reac_rate_local(14) 
-  reac_source_local(10,14) = + reac_rate_local(14) 
-  reac_source_local(11,14) = + reac_rate_local(14) 
+  reac_source_local(04,02) = + reac_rate_local(02) 
+  reac_source_local(05,03) = - reac_rate_local(03) 
+  reac_source_local(06,03) = + reac_rate_local(03) 
+  reac_source_local(05,04) = - reac_rate_local(04) 
+  reac_source_local(06,04) = + reac_rate_local(04) 
+  reac_source_local(05,05) = - reac_rate_local(05) 
+  reac_source_local(06,05) = + reac_rate_local(05) 
+  reac_source_local(05,06) = - reac_rate_local(06) 
+  reac_source_local(08,06) = + reac_rate_local(06) 
+  reac_source_local(05,07) = - reac_rate_local(07) 
+  reac_source_local(09,07) = + reac_rate_local(07) 
+  reac_source_local(05,08) = - reac_rate_local(08) 
+  reac_source_local(07,08) = + reac_rate_local(08) 
+  reac_source_local(01,09) = - reac_rate_local(09) 
+  reac_source_local(13,09) = + reac_rate_local(09) 
+  reac_source_local(14,09) = + reac_rate_local(09) 
+  reac_source_local(05,10) = - reac_rate_local(10) 
+  reac_source_local(12,10) = + reac_rate_local(10) * 2.d0
+  reac_source_local(05,11) = - reac_rate_local(11) 
+  reac_source_local(12,11) = + reac_rate_local(11) * 2.d0
+  reac_source_local(05,12) = - reac_rate_local(12) 
+  reac_source_local(12,12) = + reac_rate_local(12) * 2.d0
+  reac_source_local(05,13) = - reac_rate_local(13) 
+  reac_source_local(12,13) = + reac_rate_local(13) * 2.d0
+  reac_source_local(05,14) = - reac_rate_local(14) 
+  reac_source_local(12,14) = + reac_rate_local(14) * 2.d0
   reac_source_local(01,15) = - reac_rate_local(15) 
-  reac_source_local(10,15) = + reac_rate_local(15) 
-  reac_source_local(12,15) = + reac_rate_local(15) 
+  reac_source_local(11,15) = + reac_rate_local(15) 
+  reac_source_local(15,15) = + reac_rate_local(15) 
   reac_source_local(02,16) = - reac_rate_local(16) 
-  reac_source_local(14,16) = + reac_rate_local(16) 
-  reac_source_local(15,16) = + reac_rate_local(16) 
-  reac_source_local(08,17) = - reac_rate_local(17) 
+  reac_source_local(11,16) = + reac_rate_local(16) 
+  reac_source_local(16,16) = + reac_rate_local(16) 
+  reac_source_local(05,17) = - reac_rate_local(17) 
+  reac_source_local(11,17) = + reac_rate_local(17) 
   reac_source_local(17,17) = + reac_rate_local(17) 
-  reac_source_local(19,17) = + reac_rate_local(17) 
-  reac_source_local(07,18) = - reac_rate_local(18) 
-  reac_source_local(17,18) = + reac_rate_local(18) * 2.d0
-  reac_source_local(07,19) = - reac_rate_local(19) 
-  reac_source_local(17,19) = + reac_rate_local(19) * 2.d0
-  reac_source_local(07,20) = - reac_rate_local(20) 
-  reac_source_local(17,20) = + reac_rate_local(20) * 2.d0
-  reac_source_local(07,21) = - reac_rate_local(21) 
-  reac_source_local(17,21) = + reac_rate_local(21) * 2.d0
-  reac_source_local(07,22) = - reac_rate_local(22) 
-  reac_source_local(17,22) = + reac_rate_local(22) * 2.d0
-  reac_source_local(01,23) = - reac_rate_local(23) 
-  reac_source_local(09,23) = + reac_rate_local(23) 
-  reac_source_local(13,23) = + reac_rate_local(23) 
-  reac_source_local(02,24) = - reac_rate_local(24) 
-  reac_source_local(09,24) = + reac_rate_local(24) 
-  reac_source_local(16,24) = + reac_rate_local(24) 
-  reac_source_local(07,25) = - reac_rate_local(25) 
-  reac_source_local(09,25) = + reac_rate_local(25) 
-  reac_source_local(18,25) = + reac_rate_local(25) 
-  reac_source_local(08,26) = - reac_rate_local(26) 
-  reac_source_local(09,26) = + reac_rate_local(26) 
-  reac_source_local(20,26) = + reac_rate_local(26) 
   return
 end subroutine ZDPlasKin_reac_source_matrix
 !-----------------------------------------------------------------------------------------------------------------------------------
@@ -1066,61 +1035,49 @@ subroutine ZDPlasKin_fex(neq,t,y,ydot)
   integer,          intent(in)  :: neq
   double precision, intent(in)  :: t, y(neq)
   double precision, intent(out) :: ydot(neq)
-  if( lgas_heating ) ZDPlasKin_cfg(1) = y(21)
+  if( lgas_heating ) ZDPlasKin_cfg(1) = y(18)
   density(:) = y(1:species_max)
   call ZDPlasKin_reac_rates(t)
-  rrt(01) = rrt(01) * density(02) * density(09) 
-  rrt(02) = rrt(02) * density(02) * density(09) 
-  rrt(03) = rrt(03) * density(02) * density(09) 
-  rrt(04) = rrt(04) * density(02) * density(09) 
-  rrt(05) = rrt(05) * density(02) * density(09) 
-  rrt(06) = rrt(06) * density(02) * density(09) 
-  rrt(07) = rrt(07) * density(02) * density(09) 
-  rrt(08) = rrt(08) * density(02) * density(09) 
-  rrt(09) = rrt(09) * density(02) * density(09) 
-  rrt(10) = rrt(10) * density(02) * density(09) 
-  rrt(11) = rrt(11) * density(02) * density(09) 
-  rrt(12) = rrt(12) * density(02) * density(09) 
-  rrt(13) = rrt(13) * density(01) * density(09) 
-  rrt(14) = rrt(14) * density(01) * density(09) 
-  rrt(15) = rrt(15) * density(01) * density(09) 
-  rrt(16) = rrt(16) * density(02) * density(09) 
-  rrt(17) = rrt(17) * density(08) * density(09) 
-  rrt(18) = rrt(18) * density(07) * density(09) 
-  rrt(19) = rrt(19) * density(07) * density(09) 
-  rrt(20) = rrt(20) * density(07) * density(09) 
-  rrt(21) = rrt(21) * density(07) * density(09) 
-  rrt(22) = rrt(22) * density(07) * density(09) 
-  rrt(23) = rrt(23) * density(01) * density(09) 
-  rrt(24) = rrt(24) * density(02) * density(09) 
-  rrt(25) = rrt(25) * density(07) * density(09) 
-  rrt(26) = rrt(26) * density(08) * density(09) 
-  ydot(01) = -rrt(13)-rrt(14)-rrt(15)-rrt(23) 
-  ydot(02) = -rrt(01)-rrt(02)-rrt(03)-rrt(04)-rrt(05)-rrt(06)-rrt(07)-rrt(08)-rrt(09)-rrt(10)-rrt(11)-rrt(12)-rrt(16)-rrt(24) 
-  ydot(03) = +rrt(01)+rrt(02)+rrt(03) 
-  ydot(04) = +rrt(04)+rrt(05)+rrt(06) 
-  ydot(05) = +rrt(07)+rrt(08)+rrt(09) 
-  ydot(06) = +rrt(10)+rrt(11)+rrt(12) 
-  ydot(07) = -rrt(18)-rrt(19)-rrt(20)-rrt(21)-rrt(22)-rrt(25) 
-  ydot(08) = -rrt(17)-rrt(26) 
-  ydot(09) = +rrt(23)+rrt(24)+rrt(25)+rrt(26) 
-  ydot(10) = + 2.d0 * rrt(13)+rrt(14)+rrt(15) 
-  ydot(11) = +rrt(14) 
-  ydot(12) = +rrt(15) 
-  ydot(13) = +rrt(23) 
-  ydot(14) = +rrt(16) 
-  ydot(15) = +rrt(16) 
-  ydot(16) = +rrt(24) 
-  ydot(17) = +rrt(17)+ 2.d0 * rrt(18)+ 2.d0 * rrt(19)+ 2.d0 * rrt(20)+ 2.d0 * rrt(21)+ 2.d0 * rrt(22) 
-  ydot(18) = +rrt(25) 
-  ydot(19) = +rrt(17) 
-  ydot(20) = +rrt(26) 
+  rrt(01) = rrt(01) * density(02) * density(11) 
+  rrt(02) = rrt(02) * density(02) * density(11) 
+  rrt(03) = rrt(03) * density(05) * density(11) 
+  rrt(04) = rrt(04) * density(05) * density(11) 
+  rrt(05) = rrt(05) * density(05) * density(11) 
+  rrt(06) = rrt(06) * density(05) * density(11) 
+  rrt(07) = rrt(07) * density(05) * density(11) 
+  rrt(08) = rrt(08) * density(05) * density(11) 
+  rrt(09) = rrt(09) * density(01) * density(11) 
+  rrt(10) = rrt(10) * density(05) * density(11) 
+  rrt(11) = rrt(11) * density(05) * density(11) 
+  rrt(12) = rrt(12) * density(05) * density(11) 
+  rrt(13) = rrt(13) * density(05) * density(11) 
+  rrt(14) = rrt(14) * density(05) * density(11) 
+  rrt(15) = rrt(15) * density(01) * density(11) 
+  rrt(16) = rrt(16) * density(02) * density(11) 
+  rrt(17) = rrt(17) * density(05) * density(11) 
+  ydot(01) = -rrt(09)-rrt(15) 
+  ydot(02) = -rrt(01)-rrt(02)-rrt(16) 
+  ydot(03) = +rrt(01) 
+  ydot(04) = +rrt(02) 
+  ydot(05) = -rrt(03)-rrt(04)-rrt(05)-rrt(06)-rrt(07)-rrt(08)-rrt(10)-rrt(11)-rrt(12)-rrt(13)-rrt(14)-rrt(17) 
+  ydot(06) = +rrt(03)+rrt(04)+rrt(05) 
+  ydot(07) = +rrt(08) 
+  ydot(08) = +rrt(06) 
+  ydot(09) = +rrt(07) 
+  ydot(10) = 0.0d0
+  ydot(11) = +rrt(15)+rrt(16)+rrt(17) 
+  ydot(12) = + 2.d0 * rrt(10)+ 2.d0 * rrt(11)+ 2.d0 * rrt(12)+ 2.d0 * rrt(13)+ 2.d0 * rrt(14) 
+  ydot(13) = +rrt(09) 
+  ydot(14) = +rrt(09) 
+  ydot(15) = +rrt(15) 
+  ydot(16) = +rrt(16) 
+  ydot(17) = +rrt(17) 
   if( ldensity_constant ) where( density_constant(:) ) ydot(1:species_max) = 0.0d0
-  ydot(21) = 0.0d0
+  ydot(18) = 0.0d0
   if( lgas_heating ) then
-    ydot(21) = ( ZDPlasKin_cfg(14)/k_B + ydot(21) ) / ( sum(density(1:species_max)) - density(species_electrons) ) &
+    ydot(18) = ( ZDPlasKin_cfg(14)/k_B + ydot(18) ) / ( sum(density(1:species_max)) - density(species_electrons) ) &
             + eV_to_K * ZDPlasKin_cfg(11) * density(species_electrons)
-    ydot(21) = ydot(21) * ZDPlasKin_cfg(13)
+    ydot(18) = ydot(18) * ZDPlasKin_cfg(13)
   endif
   return
 end subroutine ZDPlasKin_fex
@@ -1135,137 +1092,93 @@ subroutine ZDPlasKin_jex(neq,t,y,ml,mu,pd,nrpd)
   double precision, intent(in)  :: t, y(neq)
   double precision, intent(out) :: pd(nrpd,neq)
   integer                       :: i
-  if( lgas_heating ) ZDPlasKin_cfg(1) = y(21)
+  if( lgas_heating ) ZDPlasKin_cfg(1) = y(18)
   density(:) = y(1:species_max)
   call ZDPlasKin_reac_rates(t)
-  pd(02,02) = pd(02,02) - rrt(01) * density(09) 
-  pd(02,09) = pd(02,09) - rrt(01) * density(02) 
-  pd(03,02) = pd(03,02) + rrt(01) * density(09) 
-  pd(03,09) = pd(03,09) + rrt(01) * density(02) 
-  pd(02,02) = pd(02,02) - rrt(02) * density(09) 
-  pd(02,09) = pd(02,09) - rrt(02) * density(02) 
-  pd(03,02) = pd(03,02) + rrt(02) * density(09) 
-  pd(03,09) = pd(03,09) + rrt(02) * density(02) 
-  pd(02,02) = pd(02,02) - rrt(03) * density(09) 
-  pd(02,09) = pd(02,09) - rrt(03) * density(02) 
-  pd(03,02) = pd(03,02) + rrt(03) * density(09) 
-  pd(03,09) = pd(03,09) + rrt(03) * density(02) 
-  pd(02,02) = pd(02,02) - rrt(04) * density(09) 
-  pd(02,09) = pd(02,09) - rrt(04) * density(02) 
-  pd(04,02) = pd(04,02) + rrt(04) * density(09) 
-  pd(04,09) = pd(04,09) + rrt(04) * density(02) 
-  pd(02,02) = pd(02,02) - rrt(05) * density(09) 
-  pd(02,09) = pd(02,09) - rrt(05) * density(02) 
-  pd(04,02) = pd(04,02) + rrt(05) * density(09) 
-  pd(04,09) = pd(04,09) + rrt(05) * density(02) 
-  pd(02,02) = pd(02,02) - rrt(06) * density(09) 
-  pd(02,09) = pd(02,09) - rrt(06) * density(02) 
-  pd(04,02) = pd(04,02) + rrt(06) * density(09) 
-  pd(04,09) = pd(04,09) + rrt(06) * density(02) 
-  pd(02,02) = pd(02,02) - rrt(07) * density(09) 
-  pd(02,09) = pd(02,09) - rrt(07) * density(02) 
-  pd(05,02) = pd(05,02) + rrt(07) * density(09) 
-  pd(05,09) = pd(05,09) + rrt(07) * density(02) 
-  pd(02,02) = pd(02,02) - rrt(08) * density(09) 
-  pd(02,09) = pd(02,09) - rrt(08) * density(02) 
-  pd(05,02) = pd(05,02) + rrt(08) * density(09) 
-  pd(05,09) = pd(05,09) + rrt(08) * density(02) 
-  pd(02,02) = pd(02,02) - rrt(09) * density(09) 
-  pd(02,09) = pd(02,09) - rrt(09) * density(02) 
-  pd(05,02) = pd(05,02) + rrt(09) * density(09) 
-  pd(05,09) = pd(05,09) + rrt(09) * density(02) 
-  pd(02,02) = pd(02,02) - rrt(10) * density(09) 
-  pd(02,09) = pd(02,09) - rrt(10) * density(02) 
-  pd(06,02) = pd(06,02) + rrt(10) * density(09) 
-  pd(06,09) = pd(06,09) + rrt(10) * density(02) 
-  pd(02,02) = pd(02,02) - rrt(11) * density(09) 
-  pd(02,09) = pd(02,09) - rrt(11) * density(02) 
-  pd(06,02) = pd(06,02) + rrt(11) * density(09) 
-  pd(06,09) = pd(06,09) + rrt(11) * density(02) 
-  pd(02,02) = pd(02,02) - rrt(12) * density(09) 
-  pd(02,09) = pd(02,09) - rrt(12) * density(02) 
-  pd(06,02) = pd(06,02) + rrt(12) * density(09) 
-  pd(06,09) = pd(06,09) + rrt(12) * density(02) 
-  pd(01,01) = pd(01,01) - rrt(13) * density(09) 
-  pd(01,09) = pd(01,09) - rrt(13) * density(01) 
-  pd(10,01) = pd(10,01) + rrt(13) * density(09) * 2.0d0
-  pd(10,09) = pd(10,09) + rrt(13) * density(01) * 2.0d0
-  pd(01,01) = pd(01,01) - rrt(14) * density(09) 
-  pd(01,09) = pd(01,09) - rrt(14) * density(01) 
-  pd(10,01) = pd(10,01) + rrt(14) * density(09) 
-  pd(10,09) = pd(10,09) + rrt(14) * density(01) 
-  pd(11,01) = pd(11,01) + rrt(14) * density(09) 
-  pd(11,09) = pd(11,09) + rrt(14) * density(01) 
-  pd(01,01) = pd(01,01) - rrt(15) * density(09) 
-  pd(01,09) = pd(01,09) - rrt(15) * density(01) 
-  pd(10,01) = pd(10,01) + rrt(15) * density(09) 
-  pd(10,09) = pd(10,09) + rrt(15) * density(01) 
-  pd(12,01) = pd(12,01) + rrt(15) * density(09) 
-  pd(12,09) = pd(12,09) + rrt(15) * density(01) 
-  pd(02,02) = pd(02,02) - rrt(16) * density(09) 
-  pd(02,09) = pd(02,09) - rrt(16) * density(02) 
-  pd(14,02) = pd(14,02) + rrt(16) * density(09) 
-  pd(14,09) = pd(14,09) + rrt(16) * density(02) 
-  pd(15,02) = pd(15,02) + rrt(16) * density(09) 
-  pd(15,09) = pd(15,09) + rrt(16) * density(02) 
-  pd(08,08) = pd(08,08) - rrt(17) * density(09) 
-  pd(08,09) = pd(08,09) - rrt(17) * density(08) 
-  pd(17,08) = pd(17,08) + rrt(17) * density(09) 
-  pd(17,09) = pd(17,09) + rrt(17) * density(08) 
-  pd(19,08) = pd(19,08) + rrt(17) * density(09) 
-  pd(19,09) = pd(19,09) + rrt(17) * density(08) 
-  pd(07,07) = pd(07,07) - rrt(18) * density(09) 
-  pd(07,09) = pd(07,09) - rrt(18) * density(07) 
-  pd(17,07) = pd(17,07) + rrt(18) * density(09) * 2.0d0
-  pd(17,09) = pd(17,09) + rrt(18) * density(07) * 2.0d0
-  pd(07,07) = pd(07,07) - rrt(19) * density(09) 
-  pd(07,09) = pd(07,09) - rrt(19) * density(07) 
-  pd(17,07) = pd(17,07) + rrt(19) * density(09) * 2.0d0
-  pd(17,09) = pd(17,09) + rrt(19) * density(07) * 2.0d0
-  pd(07,07) = pd(07,07) - rrt(20) * density(09) 
-  pd(07,09) = pd(07,09) - rrt(20) * density(07) 
-  pd(17,07) = pd(17,07) + rrt(20) * density(09) * 2.0d0
-  pd(17,09) = pd(17,09) + rrt(20) * density(07) * 2.0d0
-  pd(07,07) = pd(07,07) - rrt(21) * density(09) 
-  pd(07,09) = pd(07,09) - rrt(21) * density(07) 
-  pd(17,07) = pd(17,07) + rrt(21) * density(09) * 2.0d0
-  pd(17,09) = pd(17,09) + rrt(21) * density(07) * 2.0d0
-  pd(07,07) = pd(07,07) - rrt(22) * density(09) 
-  pd(07,09) = pd(07,09) - rrt(22) * density(07) 
-  pd(17,07) = pd(17,07) + rrt(22) * density(09) * 2.0d0
-  pd(17,09) = pd(17,09) + rrt(22) * density(07) * 2.0d0
-  pd(01,01) = pd(01,01) - rrt(23) * density(09) 
-  pd(01,09) = pd(01,09) - rrt(23) * density(01) 
-  pd(09,01) = pd(09,01) + rrt(23) * density(09) 
-  pd(09,09) = pd(09,09) + rrt(23) * density(01) 
-  pd(13,01) = pd(13,01) + rrt(23) * density(09) 
-  pd(13,09) = pd(13,09) + rrt(23) * density(01) 
-  pd(02,02) = pd(02,02) - rrt(24) * density(09) 
-  pd(02,09) = pd(02,09) - rrt(24) * density(02) 
-  pd(09,02) = pd(09,02) + rrt(24) * density(09) 
-  pd(09,09) = pd(09,09) + rrt(24) * density(02) 
-  pd(16,02) = pd(16,02) + rrt(24) * density(09) 
-  pd(16,09) = pd(16,09) + rrt(24) * density(02) 
-  pd(07,07) = pd(07,07) - rrt(25) * density(09) 
-  pd(07,09) = pd(07,09) - rrt(25) * density(07) 
-  pd(09,07) = pd(09,07) + rrt(25) * density(09) 
-  pd(09,09) = pd(09,09) + rrt(25) * density(07) 
-  pd(18,07) = pd(18,07) + rrt(25) * density(09) 
-  pd(18,09) = pd(18,09) + rrt(25) * density(07) 
-  pd(08,08) = pd(08,08) - rrt(26) * density(09) 
-  pd(08,09) = pd(08,09) - rrt(26) * density(08) 
-  pd(09,08) = pd(09,08) + rrt(26) * density(09) 
-  pd(09,09) = pd(09,09) + rrt(26) * density(08) 
-  pd(20,08) = pd(20,08) + rrt(26) * density(09) 
-  pd(20,09) = pd(20,09) + rrt(26) * density(08) 
+  pd(02,02) = pd(02,02) - rrt(01) * density(11) 
+  pd(02,11) = pd(02,11) - rrt(01) * density(02) 
+  pd(03,02) = pd(03,02) + rrt(01) * density(11) 
+  pd(03,11) = pd(03,11) + rrt(01) * density(02) 
+  pd(02,02) = pd(02,02) - rrt(02) * density(11) 
+  pd(02,11) = pd(02,11) - rrt(02) * density(02) 
+  pd(04,02) = pd(04,02) + rrt(02) * density(11) 
+  pd(04,11) = pd(04,11) + rrt(02) * density(02) 
+  pd(05,05) = pd(05,05) - rrt(03) * density(11) 
+  pd(05,11) = pd(05,11) - rrt(03) * density(05) 
+  pd(06,05) = pd(06,05) + rrt(03) * density(11) 
+  pd(06,11) = pd(06,11) + rrt(03) * density(05) 
+  pd(05,05) = pd(05,05) - rrt(04) * density(11) 
+  pd(05,11) = pd(05,11) - rrt(04) * density(05) 
+  pd(06,05) = pd(06,05) + rrt(04) * density(11) 
+  pd(06,11) = pd(06,11) + rrt(04) * density(05) 
+  pd(05,05) = pd(05,05) - rrt(05) * density(11) 
+  pd(05,11) = pd(05,11) - rrt(05) * density(05) 
+  pd(06,05) = pd(06,05) + rrt(05) * density(11) 
+  pd(06,11) = pd(06,11) + rrt(05) * density(05) 
+  pd(05,05) = pd(05,05) - rrt(06) * density(11) 
+  pd(05,11) = pd(05,11) - rrt(06) * density(05) 
+  pd(08,05) = pd(08,05) + rrt(06) * density(11) 
+  pd(08,11) = pd(08,11) + rrt(06) * density(05) 
+  pd(05,05) = pd(05,05) - rrt(07) * density(11) 
+  pd(05,11) = pd(05,11) - rrt(07) * density(05) 
+  pd(09,05) = pd(09,05) + rrt(07) * density(11) 
+  pd(09,11) = pd(09,11) + rrt(07) * density(05) 
+  pd(05,05) = pd(05,05) - rrt(08) * density(11) 
+  pd(05,11) = pd(05,11) - rrt(08) * density(05) 
+  pd(07,05) = pd(07,05) + rrt(08) * density(11) 
+  pd(07,11) = pd(07,11) + rrt(08) * density(05) 
+  pd(01,01) = pd(01,01) - rrt(09) * density(11) 
+  pd(01,11) = pd(01,11) - rrt(09) * density(01) 
+  pd(13,01) = pd(13,01) + rrt(09) * density(11) 
+  pd(13,11) = pd(13,11) + rrt(09) * density(01) 
+  pd(14,01) = pd(14,01) + rrt(09) * density(11) 
+  pd(14,11) = pd(14,11) + rrt(09) * density(01) 
+  pd(05,05) = pd(05,05) - rrt(10) * density(11) 
+  pd(05,11) = pd(05,11) - rrt(10) * density(05) 
+  pd(12,05) = pd(12,05) + rrt(10) * density(11) * 2.0d0
+  pd(12,11) = pd(12,11) + rrt(10) * density(05) * 2.0d0
+  pd(05,05) = pd(05,05) - rrt(11) * density(11) 
+  pd(05,11) = pd(05,11) - rrt(11) * density(05) 
+  pd(12,05) = pd(12,05) + rrt(11) * density(11) * 2.0d0
+  pd(12,11) = pd(12,11) + rrt(11) * density(05) * 2.0d0
+  pd(05,05) = pd(05,05) - rrt(12) * density(11) 
+  pd(05,11) = pd(05,11) - rrt(12) * density(05) 
+  pd(12,05) = pd(12,05) + rrt(12) * density(11) * 2.0d0
+  pd(12,11) = pd(12,11) + rrt(12) * density(05) * 2.0d0
+  pd(05,05) = pd(05,05) - rrt(13) * density(11) 
+  pd(05,11) = pd(05,11) - rrt(13) * density(05) 
+  pd(12,05) = pd(12,05) + rrt(13) * density(11) * 2.0d0
+  pd(12,11) = pd(12,11) + rrt(13) * density(05) * 2.0d0
+  pd(05,05) = pd(05,05) - rrt(14) * density(11) 
+  pd(05,11) = pd(05,11) - rrt(14) * density(05) 
+  pd(12,05) = pd(12,05) + rrt(14) * density(11) * 2.0d0
+  pd(12,11) = pd(12,11) + rrt(14) * density(05) * 2.0d0
+  pd(01,01) = pd(01,01) - rrt(15) * density(11) 
+  pd(01,11) = pd(01,11) - rrt(15) * density(01) 
+  pd(11,01) = pd(11,01) + rrt(15) * density(11) 
+  pd(11,11) = pd(11,11) + rrt(15) * density(01) 
+  pd(15,01) = pd(15,01) + rrt(15) * density(11) 
+  pd(15,11) = pd(15,11) + rrt(15) * density(01) 
+  pd(02,02) = pd(02,02) - rrt(16) * density(11) 
+  pd(02,11) = pd(02,11) - rrt(16) * density(02) 
+  pd(11,02) = pd(11,02) + rrt(16) * density(11) 
+  pd(11,11) = pd(11,11) + rrt(16) * density(02) 
+  pd(16,02) = pd(16,02) + rrt(16) * density(11) 
+  pd(16,11) = pd(16,11) + rrt(16) * density(02) 
+  pd(05,05) = pd(05,05) - rrt(17) * density(11) 
+  pd(05,11) = pd(05,11) - rrt(17) * density(05) 
+  pd(11,05) = pd(11,05) + rrt(17) * density(11) 
+  pd(11,11) = pd(11,11) + rrt(17) * density(05) 
+  pd(17,05) = pd(17,05) + rrt(17) * density(11) 
+  pd(17,11) = pd(17,11) + rrt(17) * density(05) 
   if( ldensity_constant ) then
     do i = 1, species_max
       if( density_constant(i) ) pd(i,:) = 0.0d0
     enddo
   endif
   if( lgas_heating ) then
-    pd(21,1) = eV_to_K * ZDPlasKin_cfg(11)
-    pd(21,:) = pd(21,:) * ZDPlasKin_cfg(13)
+    pd(18,1) = eV_to_K * ZDPlasKin_cfg(11)
+    pd(18,:) = pd(18,:) * ZDPlasKin_cfg(13)
   endif
   return
 end subroutine ZDPlasKin_jex
@@ -1298,15 +1211,6 @@ subroutine ZDPlasKin_reac_rates(Time)
   rrt(15) = bolsig_rates(bolsig_pointer(15))
   rrt(16) = bolsig_rates(bolsig_pointer(16))
   rrt(17) = bolsig_rates(bolsig_pointer(17))
-  rrt(18) = bolsig_rates(bolsig_pointer(18))
-  rrt(19) = bolsig_rates(bolsig_pointer(19))
-  rrt(20) = bolsig_rates(bolsig_pointer(20))
-  rrt(21) = bolsig_rates(bolsig_pointer(21))
-  rrt(22) = bolsig_rates(bolsig_pointer(22))
-  rrt(23) = bolsig_rates(bolsig_pointer(23))
-  rrt(24) = bolsig_rates(bolsig_pointer(24))
-  rrt(25) = bolsig_rates(bolsig_pointer(25))
-  rrt(26) = bolsig_rates(bolsig_pointer(26))
   where( lreaction_block(:) ) rrt(:) = 0.0d0
   return
 end subroutine ZDPlasKin_reac_rates

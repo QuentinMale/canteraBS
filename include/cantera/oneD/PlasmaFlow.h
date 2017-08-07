@@ -25,16 +25,21 @@ public:
     virtual void eval(size_t jg, double* xg,
               double* rg, integer* diagg, double rdt);
     virtual void resize(size_t components, size_t points);
-    void updateEEDF();
+    void updateEEDF(double* x, size_t j);
+    void solvePlasma();
+    bool doPlasma() {
+        return m_do_plasma;
+    }
 
 protected:
     virtual void updateTransport(double* x, size_t j0, size_t j1);
     vector<size_t> m_collisionSpeciesIndex;
     vector<size_t> m_plasmaSpeciesIndex;
+    bool m_do_plasma;
 
     virtual void getWdot(doublereal* x, size_t j);
     double* m_wdot_plasma = NULL;
-    // ZDPlasKin wrappe
+
 
 };
 

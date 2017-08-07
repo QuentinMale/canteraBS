@@ -4,24 +4,28 @@ subroutine zdplaskinInit() bind(C, name='zdplaskinInit')
   call ZDPlasKin_init()
 end subroutine zdplaskinInit
 
-subroutine zdplaskinSetDensity(cstring, DENS) bind(C, name='zdplaskinSetDensity')
+subroutine zdplaskinSetDensity(cstring, num_density_SI) bind(C, name='zdplaskinSetDensity')
   use C_interface_module
   use ZDPlasKin
   implicit none
   TYPE(C_PTR), intent(inout) :: cstring
   character(10) :: fstring
-  real(c_double), intent(in) :: DENS
+  real(c_double), intent(in) :: num_density_SI
+  real(c_double) :: DENS
+  DENS = num_density_SI * 1e-6
   call C_F_string_ptr(cstring, fstring)
   call ZDPlasKin_set_density(trim(fstring), DENS)
 end subroutine zdplaskinSetDensity
 
-subroutine zdplaskinGetDensity(cstring, DENS) bind(C, name='zdplaskinGetDensity')
+subroutine zdplaskinGetDensity(cstring, num_density_SI) bind(C, name='zdplaskinGetDensity')
   use C_interface_module
   use ZDPlasKin
   implicit none
   TYPE(C_PTR), intent(inout) :: cstring
   character(10) :: fstring
-  real(c_double), intent(out) :: DENS
+  real(c_double), intent(out) :: num_density_SI
+  real(c_double) :: DENS
+  num_density_SI = DENS
   call C_F_string_ptr(cstring, fstring)
   call ZDPlasKin_get_density(trim(fstring),DENS)
 end subroutine zdplaskinGetDensity

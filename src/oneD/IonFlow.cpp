@@ -40,24 +40,8 @@ IonFlow::IonFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
     // Find the index of electron
     if (m_thermo->speciesIndex("E") != npos ) {
         m_kElectron = m_thermo->speciesIndex("E");
-        setTransientTolerances(1.0e-5, 1.0e-18, c_offset_Y + m_kElectron);
-        setSteadyTolerances(1.0e-5, 1.0e-16, c_offset_Y + m_kElectron);
-    }
-    if (m_thermo->speciesIndex("HCO+") != npos ) {
-        size_t k = m_thermo->speciesIndex("HCO+");
-        setTransientTolerances(1.0e-5, 1.0e-18, c_offset_Y + k);
-        setSteadyTolerances(1.0e-5, 1.0e-16, c_offset_Y + k);
-    }
-    if (m_thermo->speciesIndex("H3O+") != npos ) {
-        size_t k = m_thermo->speciesIndex("H3O+");
-        setTransientTolerances(1.0e-5, 1.0e-15, c_offset_Y + k);
-        setSteadyTolerances(1.0e-5, 1.0e-13, c_offset_Y + k);
     }
 
-    // mass fraction bounds (strict bound for ions)
-    for (size_t k : m_kCharge) {
-        setBounds(c_offset_Y+k, -1.0e-20, 1.0e5);
-    }
     // no bound for electric potential
     setBounds(c_offset_P, -1.0e20, 1.0e20);
 

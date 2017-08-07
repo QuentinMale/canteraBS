@@ -553,6 +553,13 @@ cdef class PlasmaFlow(_FlowBase):
             else:
                 (<CxxPlasmaFlow*>self.flow).fixVelocity()
 
+    property plasma_enabled:
+        """ Determines whether or not to solve the energy equation."""
+        def __get__(self):
+            return (<CxxPlasmaFlow*>self.flow).doPlasma()
+        def __set__(self, enable):
+            if enable:
+                (<CxxPlasmaFlow*>self.flow).solvePlasma()
 
 cdef class AxisymmetricStagnationFlow(_FlowBase):
     """

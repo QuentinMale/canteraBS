@@ -716,6 +716,9 @@ cdef extern from "cantera/oneD/PlasmaFlow.h":
         void solveVelocity()
         void fixVelocity()
         cbool doVelocity(size_t)
+        cbool doPlasma()
+        void solvePlasma()
+
 
 cdef extern from "cantera/oneD/Sim1D.h":
     cdef cppclass CxxSim1D "Cantera::Sim1D":

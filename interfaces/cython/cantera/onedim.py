@@ -594,6 +594,53 @@ class PlasmaFlame(IonFlame):
             self.flame = PlasmaFlow(gas, name='flame')
         super(PlasmaFlame, self).__init__(gas, grid, width)
 
+    def set_initial_guess(self, locs=[0.0, 0.3, 0.5, 1.0]):
+        """
+        Set the initial guess for the solution. The adiabatic flame
+        temperature and equilibrium composition are computed for the inlet gas
+        composition. 
+        
+        :param locs:
+            A list of four locations to define the temperature and mass fraction profiles. 
+            Profiles rise linearly between the second and third location.
+            Locations are given as a fraction of the entire domain
+        """
+        super(PlasmaFlame, self).set_initial_guess()
+        self.gas.TPY = self.inlet.T, self.P, self.inlet.Y
+
+        if not self.inlet.mdot:
+            # nonzero initial guess increases likelihood of convergence
+            self.inlet.mdot = 1.0 * self.gas.density
+
+        Y0 = self.inlet.Y
+        u0 = self.inlet.mdot/self.gas.density
+        T0 = self.inlet.T
+
+        # get adiabatic flame temperature and composition
+        self.gas.equilibrate('HP')
+        Teq = self.gas.T
+        Yeq = self.gas.Y
+        u1 = self.inlet.mdot/self.gas.density
+
+        self.set_profile('u', locs, [u0, u0, u1, u1])
+        self.set_profile('T', locs, [T0, T0, Teq, Teq])
+
+        # Pick the location of the fixed temperature point, using an existing
+        # point if a reasonable choice exists
+        T = self.T
+        Tmid = 0.75 * T0 + 0.25 * Teq
+        i = np.flatnonzero(T < Tmid)[-1] # last point less than Tmid
+        if Tmid - T[i] < 0.2 * (Tmid - T0):
+            self.set_fixed_temperature(T[i])
+        elif T[i+1] - Tmid < 0.2 * (Teq - Tmid):
+            self.set_fixed_temperature(T[i+1])
+        else:
+            self.set_fixed_temperature(Tmid)
+
+        for n in range(self.gas.n_species):
+            self.set_profile(self.gas.species_name(n),
+                             locs, [Y0[n], Y0[n], Yeq[n], Yeq[n]])
+
     def solve(self, loglevel=1, refine_grid=True, auto=False, stage=1, enable_energy=True):
         if enable_energy == True:
             self.energy_enabled = True
@@ -659,6 +706,15 @@ class PlasmaFlame(IonFlame):
     @velocity_enabled.setter
     def velocity_enabled(self, enable):
         self.flame.velocity_enabled = enable
+
+    @property
+    def plasma_enabled(self):
+        """ Get/Set whether or not to solve the Plasma reaction."""
+        return self.flame.plasma_enabled
+
+    @plasma_enabled.setter
+    def plasma_enabled(self, enable):
+        self.flame.plasma_enabled = enable
 
     @property
     def phi(self):

@@ -13,16 +13,17 @@ namespace Cantera
 {
 
 PlasmaFlow::PlasmaFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
-    IonFlow(ph, nsp, points)
+    IonFlow(ph, nsp, points),
+    m_do_plasma(false)
 {
     vector<string> list;
     list.push_back("N2");
     list.push_back("O2");
     list.push_back("H2");
     list.push_back("H2O");
-    //list.push_back("CO2");
-    //list.push_back("CO");
-    //list.push_back("CH4");
+    list.push_back("CO2");
+    list.push_back("CO");
+    list.push_back("CH4");
     // check valid index 
     for (size_t i = 0; i < list.size(); i++) {
         size_t k = m_thermo->speciesIndex(list[i]);
@@ -42,7 +43,7 @@ PlasmaFlow::PlasmaFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
     }
 }
 
-void PlasmaFlow::resize(size_t components, size_t points){
+void PlasmaFlow::resize(size_t components, size_t points) {
     IonFlow::resize(components, points);
 }
 
@@ -54,7 +55,7 @@ void PlasmaFlow::updateTransport(double* x, size_t j0, size_t j1)
         m_trans->getMobilities(&m_mobility[j*m_nsp]);
         if (m_overwrite_eTransport && (m_kElectron != npos)) {
             if (m_import_electron_transport) {
-                updateEEDF();
+                updateEEDF(x,j);
                 const double number_density = ND_t(x,j);
                 m_mobility[m_kElectron+m_nsp*j] = zdplaskinGetElecMobility(&number_density);
                 m_diff[m_kElectron+m_nsp*j] = zdplaskinGetElecDiffCoeff();
@@ -87,29 +88,46 @@ void PlasmaFlow::eval(size_t jg, double* xg,
     */
 }
 
+void PlasmaFlow::solvePlasma()
+{
+    bool changed = false;
+    if (m_do_plasma) {
+        changed = true;
+    }
+    m_do_plasma = true;
+    m_refiner->setActive(c_offset_U, true);
+    m_refiner->setActive(c_offset_V, true);
+    m_refiner->setActive(c_offset_T, true);
+    m_refiner->setActive(c_offset_P, true);
+    if (changed) {
+        needJacUpdate();
+    }
+}
+
 void PlasmaFlow::getWdot(doublereal* x, size_t j)
 {
     setGas(x,j);
     m_kin->getNetProductionRates(&m_wdot(0,j));
-    updateEEDF();
-    
-    zdplaskinGetPlasmaSource(&m_wdot_plasma);
-    size_t i = 0;
-    for (size_t k : m_plasmaSpeciesIndex) {
-        i++;
-        m_wdot(k,j) += m_wdot_plasma[i];
+    if (m_do_plasma) {
+        updateEEDF(x, j);
+        zdplaskinGetPlasmaSource(&m_wdot_plasma);
+        size_t i = 0;
+        for (size_t k : m_plasmaSpeciesIndex) {
+            i++;
+            m_wdot(k,j) += m_wdot_plasma[i];
+        }  
     }
 }
 
-void PlasmaFlow::updateEEDF()
+void PlasmaFlow::updateEEDF(double* x, size_t j)
 {
     for (size_t k : m_collisionSpeciesIndex) {
         const char* species[10] = {m_thermo->speciesName(k).c_str()};
-        const double density = m_thermo->moleFraction(k);
-        zdplaskinSetDensity(species, &density);
+        const double num_density = ND(x,k,j);
+        zdplaskinSetDensity(species, &num_density);
     }
-    const double temperature = m_thermo->temperature();
-    const double ruduced_field = 0.0;
+    const double temperature = T(x,j);
+    const double ruduced_field = 10.0;
     zdplaskinSetConditions(&temperature, &ruduced_field);
 }
 
