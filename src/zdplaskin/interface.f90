@@ -8,12 +8,12 @@ subroutine zdplaskinSetDensity(cstring, num_density_SI) bind(C, name='zdplaskinS
   use C_interface_module
   use ZDPlasKin
   implicit none
-  TYPE(C_PTR), intent(inout) :: cstring
-  character(10) :: fstring
+  character(len=1,kind=C_char), intent(in) :: cstring(*)
+  character(20) :: fstring
   real(c_double), intent(in) :: num_density_SI
   real(c_double) :: DENS
   DENS = num_density_SI * 1e-6
-  call C_F_string_ptr(cstring, fstring)
+  call C_F_string_chars(cstring, fstring)
   call ZDPlasKin_set_density(trim(fstring), DENS)
 end subroutine zdplaskinSetDensity
 
@@ -21,13 +21,13 @@ subroutine zdplaskinGetDensity(cstring, num_density_SI) bind(C, name='zdplaskinG
   use C_interface_module
   use ZDPlasKin
   implicit none
-  TYPE(C_PTR), intent(inout) :: cstring
-  character(10) :: fstring
+  character(len=1,kind=C_char), intent(in) :: cstring(*)
+  character(20) :: fstring
   real(c_double), intent(out) :: num_density_SI
   real(c_double) :: DENS
-  num_density_SI = DENS
-  call C_F_string_ptr(cstring, fstring)
+  call C_F_string_chars(cstring, fstring)
   call ZDPlasKin_get_density(trim(fstring),DENS)
+  num_density_SI = DENS * 1e6
 end subroutine zdplaskinGetDensity
 
 subroutine zdplaskinSetConditions(gasTemperature, reduced_field) bind(C,name='zdplaskinSetConditions')
@@ -72,8 +72,8 @@ subroutine zdplaskinGetPlasmaSource(carray) bind(C,name='zdplaskinGetPlasmaSourc
   use, intrinsic :: iso_c_binding
   use ZDPlasKin
   implicit none
-  type(c_ptr), intent(inout) :: carray
-  real(c_double), target :: farray(species_max)
+  type(c_ptr), intent(out) :: carray
+  real(c_double), target, save :: farray(species_max)
   real(c_double) :: Avogadro = 6.02214129e26
   integer i
   call ZDPlasKin_get_rates(SOURCE_TERMS=farray)
@@ -94,7 +94,7 @@ subroutine zdplaskinGetSpeciesName(cstring, index) bind(C, name='zdplaskinGetSpe
   use ZDPlasKin
   use C_interface_module
   implicit none
-  integer, intent(in) :: index
-  TYPE(C_PTR), intent(inout) :: cstring
-  call F_C_string_ptr(trim(species_name(index+1)), cstring)
+  integer(c_size_t), intent(in) :: index
+  character(len=1,kind=C_char), dimension(*), intent(out) :: cstring
+  call F_C_string_chars(trim(species_name(index+1)), cstring)
 end subroutine zdplaskinGetSpeciesName

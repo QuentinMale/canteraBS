@@ -9,16 +9,16 @@
 extern "C"
 {
     void zdplaskinInit();
-    void zdplaskinSetDensity(const char* cstring[], const double* DENS);
+    void zdplaskinSetDensity(const char* cstring, const double* DENS);
 
     void zdplaskinSetConditions(const double* GAS_TEMPERATURE,
                                 const double* REDUCED_FIELD);
     double zdplaskinGetElecTemp();
     double zdplaskinGetElecDiffCoeff();
     double zdplaskinGetElecMobility(const double*);
-    void zdplaskinGetPlasmaSource(double* array[]);
+    void zdplaskinGetPlasmaSource(double** array);
     size_t zdplaskinNSpecies();
-    void zdplaskinGetSpeciesName(char* cstring[], size_t* index);
+    void zdplaskinGetSpeciesName(char* cstring, size_t* index);
 }
 
 #endif

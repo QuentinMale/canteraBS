@@ -36,13 +36,11 @@ PlasmaFlow::PlasmaFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
     zdplaskinInit();
 
     for (size_t i = 0; i < zdplaskinNSpecies(); i++) {
-        char* cstring[20];
+        char cstring[20];
         zdplaskinGetSpeciesName(cstring, &i);
-        string speciesName(*cstring);
+        string speciesName(cstring);
         size_t k = m_thermo->speciesIndex(speciesName);
         m_plasmaSpeciesIndex.push_back(k);
-        cout << speciesName << endl;
-        cout << k << endl;
     }
 }
 
@@ -111,23 +109,22 @@ void PlasmaFlow::getWdot(doublereal* x, size_t j)
 {
     setGas(x,j);
     m_kin->getNetProductionRates(&m_wdot(0,j));
-    if (j != 0 && j < 4) {
+//    if (j != 0 && j < 4) {
         if (m_do_plasma) {
             updateEEDF(x, j);
             zdplaskinGetPlasmaSource(&m_wdot_plasma);
-            size_t i = 0;
-            for (size_t k : m_plasmaSpeciesIndex) {
-                i++;
+            for (size_t i = 0; i < zdplaskinNSpecies(); i++) {
+                size_t k = m_plasmaSpeciesIndex[i];
                 m_wdot(k,j) += m_wdot_plasma[i];
             }  
-        }       
-    }
+        }
+//    }
 }
 
 void PlasmaFlow::updateEEDF(double* x, size_t j)
 {
     for (size_t k : m_collisionSpeciesIndex) {
-        const char* species[10] = {m_thermo->speciesName(k).c_str()};
+        const char* species = m_thermo->speciesName(k).c_str();
         if ( k == m_kElectron) {
             //const double num_density = 1e17;
             const double num_density = ND(x,k,j);
@@ -137,6 +134,7 @@ void PlasmaFlow::updateEEDF(double* x, size_t j)
             zdplaskinSetDensity(species, &num_density);
         }
     }
+
     const double temperature = T(x,j);
     const double ruduced_field = 200.0;
     zdplaskinSetConditions(&temperature, &ruduced_field);
