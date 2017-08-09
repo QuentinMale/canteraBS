@@ -14,7 +14,10 @@ namespace Cantera
 
 PlasmaFlow::PlasmaFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
     IonFlow(ph, nsp, points),
-    m_do_plasma(false)
+    m_do_plasma(false),
+    m_elec_num_density(1e17),
+    m_reduced_field(100),
+    m_plasma_multiplier(1.0)
 {
     vector<string> list;
     list.push_back("N2");
@@ -33,19 +36,40 @@ PlasmaFlow::PlasmaFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
         }
     }
 
-    zdplaskinInit();
-
     for (size_t i = 0; i < zdplaskinNSpecies(); i++) {
         char cstring[20];
         zdplaskinGetSpeciesName(cstring, &i);
         string speciesName(cstring);
         size_t k = m_thermo->speciesIndex(speciesName);
-        m_plasmaSpeciesIndex.push_back(k);
+        if (k != npos) {
+            m_plasmaSpeciesIndex.push_back(k);
+        }
     }
 }
 
 void PlasmaFlow::resize(size_t components, size_t points) {
     IonFlow::resize(components, points);
+}
+
+void PlasmaFlow::evalResidual(double* x, double* rsd, int* diag,
+                              double rdt, size_t jmin, size_t jmax)
+{
+    IonFlow::evalResidual(x, rsd, diag, rdt, jmin, jmax);
+    size_t j0 = max<size_t>(jmin, 1);
+    size_t j1 = min(jmax, m_points-2);
+    if (m_do_plasma) {
+        for (size_t j = j0; j <= j1; j++) {
+            double* wdot_plasma = NULL;
+            updateEEDF(x, j);
+            zdplaskinGetPlasmaSource(&wdot_plasma);
+            for (size_t i = 0; i < zdplaskinNSpecies(); i++) {
+                size_t k = m_plasmaSpeciesIndex[i];
+                // multiply by the multiplier
+                wdot_plasma[i] *= m_plasma_multiplier;
+                rsd[index(c_offset_Y + k, j)] += m_wt[k] * wdot_plasma[i] / m_rho[j];
+            }
+        }
+    }
 }
 
 void PlasmaFlow::updateTransport(double* x, size_t j0, size_t j1)
@@ -68,27 +92,6 @@ void PlasmaFlow::updateTransport(double* x, size_t j0, size_t j1)
     }
 }
 
-void PlasmaFlow::eval(size_t jg, double* xg,
-                  double* rg, integer* diagg, double rdt)
-{
-    IonFlow::eval(jg, xg, rg, diagg, rdt);
-    /*
-    // start of local part of global arrays
-    double* x = xg + loc();
-    //double* rsd = rg + loc();
-    //integer* diag = diagg + loc();
-    // Define boundary Indexes
-    size_t jmin, jmax, j0, j1;
-    getBoundaryIndexes(jg, jmin, jmax, j0, j1);
-    for (size_t j = jmin; j <= jmax; j++) {
-        zdplaskin_set_conditions(T(x, j), 0.0);
-        for (size_t k : m_collisionSpeciesIndex) {
-            zdplaskin_set_density(m_thermo->speciesName(k), X(x, k, j));
-        }
-    }
-    */
-}
-
 void PlasmaFlow::solvePlasma()
 {
     bool changed = false;
@@ -105,39 +108,34 @@ void PlasmaFlow::solvePlasma()
     }
 }
 
-void PlasmaFlow::getWdot(doublereal* x, size_t j)
+void PlasmaFlow::setElecField(double reduced_field)
 {
-    setGas(x,j);
-    m_kin->getNetProductionRates(&m_wdot(0,j));
-//    if (j != 0 && j < 4) {
-        if (m_do_plasma) {
-            updateEEDF(x, j);
-            zdplaskinGetPlasmaSource(&m_wdot_plasma);
-            for (size_t i = 0; i < zdplaskinNSpecies(); i++) {
-                size_t k = m_plasmaSpeciesIndex[i];
-                m_wdot(k,j) += m_wdot_plasma[i];
-            }  
-        }
-//    }
+    m_reduced_field = reduced_field;
+}
+
+void PlasmaFlow::setElecNumDensity(double num_density)
+{
+    m_elec_num_density = num_density;
+}
+
+void PlasmaFlow::setPlasmaSourceMultiplier(double multiplier)
+{
+    m_plasma_multiplier = multiplier; 
 }
 
 void PlasmaFlow::updateEEDF(double* x, size_t j)
 {
     for (size_t k : m_collisionSpeciesIndex) {
         const char* species = m_thermo->speciesName(k).c_str();
-        if ( k == m_kElectron) {
-            //const double num_density = 1e17;
-            const double num_density = ND(x,k,j);
-            zdplaskinSetDensity(species, &num_density);
-        } else {
-            const double num_density = ND(x,k,j);
-            zdplaskinSetDensity(species, &num_density);
-        }
+        const double num_density = ND(x,k,j);
+        zdplaskinSetDensity(species, &num_density);
     }
 
+    // set electron density
+    zdplaskinSetDensity("E", &m_elec_num_density);
+
     const double temperature = T(x,j);
-    const double ruduced_field = 200.0;
-    zdplaskinSetConditions(&temperature, &ruduced_field);
+    zdplaskinSetConditions(&temperature, &m_reduced_field);
 }
 
 }

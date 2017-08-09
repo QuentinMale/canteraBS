@@ -221,11 +221,6 @@ public:
     virtual void evalContinuity(size_t j, doublereal* x, doublereal* r,
                                 integer* diag, doublereal rdt) = 0;
 
-    //! Define boundary indexes and diag
-    void getBoundaryIndexes(size_t jg,
-                            size_t &jmin, size_t &jmax,
-                            size_t &j0, size_t &j1);
-
     //! Index of the species on the left boundary with the largest mass fraction
     size_t leftExcessSpecies() const {
         return m_kExcessLeft;
@@ -242,10 +237,16 @@ protected:
     }
 
     //! Write the net production rates at point `j` into array `m_wdot`
-    virtual void getWdot(doublereal* x, size_t j) {
+    void getWdot(doublereal* x, size_t j) {
         setGas(x,j);
         m_kin->getNetProductionRates(&m_wdot(0,j));
     }
+
+    virtual void updateProperties(size_t jg, double* x, double* rsd, int* diag,
+                                  double rdt, size_t jmin, size_t jmax);
+
+    virtual void evalResidual(double* x, double* rsd, int* diag,
+                              double rdt, size_t jmin, size_t jmax);
 
     /**
      * Update the thermodynamic properties from point j0 to point j1

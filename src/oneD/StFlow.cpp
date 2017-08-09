@@ -211,24 +211,6 @@ void StFlow::_finalize(const doublereal* x)
     }
 }
 
-void StFlow::getBoundaryIndexes(size_t jg,
-                                size_t &jmin, size_t &jmax,
-                                size_t &j0, size_t &j1)
-{
-    if (jg == npos) { // evaluate all points
-        jmin = 0;
-        jmax = m_points - 1;
-    } else { // evaluate points for Jacobian
-        size_t jpt = (jg == 0) ? 0 : jg - firstPoint();
-        jmin = std::max<size_t>(jpt, 1) - 1;
-        jmax = std::min(jpt+1,m_points-1);
-    }
-
-    // properties are computed for grid points from j0 to j1
-    j0 = std::max<size_t>(jmin, 1) - 1;
-    j1 = std::min(jmax+1,m_points-1);
-}
-
 void StFlow::eval(size_t jg, doublereal* xg,
                   doublereal* rg, integer* diagg, doublereal rdt)
 {
@@ -248,11 +230,26 @@ void StFlow::eval(size_t jg, doublereal* xg,
     doublereal* rsd = rg + loc();
     integer* diag = diagg + loc();
 
-    // Define boundary Indexes
-    size_t jmin, jmax, j0, j1;
-    getBoundaryIndexes(jg, jmin, jmax, j0, j1);
+    size_t jmin, jmax;
+    if (jg == npos) { // evaluate all points
+        jmin = 0;
+        jmax = m_points - 1;
+    } else { // evaluate points for Jacobian
+        size_t jpt = (jg == 0) ? 0 : jg - firstPoint();
+        jmin = std::max<size_t>(jpt, 1) - 1;
+        jmax = std::min(jpt+1,m_points-1);
+    }
 
-    // ------------ update properties ------------
+    updateProperties(jg, x, rsd, diag, rdt, jmin, jmax);
+    evalResidual(x, rsd, diag, rdt, jmin, jmax);
+}
+
+void StFlow::updateProperties(size_t jg, double* x, double* rsd, int* diag,
+                              double rdt, size_t jmin, size_t jmax)
+{
+    // properties are computed for grid points from j0 to j1
+    size_t j0 = std::max<size_t>(jmin, 1) - 1;
+    size_t j1 = std::min(jmax+1,m_points-1);
 
     updateThermo(x, j0, j1);
     if (jg == npos || m_force_full_update) {
@@ -270,7 +267,11 @@ void StFlow::eval(size_t jg, doublereal* xg,
     // update the species diffusive mass fluxes whether or not a
     // Jacobian is being evaluated
     updateDiffFluxes(x, j0, j1);
+}
 
+void StFlow::evalResidual(double* x, double* rsd, int* diag,
+                          double rdt, size_t jmin, size_t jmax)
+{
     //----------------------------------------------------
     // evaluate the residual equations at all required
     // grid points

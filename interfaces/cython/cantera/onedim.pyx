@@ -533,6 +533,15 @@ cdef class PlasmaFlow(_FlowBase):
     def set_electricPotential(self, v_inlet, v_outlet):
         (<CxxPlasmaFlow*>self.flow).setElectricPotential(v_inlet, v_outlet)
 
+    def set_elecField(self, Td):
+        (<CxxPlasmaFlow*>self.flow).setElecField(Td)
+
+    def set_elecNumDensity(self, num_density):
+        (<CxxPlasmaFlow*>self.flow).setElecNumDensity(num_density)
+
+    def set_plasmaSourceMultiplier(self, multiplier):
+        (<CxxPlasmaFlow*>self.flow).setPlasmaSourceMultiplier(multiplier)
+
     property poisson_enabled:
         """ Determines whether or not to solve the energy equation."""
         def __get__(self):

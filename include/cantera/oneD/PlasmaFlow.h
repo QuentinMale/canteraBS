@@ -22,25 +22,26 @@ class PlasmaFlow : public IonFlow
 public:
     PlasmaFlow(IdealGasPhase* ph = 0, size_t nsp = 1, size_t points = 1);
 
-    virtual void eval(size_t jg, double* xg,
-              double* rg, integer* diagg, double rdt);
     virtual void resize(size_t components, size_t points);
     void updateEEDF(double* x, size_t j);
     void solvePlasma();
     bool doPlasma() {
         return m_do_plasma;
     }
+    void setElecField(double reduced_field);
+    void setElecNumDensity(double num_density);
+    void setPlasmaSourceMultiplier(double multiplier);
 
 protected:
+    virtual void evalResidual(double* x, double* rsd, int* diag,
+                              double rdt, size_t jmin, size_t jmax);
     virtual void updateTransport(double* x, size_t j0, size_t j1);
     vector<size_t> m_collisionSpeciesIndex;
     vector<size_t> m_plasmaSpeciesIndex;
     bool m_do_plasma;
-
-    virtual void getWdot(doublereal* x, size_t j);
-    double* m_wdot_plasma = NULL;
-
-
+    double m_elec_num_density;
+    double m_reduced_field;
+    double m_plasma_multiplier;
 };
 
 }

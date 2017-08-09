@@ -718,6 +718,9 @@ cdef extern from "cantera/oneD/PlasmaFlow.h":
         cbool doVelocity(size_t)
         cbool doPlasma()
         void solvePlasma()
+        void setElecField(double)
+        void setElecNumDensity(double)
+        void setPlasmaSourceMultiplier(double)
 
 
 cdef extern from "cantera/oneD/Sim1D.h":

@@ -42,6 +42,7 @@ localenv = env.Clone()
 localenv.Prepend(CPPPATH=[Dir('#include'), Dir('#include/cantera/ext'), Dir('.')])
 localenv.Prepend(F90PATH=[Dir('.'+'/zdplaskin'),])
 localenv.Append(CCFLAGS=env['warning_flags'])
+localenv.Append(CCFLAGS=env['openmp_flag'])
 
 if env['CC'] == 'cl' and env['debug']:
     env['use_pch'] = False # PCH doesn't work with per-file PDB

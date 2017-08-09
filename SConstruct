@@ -808,6 +808,8 @@ if env['coverage']:
 if env['toolchain'] == 'mingw':
     env.Append(LINKFLAGS=['-static-libgcc', '-static-libstdc++'])
 
+env.Append(LINKFLAGS=['-fopenmp'])
+
 def config_error(message):
     print 'ERROR:', message
     if env['VERBOSE']:
