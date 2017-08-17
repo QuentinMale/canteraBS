@@ -76,14 +76,14 @@ species(name = "H(T)",
 #-------------------------------------------------------------------------------
 # Reaction data
 #-------------------------------------------------------------------------------
-reaction("N2(c3pu) + N2 => 2 N2", [5.00E-11, 0.0, 0.0])
-reaction("N2(c3pu) + H2 => N2 + 2 H(T)", [3.00E-10, 0.0, 0.0])
-reaction("N2(c3pu) + O2 => N2 + 2 O(T)", [3.00E-10, 0.0, 0.0])
+#reaction("N2(c3pu) + N2 => 2 N2", [5.00E-11, 0.0, 0.0])
+#reaction("N2(c3pu) + H2 => N2 + 2 H(T)", [3.00E-10, 0.0, 0.0])
+#reaction("N2(c3pu) + O2 => N2 + 2 O(T)", [3.00E-10, 0.0, 0.0])
 
 # H(T) chain braching and quenching
-reaction("H(T) + O2 => O + OH", [1.60E-10, 0.0, 0.0])
-three_body_reaction("H(T) + M => H + M", [1.60E-10, 0.0, 0.0])
+#reaction("H(T) + O2 => O + OH", [1.60E-10, 0.0, 0.0])
+#three_body_reaction("H(T) + M => H + M", [1.60E-10, 0.0, 0.0])
 
 # O(T) chain braching and quenching
-reaction("O(T) + H2 => H + OH", [1.50E-11, 0.0, 0.0])
-three_body_reaction("O(T) + M => O + M", [1.3E-10, 0.0, 0.0])
+#reaction("O(T) + H2 => H + OH", [1.50E-11, 0.0, 0.0])
+#three_body_reaction("O(T) + M => O + M", [1.3E-10, 0.0, 0.0])

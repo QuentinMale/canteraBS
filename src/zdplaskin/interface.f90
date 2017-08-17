@@ -68,6 +68,17 @@ function zdplaskinGetElecMobility(ND) bind(C,name='zdplaskinGetElecMobility') re
   mu = 100 * mu / ND
 end function zdplaskinGetElecMobility
 
+function zdplaskinGetElecPower(ND) bind(C,name='zdplaskinGetElecPower') result(ep)
+  use, intrinsic :: iso_c_binding
+  use ZDPlasKin
+  implicit none
+  real(c_double) :: ep
+  real(c_double), intent(in) :: ND
+  real(c_double) :: ElectronCharge = 1.602176565e-19
+  call ZDPlasKin_get_conditions(ELEC_POWER_N=ep)
+  ep = ep * ND * ElectronCharge * 1e-6   !power per electron
+end function zdplaskinGetElecPower
+
 subroutine zdplaskinGetPlasmaSource(carray) bind(C,name='zdplaskinGetPlasmaSource')
   use, intrinsic :: iso_c_binding
   use ZDPlasKin

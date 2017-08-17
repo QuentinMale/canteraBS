@@ -42,6 +42,7 @@ protected:
     double m_elec_num_density;
     double m_reduced_field;
     double m_plasma_multiplier;
+    vector<double> m_elec_power;
 };
 
 }

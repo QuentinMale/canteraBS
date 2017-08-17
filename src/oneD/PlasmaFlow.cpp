@@ -45,10 +45,12 @@ PlasmaFlow::PlasmaFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
             m_plasmaSpeciesIndex.push_back(k);
         }
     }
+    m_elec_power.resize(m_points, 0.0);
 }
 
 void PlasmaFlow::resize(size_t components, size_t points) {
     IonFlow::resize(components, points);
+    m_elec_power.resize(m_points, 0.0);
 }
 
 void PlasmaFlow::evalResidual(double* x, double* rsd, int* diag,
@@ -57,18 +59,32 @@ void PlasmaFlow::evalResidual(double* x, double* rsd, int* diag,
     IonFlow::evalResidual(x, rsd, diag, rdt, jmin, jmax);
     size_t j0 = max<size_t>(jmin, 1);
     size_t j1 = min(jmax, m_points-2);
+
     if (m_do_plasma) {
+        m_do_plasma = false;
         for (size_t j = j0; j <= j1; j++) {
-            double* wdot_plasma = NULL;
             updateEEDF(x, j);
-            zdplaskinGetPlasmaSource(&wdot_plasma);
-            for (size_t i = 0; i < zdplaskinNSpecies(); i++) {
-                size_t k = m_plasmaSpeciesIndex[i];
-                // multiply by the multiplier
-                wdot_plasma[i] *= m_plasma_multiplier;
-                rsd[index(c_offset_Y + k, j)] += m_wt[k] * wdot_plasma[i] / m_rho[j];
-            }
+            // double* wdot_plasma = NULL;
+            // zdplaskinGetPlasmaSource(&wdot_plasma);
+            // for (size_t i = 0; i < zdplaskinNSpecies(); i++) {
+            //     size_t k = m_plasmaSpeciesIndex[i];
+            //     // multiply by the multiplier
+            //     wdot_plasma[i] *= m_plasma_multiplier;
+            //     rsd[index(c_offset_Y + k, j)] += m_wt[k] * wdot_plasma[i] / m_rho[j];
+            // }
+
+            // update electron power
+            const double number_density = ND_t(j);
+            m_elec_power[j] = zdplaskinGetElecPower(&number_density);
         }
+    }
+
+    // add electron power to the system
+    for (size_t j = j0; j <= j1; j++) {
+        rsd[index(c_offset_T, j)] += m_elec_power[j]
+                                     * m_elec_num_density 
+                                     / (m_rho[j] * m_cp[j])
+                                     * m_plasma_multiplier;
     }
 }
 
