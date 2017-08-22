@@ -533,8 +533,8 @@ cdef class PlasmaFlow(_FlowBase):
     def set_electricPotential(self, v_inlet, v_outlet):
         (<CxxPlasmaFlow*>self.flow).setElectricPotential(v_inlet, v_outlet)
 
-    def set_elecField(self, Td):
-        (<CxxPlasmaFlow*>self.flow).setElecField(Td)
+    def set_elecField(self, E):
+        (<CxxPlasmaFlow*>self.flow).setElecField(E)
 
     def set_elecNumDensity(self, num_density):
         (<CxxPlasmaFlow*>self.flow).setElecNumDensity(num_density)

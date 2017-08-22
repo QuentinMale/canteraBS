@@ -12,7 +12,7 @@
 !
 !-----------------------------------------------------------------------------------------------------------------------------------
 !
-! Wed Aug  9 15:52:42 2017
+! Sat Aug 26 19:12:24 2017
 !
 !-----------------------------------------------------------------------------------------------------------------------------------
 !
@@ -30,7 +30,7 @@ module ZDPlasKin
 !
 ! config
 !
-  integer, parameter :: species_max = 6, species_electrons = 6, species_length = 8, reactions_max = 1, reactions_length = 19
+  integer, parameter :: species_max = 6, species_electrons = 6, species_length = 4, reactions_max = 1, reactions_length = 14
   double precision                          :: density(species_max)
   integer                                   :: species_charge(species_max)
   character(species_length)                 :: species_name(species_max)
@@ -39,10 +39,6 @@ module ZDPlasKin
 !
 ! internal config
 !
-!$OMP THREADPRIVATE(vode_options, vode_itask, vode_istate, ifile_unit)
-!$OMP THREADPRIVATE(stat_dens, stat_src, stat_rrt, stat_time, dens_loc, rrt_loc, tsav, mach_accur, mach_tiny)
-!$OMP THREADPRIVATE(rrt, mrtm, ZDPlasKin_cfg)
-!$OMP THREADPRIVATE(lZDPlasKin_init, lprint, lstat_accum, ldensity_constant, density_constant, lgas_heating)
   double precision, parameter, private      :: vode_atol = 1.00D-10, vode_rtol = 1.00D-05, cfg_rtol = 1.00D-01
   integer, parameter, private               :: vode_neq = species_max + 1
   type (vode_opts), private                 :: vode_options
@@ -67,8 +63,6 @@ module ZDPlasKin
 !
 ! bolsig+ config
 !
-!$OMP THREADPRIVATE(bolsig_eecol_frac, bolsig_pointer, bolsig_species_index, bolsig_collisions_max)
-!$OMP THREADPRIVATE(lbolsig_ignore_gas_temp, lbolsig_Maxwell_EEDF, bolsig_rates, bolsig_species)
   double precision, parameter, private      :: bolsig_rtol = 1.00D-03, bolsig_rtol_half = 3.16D-02, &
                                                bolsig_field_min = 1.00D-01, bolsig_field_max = 1.00D+03, &
                                                bolsig_eecol_frac_def = 1.00D-05
@@ -112,11 +106,11 @@ module ZDPlasKin
 ! data section
 !
   data species_charge(1:species_max) &
-  / 0, 0, 0, 0, 0,-1/
+  / 0, 1, 0, 0, 0,-1/
   data species_name(1:species_max) &
-  /"O2      ","N2      ","N2(C3PU)","H2      ","H2O     ","E       "/
+  /"O2  ","O2^+","N2  ","H2  ","H2O ","E   "/
   data reaction_sign(1:reactions_max) &
-  /"bolsig:N2->N2(C3PU)"/
+  /"bolsig:O2->O2+"/
   data bolsig_species(1:bolsig_species_max) &
   /"O2 ","N2 ","H2 ","H2O"/
 contains
@@ -811,7 +805,7 @@ subroutine ZDPlasKin_write_file(FILE_SPECIES,FILE_REACTIONS,FILE_SOURCE_MATRIX,F
 100 if( lerror ) call ZDPlasKin_stop("ZDPlasKin ERROR: cannot write to file <" &
                                     // trim(adjustl(FILE_SPECIES)) // "> (subroutine ZDPlasKin_write_file)")
     close(ifile_unit)
-111 format(i1,1x,A8)
+111 format(i1,1x,A4)
   endif
   if( present(FILE_REACTIONS) ) then
     lerror = .true.
@@ -823,7 +817,7 @@ subroutine ZDPlasKin_write_file(FILE_SPECIES,FILE_REACTIONS,FILE_SOURCE_MATRIX,F
 200 if( lerror ) call ZDPlasKin_stop("ZDPlasKin ERROR: cannot write to file <" &
                                     // trim(adjustl(FILE_REACTIONS)) // "> (subroutine ZDPlasKin_write_file)")
     close(ifile_unit)
-211 format(i1,1x,A19)
+211 format(i1,1x,A14)
   endif
   if( present(FILE_SOURCE_MATRIX) ) then
     if( lstat_accum ) then
@@ -843,9 +837,9 @@ subroutine ZDPlasKin_write_file(FILE_SPECIES,FILE_REACTIONS,FILE_SOURCE_MATRIX,F
 300 if( lerror ) call ZDPlasKin_stop("ZDPlasKin ERROR: cannot write to file <" &
                                     // trim(adjustl(FILE_SOURCE_MATRIX)) // "> (subroutine ZDPlasKin_write_file)")
     close(ifile_unit)
-311 format(221x,6(1x,i9))
-312 format(A1,1x,A19,1x,6(1x,A9))
-313 format(i1,1x,A19,1x,6(1x,1pd9.2))
+311 format(171x,6(1x,i9))
+312 format(A1,1x,A14,1x,6(1x,A9))
+313 format(i1,1x,A14,1x,6(1x,1pd9.2))
   endif
   return
 end subroutine ZDPlasKin_write_file
@@ -987,8 +981,9 @@ subroutine ZDPlasKin_reac_source_matrix(reac_rate_local,reac_source_local)
   double precision, intent(in)  :: reac_rate_local(reactions_max)
   double precision, intent(out) :: reac_source_local(species_max,reactions_max)
   reac_source_local(:,:) = 0.0d0
-  reac_source_local(2,1) = - reac_rate_local(1) 
-  reac_source_local(3,1) = + reac_rate_local(1) 
+  reac_source_local(1,1) = - reac_rate_local(1) 
+  reac_source_local(2,1) = + reac_rate_local(1) 
+  reac_source_local(6,1) = + reac_rate_local(1) 
   return
 end subroutine ZDPlasKin_reac_source_matrix
 !-----------------------------------------------------------------------------------------------------------------------------------
@@ -1004,13 +999,13 @@ subroutine ZDPlasKin_fex(neq,t,y,ydot)
   if( lgas_heating ) ZDPlasKin_cfg(1) = y(7)
   density(:) = y(1:species_max)
   call ZDPlasKin_reac_rates(t)
-  rrt(1) = rrt(1) * density(2) * density(6) 
-  ydot(1) = 0.0d0
-  ydot(2) = -rrt(1) 
-  ydot(3) = +rrt(1) 
+  rrt(1) = rrt(1) * density(1) * density(6) 
+  ydot(1) = -rrt(1) 
+  ydot(2) = +rrt(1) 
+  ydot(3) = 0.0d0
   ydot(4) = 0.0d0
   ydot(5) = 0.0d0
-  ydot(6) = 0.0d0
+  ydot(6) = +rrt(1) 
   if( ldensity_constant ) where( density_constant(:) ) ydot(1:species_max) = 0.0d0
   ydot(7) = 0.0d0
   if( lgas_heating ) then
@@ -1034,10 +1029,12 @@ subroutine ZDPlasKin_jex(neq,t,y,ml,mu,pd,nrpd)
   if( lgas_heating ) ZDPlasKin_cfg(1) = y(7)
   density(:) = y(1:species_max)
   call ZDPlasKin_reac_rates(t)
-  pd(2,2) = pd(2,2) - rrt(1) * density(6) 
-  pd(2,6) = pd(2,6) - rrt(1) * density(2) 
-  pd(3,2) = pd(3,2) + rrt(1) * density(6) 
-  pd(3,6) = pd(3,6) + rrt(1) * density(2) 
+  pd(1,1) = pd(1,1) - rrt(1) * density(6) 
+  pd(1,6) = pd(1,6) - rrt(1) * density(1) 
+  pd(2,1) = pd(2,1) + rrt(1) * density(6) 
+  pd(2,6) = pd(2,6) + rrt(1) * density(1) 
+  pd(6,1) = pd(6,1) + rrt(1) * density(6) 
+  pd(6,6) = pd(6,6) + rrt(1) * density(1) 
   if( ldensity_constant ) then
     do i = 1, species_max
       if( density_constant(i) ) pd(i,:) = 0.0d0

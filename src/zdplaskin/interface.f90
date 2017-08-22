@@ -30,13 +30,21 @@ subroutine zdplaskinGetDensity(cstring, num_density_SI) bind(C, name='zdplaskinG
   num_density_SI = DENS * 1e6
 end subroutine zdplaskinGetDensity
 
-subroutine zdplaskinSetConditions(gasTemperature, reduced_field) bind(C,name='zdplaskinSetConditions')
+subroutine zdplaskinSetConditions(gasTemperature, elec_field, elec_frequency, num_density) bind(C,name='zdplaskinSetConditions')
   use, intrinsic :: iso_c_binding
   use ZDPlasKin
   implicit none
-  real(c_double), intent(in) :: gasTemperature
-  real(c_double), intent(in) :: reduced_field
-  call ZDPlasKin_set_conditions(GAS_TEMPERATURE=gasTemperature, REDUCED_FIELD=reduced_field)
+  ! input variables in SI unit 
+  real(c_double), intent(in) :: gasTemperature ![K]
+  real(c_double), intent(in) :: elec_field ! [v/m] 
+  real(c_double), intent(in) :: elec_frequency ! [1/s]
+  real(c_double), intent(in) :: num_density ! [m-3]
+  ! zdplaskin varibles
+  real(c_double) :: reduced_field
+  real(c_double) :: reduced_freqency
+  reduced_field = elec_field / num_density * 1e21 ! [Td]
+  reduced_freqency = elec_frequency / num_density * 1e6  ! [cm3 s-1]
+  call ZDPlasKin_set_conditions(GAS_TEMPERATURE=gasTemperature, REDUCED_FIELD=reduced_field, REDUCED_FREQUENCY=reduced_freqency)
 end subroutine zdplaskinSetConditions
 
 function zdplaskinGetElecTemp() bind(C,name='zdplaskinGetElecTemp') result(eTemperature)
@@ -77,6 +85,7 @@ function zdplaskinGetElecPower(ND) bind(C,name='zdplaskinGetElecPower') result(e
   real(c_double) :: ElectronCharge = 1.602176565e-19
   call ZDPlasKin_get_conditions(ELEC_POWER_N=ep)
   ep = ep * ND * ElectronCharge * 1e-6   !power per electron
+
 end function zdplaskinGetElecPower
 
 subroutine zdplaskinGetPlasmaSource(carray) bind(C,name='zdplaskinGetPlasmaSource')

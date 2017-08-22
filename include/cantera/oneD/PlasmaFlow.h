@@ -40,8 +40,11 @@ protected:
     vector<size_t> m_plasmaSpeciesIndex;
     bool m_do_plasma;
     double m_elec_num_density;
-    double m_reduced_field;
+    double m_elec_field;
+    double m_elec_frequency;
     double m_plasma_multiplier;
+    vector<double> m_ND;
+    double m_ND_t;
     vector<double> m_elec_power;
 };
 
