@@ -28,6 +28,7 @@ public:
     bool doPlasma() {
         return m_do_plasma;
     }
+    void enableElecHeat(bool withElecHeat);
     void setElecField(double reduced_field);
     void setElecNumDensity(double num_density);
     void setPlasmaSourceMultiplier(double multiplier);
@@ -39,6 +40,7 @@ protected:
     vector<size_t> m_collisionSpeciesIndex;
     vector<size_t> m_plasmaSpeciesIndex;
     bool m_do_plasma;
+    bool m_do_elec_heat;
     double m_elec_num_density;
     double m_elec_field;
     double m_elec_frequency;

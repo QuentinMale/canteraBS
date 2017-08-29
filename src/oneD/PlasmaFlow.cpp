@@ -15,6 +15,7 @@ namespace Cantera
 PlasmaFlow::PlasmaFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
     IonFlow(ph, nsp, points),
     m_do_plasma(false),
+    m_do_elec_heat(false),
     m_elec_num_density(1e17),
     m_elec_field(2.5e6),
     m_elec_frequency(1e10),
@@ -65,12 +66,18 @@ void PlasmaFlow::evalResidual(double* x, double* rsd, int* diag,
 
     if (m_do_plasma) {
         for (size_t j = jmin; j <= jmax; j++) {
-            if (j != 0 && grid(j) <= m_zfixed) {
+            if (j != 0 && j != m_points -1) {
+            // if (j != 0 && grid(j) <= m_zfixed) {
             // if (grid(j) == m_zfixed) {
                 // set gas
                 setGas(x,j);
                 for (size_t k = 0; k < m_nsp; k++) {
-                    m_ND[k] = ND(x,k,j);
+                    // make sure number density is larger than zero.
+                    if (ND(x,k,j) > 0.0) {
+                        m_ND[k] = ND(x,k,j);
+                    } else {
+                        m_ND[k] = 0.0;
+                    }
                 }
                 m_ND_t = ND_t(j);
                 updateEEDF(x, j);
@@ -79,20 +86,30 @@ void PlasmaFlow::evalResidual(double* x, double* rsd, int* diag,
                 for (size_t i = 0; i < zdplaskinNSpecies(); i++) {
                     size_t k = m_plasmaSpeciesIndex[i];
                     // multiply by the multiplier
-                    // wdot_plasma[i] *= m_plasma_multiplier;
+                    wdot_plasma[i] *= m_plasma_multiplier;
                     rsd[index(c_offset_Y + k, j)] += m_wt[k] * wdot_plasma[i] / m_rho[j];
                 }
 
                 // update electron power
-                const double number_density = ND_t(j);
-                m_elec_power[j] = zdplaskinGetElecPower(&number_density);
-                rsd[index(c_offset_T, j)] += m_elec_power[j]
-                                             * m_elec_num_density
-                                             / (m_rho[j] * m_cp[j])
-                                             * m_plasma_multiplier;
+                if (m_do_elec_heat) {
+                    const double number_density = ND_t(j);
+                    m_elec_power[j] = zdplaskinGetElecPower(&number_density);
+                    if (m_kElectron != npos) {
+                        m_elec_num_density = m_ND[m_kElectron];
+                    }
+                    rsd[index(c_offset_T, j)] += m_elec_power[j]
+                                                 * m_elec_num_density
+                                                 / (m_rho[j] * m_cp[j])
+                                                 * m_plasma_multiplier;           
+                }
             }
         }
     }
+}
+
+void PlasmaFlow::enableElecHeat(bool withElecHeat)
+{
+    m_do_elec_heat = withElecHeat;
 }
 
 void PlasmaFlow::updateTransport(double* x, size_t j0, size_t j1)

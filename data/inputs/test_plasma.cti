@@ -3,7 +3,7 @@ units(length='cm', time='s', quantity='molec', act_energy='K')
 ideal_gas(name='h2airplasma',
        elements=' O  H  Ar  N  E',
        species=['''gri30: H2  H  O  O2  OH  H2O  HO2  H2O2  N2  AR''',
-                'O2^+ E'],
+                'O2(a1dg) E'],
        reactions=['gri30: all', 'all'],
        transport='Mix',
        options=['skip_undeclared_species', 'skip_undeclared_third_bodies'],
@@ -187,3 +187,5 @@ species(name = 'E',
 
 #reaction("O2^+ + E + E => O2 + E", [9.0e-14, -2.0, 0.0])
 #reaction("O2^+ + E + E => O2 + E", [0.0, -2.0, 0.0])
+
+#reaction("O2^- + N2 => E + O2 + N2", [1.10E-13, 0.5, 4990.0])

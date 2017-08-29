@@ -713,6 +713,7 @@ cdef extern from "cantera/oneD/PlasmaFlow.h":
         void solvePoissonEqn()
         void fixElectricPotential()
         cbool doPoisson(size_t)
+        void enableElecHeat(cbool)
         void solveVelocity()
         void fixVelocity()
         cbool doVelocity(size_t)

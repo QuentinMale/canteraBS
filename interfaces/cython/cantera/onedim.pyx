@@ -542,6 +542,9 @@ cdef class PlasmaFlow(_FlowBase):
     def set_plasmaSourceMultiplier(self, multiplier):
         (<CxxPlasmaFlow*>self.flow).setPlasmaSourceMultiplier(multiplier)
 
+    def enable_ElecHeat(self, withElecHeat):
+        (<CxxPlasmaFlow*>self.flow).enableElecHeat(withElecHeat) 
+
     property poisson_enabled:
         """ Determines whether or not to solve the energy equation."""
         def __get__(self):
