@@ -234,37 +234,37 @@ void IonFlow::evalResidual(double* x, double* rsd, int* diag,
                            double rdt, size_t jmin, size_t jmax)
 {
     StFlow::evalResidual(x, rsd, diag, rdt, jmin, jmax);
-    if (m_stage != 3) {
-        return;
-    }
+    if (m_stage == 3) {
+        for (size_t j = jmin; j <= jmax; j++) {
+            if (j == 0) {
+                rsd[index(c_offset_P, j)] = m_inletVoltage - phi(x,j);
+                // rsd[index(c_offset_P, j)] = E(x,j) - 100.0;
+                diag[index(c_offset_P, j)] = 0;
+            } else if (j == m_points - 1) {
+                rsd[index(c_offset_P, j)] = m_outletVoltage - phi(x,j);
+                // rsd[index(c_offset_P, j)] = E(x,j-1) - 0.0;
+                diag[index(c_offset_P, j)] = 0;
+            } else {
+                //-----------------------------------------------
+                //    Poisson's equation
+                //
+                //    dE/dz = e/eps_0 * sum(q_k*n_k)
+                //
+                //    E = -dV/dz
+                //-----------------------------------------------
+                double chargeDensity = 0.0;
+                for (size_t k : m_kCharge) {
+                    chargeDensity += m_speciesCharge[k] * ElectronCharge * ND(x,k,j);
+                }
+                rsd[index(c_offset_P, j)] = dEdz(x,j) - chargeDensity / epsilon_0;
+                diag[index(c_offset_P, j)] = 0;
 
-    for (size_t j = jmin; j <= jmax; j++) {
-        if (j == 0) {
-            rsd[index(c_offset_P, j)] = m_inletVoltage - phi(x,j);
-            diag[index(c_offset_P, j)] = 0;
-        } else if (j == m_points - 1) {
-            rsd[index(c_offset_P, j)] = m_outletVoltage - phi(x,j);
-            diag[index(c_offset_P, j)] = 0;
-        } else {
-            //-----------------------------------------------
-            //    Poisson's equation
-            //
-            //    dE/dz = e/eps_0 * sum(q_k*n_k)
-            //
-            //    E = -dV/dz
-            //-----------------------------------------------
-            double chargeDensity = 0.0;
-            for (size_t k : m_kCharge) {
-                chargeDensity += m_speciesCharge[k] * ElectronCharge * ND(x,k,j);
-            }
-            rsd[index(c_offset_P, j)] = dEdz(x,j) - chargeDensity / epsilon_0;
-            diag[index(c_offset_P, j)] = 0;
-
-            // This method is used when you disable energy equation
-            // but still maintain the velocity profile
-            if (!m_do_velocity[j]) {
-                rsd[index(c_offset_U, j)] = u(x,j) - u_fixed(j);
-                diag[index(c_offset_U, j)] = 0;
+                // This method is used when you disable energy equation
+                // but still maintain the velocity profile
+                if (!m_do_velocity[j]) {
+                    rsd[index(c_offset_U, j)] = u(x,j) - u_fixed(j);
+                    diag[index(c_offset_U, j)] = 0;
+                }
             }
         }
     }
