@@ -496,24 +496,22 @@ class IonFlame(FreeFlame):
         super(IonFlame, self).__init__(gas, grid, width)
 
     def solve(self, loglevel=1, refine_grid=True, auto=False, stage=1, enable_energy=True):
-        if not hasattr(self, 'solve'):
-            print("ion")
-            if enable_energy == True:
-                self.energy_enabled = True
-                self.velocity_enabled = True
-            else:
-                self.energy_enabled = False
-                self.velocity_enabled = False
-            if stage == 1:
-                self.flame.set_solvingStage(stage)
-                super(IonFlame, self).solve(loglevel, refine_grid, auto)
-            if stage == 2:
-                self.flame.set_solvingStage(stage)
-                super(IonFlame, self).solve(loglevel, refine_grid, auto)
-            if stage == 3:
-                self.flame.set_solvingStage(stage)
-                self.poisson_enabled = True
-                super(IonFlame, self).solve(loglevel, refine_grid, auto)
+        if enable_energy == True:
+            self.energy_enabled = True
+            self.velocity_enabled = True
+        else:
+            self.energy_enabled = False
+            self.velocity_enabled = False
+        if stage == 1:
+            self.flame.set_solvingStage(stage)
+            super(FreeFlame, self).solve(loglevel, refine_grid, auto)
+        if stage == 2:
+            self.flame.set_solvingStage(stage)
+            super(FreeFlame, self).solve(loglevel, refine_grid, auto)
+        if stage == 3:
+            self.flame.set_solvingStage(stage)
+            self.poisson_enabled = True
+            super(FreeFlame, self).solve(loglevel, refine_grid, auto)
 
     def write_csv(self, filename, species='X', quiet=True):
         """
@@ -596,72 +594,6 @@ class PlasmaFlame(IonFlame):
             self.flame = PlasmaFlow(gas, name='flame')
         super(PlasmaFlame, self).__init__(gas, grid, width)
 
-    def set_initial_guess(self, locs=[0.0, 0.3, 0.5, 1.0]):
-        """
-        Set the initial guess for the solution. The adiabatic flame
-        temperature and equilibrium composition are computed for the inlet gas
-        composition. 
-        
-        :param locs:
-            A list of four locations to define the temperature and mass fraction profiles. 
-            Profiles rise linearly between the second and third location.
-            Locations are given as a fraction of the entire domain
-        """
-        super(PlasmaFlame, self).set_initial_guess()
-        self.gas.TPY = self.inlet.T, self.P, self.inlet.Y
-
-        if not self.inlet.mdot:
-            # nonzero initial guess increases likelihood of convergence
-            self.inlet.mdot = 1.0 * self.gas.density
-
-        Y0 = self.inlet.Y
-        u0 = self.inlet.mdot/self.gas.density
-        T0 = self.inlet.T
-
-        # get adiabatic flame temperature and composition
-        self.gas.equilibrate('HP')
-        Teq = self.gas.T
-        Yeq = self.gas.Y
-        u1 = self.inlet.mdot/self.gas.density
-
-        self.set_profile('u', locs, [u0, u0, u1, u1])
-        self.set_profile('T', locs, [T0, T0, Teq, Teq])
-
-        # Pick the location of the fixed temperature point, using an existing
-        # point if a reasonable choice exists
-        T = self.T
-        Tmid = 0.75 * T0 + 0.25 * Teq
-        i = np.flatnonzero(T < Tmid)[-1] # last point less than Tmid
-        if Tmid - T[i] < 0.2 * (Tmid - T0):
-            self.set_fixed_temperature(T[i])
-        elif T[i+1] - Tmid < 0.2 * (Teq - Tmid):
-            self.set_fixed_temperature(T[i+1])
-        else:
-            self.set_fixed_temperature(Tmid)
-
-        for n in range(self.gas.n_species):
-            self.set_profile(self.gas.species_name(n),
-                             locs, [Y0[n], Y0[n], Yeq[n], Yeq[n]])
-
-    def solve(self, loglevel=1, refine_grid=True, auto=False, stage=1, enable_energy=True):
-        super(IonFlame, self).solve(loglevel, refine_grid, auto)
-        if enable_energy == True:
-            self.energy_enabled = True
-            self.velocity_enabled = True
-        else:
-            self.energy_enabled = False
-            self.velocity_enabled = False
-        if stage == 1:
-            self.flame.set_solvingStage(stage)
-            super(PlasmaFlame, self).solve(loglevel, refine_grid, auto)
-        if stage == 2:
-            self.flame.set_solvingStage(stage)
-            super(PlasmaFlame, self).solve(loglevel, refine_grid, auto)
-        if stage == 3:
-            self.flame.set_solvingStage(stage)
-            self.poisson_enabled = True
-            super(PlasmaFlame, self).solve(loglevel, refine_grid, auto)
-
     def write_csv(self, filename, species='X', quiet=True):
         """
         Write the velocity, temperature, density, electric potential,
@@ -679,36 +611,19 @@ class PlasmaFlame(IonFlame):
         V = self.V
         phi = self.phi
         E = self.E
+        Avogadro = 6.02214129e26
 
         csvfile = open(filename, 'w')
         writer = _csv.writer(csvfile)
         writer.writerow(['z (m)', 'u (m/s)', 'V (1/s)', 'T (K)',
-                         'phi (V)', 'E (V/m)', 'rho (kmol/m3)'] + self.gas.species_names)
+                         'phi (V)', 'E (V/m)', 'ND (1/m3)'] + self.gas.species_names)
         for n in range(self.flame.n_points):
             self.set_gas_state(n)
-            writer.writerow([z[n], u[n], V[n], T[n], phi[n], E[n], self.gas.density_mole] +
+            writer.writerow([z[n], u[n], V[n], T[n], phi[n], E[n], self.gas.density_mole*Avogadro] +
                             list(getattr(self.gas, species)))
         csvfile.close()
         if not quiet:
             print("Solution saved to '{0}'.".format(filename))
-
-    @property
-    def poisson_enabled(self):
-        """ Get/Set whether or not to solve the Poisson's equation."""
-        return self.flame.poisson_enabled
-
-    @poisson_enabled.setter
-    def poisson_enabled(self, enable):
-        self.flame.poisson_enabled = enable
-
-    @property
-    def velocity_enabled(self):
-        """ Get/Set whether or not to solve the velocity."""
-        return self.flame.velocity_enabled
-
-    @velocity_enabled.setter
-    def velocity_enabled(self, enable):
-        self.flame.velocity_enabled = enable
 
     @property
     def plasma_enabled(self):
@@ -718,29 +633,6 @@ class PlasmaFlame(IonFlame):
     @plasma_enabled.setter
     def plasma_enabled(self, enable):
         self.flame.plasma_enabled = enable
-
-    @property
-    def phi(self):
-        """
-        Array containing the electric potential at each point.
-        """
-        return self.profile(self.flame, 'ePotential')
-
-    @property
-    def E(self):
-        """
-        Array containing the electric field strength at each point.
-        """
-        z = self.grid
-        phi = self.phi
-        np = self.flame.n_points
-        Efield = []
-        Efield.append((phi[0] - phi[1]) / (z[1] - z[0]))
-        # calculate E field strength
-        for n in range(1,np-1):
-            Efield.append((phi[n-1] - phi[n+1]) / (z[n+1] - z[n-1]))
-        Efield.append((phi[np-2] - phi[np-1]) / (z[np-1] - z[np-2]))
-        return Efield
 
 
 class BurnerFlame(FlameBase):
