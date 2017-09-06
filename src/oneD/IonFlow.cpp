@@ -24,7 +24,7 @@ IonFlow::IonFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
     m_outletVoltage(0.0),
     m_kElectron(npos),
     m_elec_num_density(1e17),
-    m_elec_field(2.5e6),
+    m_elec_field(0.0),
     m_elec_frequency(0.0),
     m_plasma_multiplier(1.0)
 {
@@ -59,9 +59,9 @@ IonFlow::IonFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
     }
 
     // set zdplaskin tol
-    double atol = 1e-11;
-    double rtol = 1e-6;
-    zdplaskinSetConfig(&atol, &rtol);
+    // double atol = 1e-11;
+    // double rtol = 1e-6;
+    // zdplaskinSetConfig(&atol, &rtol);
 
     // no bound for electric potential
     setBounds(c_offset_P, -1.0e20, 1.0e20);
@@ -125,7 +125,7 @@ void IonFlow::updateEEDF(double* x, size_t j)
     }
 
     const double temperature = m_thermo->temperature();
-    m_elec_field = abs(E(x,j));
+    // m_elec_field = abs(E(x,j));
     zdplaskinSetConditions(&temperature, &m_elec_field, &m_elec_frequency, &m_ND_t);
 }
 
@@ -295,7 +295,7 @@ void IonFlow::evalResidual(double* x, double* rsd, int* diag,
     if (m_stage == 3) {
         for (size_t j = jmin; j <= jmax; j++) {
             if (j == 0) {
-                rsd[index(c_offset_P, j)] = m_inletVoltage - phi(x,j);
+                rsd[index(c_offset_P, j)] = E(x,j);
                 // rsd[index(c_offset_P, j)] = E(x,j) - 100.0;
                 diag[index(c_offset_P, j)] = 0;
             } else if (j == m_points - 1) {
