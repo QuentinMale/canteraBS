@@ -700,9 +700,14 @@ cdef extern from "cantera/oneD/IonFlow.h":
         void solvePoissonEqn()
         void fixElectricPotential()
         cbool doPoisson(size_t)
+        void enableElecHeat(cbool)
         void solveVelocity()
         void fixVelocity()
         cbool doVelocity(size_t)
+        cbool doPlasma()
+        void solvePlasma()
+        void setTransverseElecField(double)
+        void setPlasmaSourceMultiplier(double)
 
 
 cdef extern from "cantera/oneD/PlasmaFlow.h":

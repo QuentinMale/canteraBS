@@ -869,16 +869,16 @@ class TestIonFlame(utilities.CanteraTest):
         self.sim.set_refine_criteria(ratio=4, slope=0.8, curve=1.0)
 
         # stage one
-        self.sim.solve(loglevel=0, auto=True)
+        self.sim.ionSolve(loglevel=0, auto=True)
 
         # stage two
-        self.sim.solve(loglevel=0, stage=2, enable_energy=False)
+        self.sim.ionSolve(loglevel=0, stage=2, enable_energy=False)
 
         # stage two
-        self.sim.solve(loglevel=0, stage=2, enable_energy=True)
+        self.sim.ionSolve(loglevel=0, stage=2, enable_energy=True)
 
         #stage three
-        self.sim.solve(loglevel=0, stage=3, enable_energy=True)
+        self.sim.ionSolve(loglevel=0, stage=3, enable_energy=True)
 
         # Regression test
         self.assertNear(min(self.sim.E) / max(self.sim.E), -5.0765, 1e-3)

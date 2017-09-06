@@ -50,7 +50,6 @@ PlasmaFlow::PlasmaFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
     }
     m_elec_power.resize(m_points, 0.0);
     m_ND.resize(m_points, 0.0);
-    m_import_electron_transport = true;
 }
 
 void PlasmaFlow::resize(size_t components, size_t points) {

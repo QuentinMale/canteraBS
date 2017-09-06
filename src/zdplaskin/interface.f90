@@ -4,6 +4,14 @@ subroutine zdplaskinInit() bind(C, name='zdplaskinInit')
   call ZDPlasKin_init()
 end subroutine zdplaskinInit
 
+subroutine zdplaskinSetConfig(atol,rtol) bind(C, name='zdplaskinSetConfig')
+    use C_interface_module
+    use ZDPlasKin
+    implicit none
+    real(c_double), intent(in) :: atol, rtol
+    call ZDPlasKin_set_config(ATOL=atol,RTOL=rtol)
+end subroutine zdplaskinSetConfig
+
 subroutine zdplaskinSetDensity(cstring, num_density_SI) bind(C, name='zdplaskinSetDensity')
   use C_interface_module
   use ZDPlasKin

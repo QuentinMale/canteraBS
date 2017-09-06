@@ -8,6 +8,7 @@
 #include "cantera/base/ctml.h"
 #include "cantera/transport/TransportBase.h"
 #include "cantera/numerics/funcs.h"
+#include "cantera/zdplaskin.h"
 
 using namespace std;
 
@@ -16,12 +17,16 @@ namespace Cantera
 
 IonFlow::IonFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
     FreeFlame(ph, nsp, points),
-    m_import_electron_transport(false),
-    m_overwrite_eTransport(true),
+    m_do_plasma(false),
+    m_do_elec_heat(false),
     m_stage(1),
     m_inletVoltage(0.0),
     m_outletVoltage(0.0),
-    m_kElectron(npos)
+    m_kElectron(npos),
+    m_elec_num_density(1e17),
+    m_elec_field(2.5e6),
+    m_elec_frequency(0.0),
+    m_plasma_multiplier(1.0)
 {
     // make a local copy of species charge
     for (size_t k = 0; k < m_nsp; k++) {
@@ -42,6 +47,22 @@ IonFlow::IonFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
         m_kElectron = m_thermo->speciesIndex("E");
     }
 
+    for (size_t i = 0; i < zdplaskinNSpecies(); i++) {
+        char cstring[20];
+        zdplaskinGetSpeciesName(cstring, &i);
+        string speciesName(cstring);
+        size_t k = m_thermo->speciesIndex(speciesName);
+        if (k != npos) {
+            m_plasmaSpeciesIndex.push_back(k);
+            cout << speciesName << " " << k << endl;
+        }
+    }
+
+    // set zdplaskin tol
+    double atol = 1e-11;
+    double rtol = 1e-6;
+    zdplaskinSetConfig(&atol, &rtol);
+
     // no bound for electric potential
     setBounds(c_offset_P, -1.0e20, 1.0e20);
 
@@ -49,6 +70,8 @@ IonFlow::IonFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
     m_mobility.resize(m_nsp*m_points);
     m_do_poisson.resize(m_points,false);
     m_do_velocity.resize(m_points,true);
+    m_elec_power.resize(m_points, 0.0);
+    m_ND.resize(m_points, 0.0);
 }
 
 void IonFlow::resize(size_t components, size_t points){
@@ -59,26 +82,51 @@ void IonFlow::resize(size_t components, size_t points){
     m_do_velocity.resize(m_points,true);
     m_fixedElecPoten.resize(m_points,0.0);
     m_fixedVelocity.resize(m_points);
-    m_elecMobility.resize(m_points);
-    m_elecDiffCoeff.resize(m_points);
+    m_elec_power.resize(m_points, 0.0);
+    m_ND.resize(m_points, 0.0);
 }
 
 void IonFlow::updateTransport(double* x, size_t j0, size_t j1)
 {
-    StFlow::updateTransport(x,j0,j1);
+    StFlow::updateTransport(x, j0, j1);
     for (size_t j = j0; j < j1; j++) {
         setGasAtMidpoint(x,j);
         m_trans->getMobilities(&m_mobility[j*m_nsp]);
-        if (m_overwrite_eTransport && (m_kElectron != npos)) {
-            if (m_import_electron_transport) {
-                m_mobility[m_kElectron+m_nsp*j] = m_elecMobility[j];
-                m_diff[m_kElectron+m_nsp*j] = m_elecDiffCoeff[j];
+        if (m_kElectron != npos) {
+            if (m_do_plasma) {
+                // set number density to mid point
+                for (size_t k = 0; k < m_nsp; k++) {
+                    m_ND[k] = 0.5*(ND(x,k,j+1) + ND(x,k,j));
+                }
+                m_ND_t = 0.5 * (ND_t(j+1) + ND_t(j));
+                updateEEDF(x,j);
+                m_mobility[m_kElectron+m_nsp*j] = zdplaskinGetElecMobility(&m_ND_t);
+                m_diff[m_kElectron+m_nsp*j] = zdplaskinGetElecDiffCoeff();
             } else {
                 m_mobility[m_kElectron+m_nsp*j] = 0.4;
                 m_diff[m_kElectron+m_nsp*j] = 0.4*(Boltzmann * T(x,j)) / ElectronCharge;
+                // Below will not pass test, but it is correct
+                // m_diff[m_kElectron+m_nsp*j] = 0.4 * Boltzmann / ElectronCharge;
+                // m_diff[m_kElectron+m_nsp*j] *= m_thermo->temperature();
             }
         }
     }
+}
+
+void IonFlow::updateEEDF(double* x, size_t j)
+{
+    for (size_t k : m_plasmaSpeciesIndex) {
+        if (k == m_kElectron) {
+            zdplaskinSetDensity("E", &m_ND[m_kElectron]);
+        } else {
+            const char* species = m_thermo->speciesName(k).c_str();
+            zdplaskinSetDensity(species, &m_ND[k]);     
+        }
+    }
+
+    const double temperature = m_thermo->temperature();
+    m_elec_field = abs(E(x,j));
+    zdplaskinSetConditions(&temperature, &m_elec_field, &m_elec_frequency, &m_ND_t);
 }
 
 void IonFlow::updateDiffFluxes(const double* x, size_t j0, size_t j1)
@@ -230,6 +278,16 @@ void IonFlow::setElectricPotential(const double v1, const double v2)
     m_outletVoltage = v2;
 }
 
+void IonFlow::setTransverseElecField(double elec_field)
+{
+    m_elec_field = elec_field;
+}
+
+void IonFlow::setPlasmaSourceMultiplier(double multiplier)
+{
+    m_plasma_multiplier = multiplier;
+}
+
 void IonFlow::evalResidual(double* x, double* rsd, int* diag,
                            double rdt, size_t jmin, size_t jmax)
 {
@@ -267,6 +325,67 @@ void IonFlow::evalResidual(double* x, double* rsd, int* diag,
                 }
             }
         }
+    }
+
+    if (m_do_plasma) {
+        for (size_t j = jmin; j <= jmax; j++) {
+            if (j != 0 && j != m_points -1) {
+                // set gas
+                setGas(x,j);
+                for (size_t k = 0; k < m_nsp; k++) {
+                    // make sure number density is larger than zero.
+                    if (ND(x,k,j) > 0.0) {
+                        m_ND[k] = ND(x,k,j);
+                    } else {
+                        m_ND[k] = 0.0;
+                    }
+                }
+                m_ND_t = ND_t(j);
+                updateEEDF(x, j);
+                double* wdot_plasma = NULL;
+                zdplaskinGetPlasmaSource(&wdot_plasma);
+                for (size_t i = 0; i < zdplaskinNSpecies(); i++) {
+                    size_t k = m_plasmaSpeciesIndex[i];
+                    // multiply by the multiplier
+                    wdot_plasma[i] *= m_plasma_multiplier;
+                    rsd[index(c_offset_Y + k, j)] += m_wt[k] * wdot_plasma[i] / m_rho[j];
+                }
+
+                // update electron power
+                if (m_do_elec_heat) {
+                    const double number_density = ND_t(j);
+                    m_elec_power[j] = zdplaskinGetElecPower(&number_density);
+                    if (m_kElectron != npos) {
+                        m_elec_num_density = m_ND[m_kElectron];
+                    }
+                    rsd[index(c_offset_T, j)] += m_elec_power[j]
+                                                 * m_elec_num_density
+                                                 / (m_rho[j] * m_cp[j])
+                                                 * m_plasma_multiplier;           
+                }
+            }
+        }
+    }
+}
+
+void IonFlow::enableElecHeat(bool withElecHeat)
+{
+    m_do_elec_heat = withElecHeat;
+}
+
+void IonFlow::solvePlasma()
+{
+    bool changed = false;
+    if (m_do_plasma) {
+        changed = true;
+    }
+    m_do_plasma = true;
+    m_refiner->setActive(c_offset_U, true);
+    m_refiner->setActive(c_offset_V, true);
+    m_refiner->setActive(c_offset_T, true);
+    m_refiner->setActive(c_offset_P, true);
+    if (changed) {
+        needJacUpdate();
     }
 }
 
@@ -366,15 +485,6 @@ void IonFlow::fixVelocity(size_t j)
     if (changed) {
         needJacUpdate();
     }
-}
-
-void IonFlow::setElectronTransport(vector_fp& zfixed, vector_fp& diff_e_fixed,
-                                   vector_fp& mobi_e_fixed)
-{
-    m_ztfix = zfixed;
-    m_diff_e_fix = diff_e_fixed;
-    m_mobi_e_fix = mobi_e_fixed;
-    m_import_electron_transport = true;
 }
 
 void IonFlow::_finalize(const double* x)

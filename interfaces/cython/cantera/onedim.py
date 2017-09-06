@@ -495,7 +495,7 @@ class IonFlame(FreeFlame):
             self.flame = IonFlow(gas, name='flame')
         super(IonFlame, self).__init__(gas, grid, width)
 
-    def solve(self, loglevel=1, refine_grid=True, auto=False, stage=1, enable_energy=True):
+    def ionSolve(self, loglevel=1, refine_grid=True, auto=False, stage=1, enable_energy=True):
         if enable_energy == True:
             self.energy_enabled = True
             self.velocity_enabled = True
@@ -504,14 +504,14 @@ class IonFlame(FreeFlame):
             self.velocity_enabled = False
         if stage == 1:
             self.flame.set_solvingStage(stage)
-            super(FreeFlame, self).solve(loglevel, refine_grid, auto)
+            self.solve(loglevel, refine_grid, auto)
         if stage == 2:
             self.flame.set_solvingStage(stage)
-            super(FreeFlame, self).solve(loglevel, refine_grid, auto)
+            self.solve(loglevel, refine_grid, auto)
         if stage == 3:
             self.flame.set_solvingStage(stage)
             self.poisson_enabled = True
-            super(FreeFlame, self).solve(loglevel, refine_grid, auto)
+            self.solve(loglevel, refine_grid, auto)
 
     def write_csv(self, filename, species='X', quiet=True):
         """
@@ -562,6 +562,15 @@ class IonFlame(FreeFlame):
         self.flame.velocity_enabled = enable
 
     @property
+    def plasma_enabled(self):
+        """ Get/Set whether or not to solve the Plasma reaction."""
+        return self.flame.plasma_enabled
+
+    @plasma_enabled.setter
+    def plasma_enabled(self, enable):
+        self.flame.plasma_enabled = enable
+
+    @property
     def phi(self):
         """
         Array containing the electric potential at each point.
@@ -594,36 +603,36 @@ class PlasmaFlame(IonFlame):
             self.flame = PlasmaFlow(gas, name='flame')
         super(PlasmaFlame, self).__init__(gas, grid, width)
 
-    def write_csv(self, filename, species='X', quiet=True):
-        """
-        Write the velocity, temperature, density, electric potential,
-        , electric field stregth, and species profiles to a CSV file.
+    # def write_csv(self, filename, species='X', quiet=True):
+    #     """
+    #     Write the velocity, temperature, density, electric potential,
+    #     , electric field stregth, and species profiles to a CSV file.
 
-        :param filename:
-            Output file name
-        :param species:
-            Attribute to use obtaining species profiles, e.g. ``X`` for
-            mole fractions or ``Y`` for mass fractions.
-        """
-        z = self.grid
-        T = self.T
-        u = self.u
-        V = self.V
-        phi = self.phi
-        E = self.E
-        Avogadro = 6.02214129e26
+    #     :param filename:
+    #         Output file name
+    #     :param species:
+    #         Attribute to use obtaining species profiles, e.g. ``X`` for
+    #         mole fractions or ``Y`` for mass fractions.
+    #     """
+    #     z = self.grid
+    #     T = self.T
+    #     u = self.u
+    #     V = self.V
+    #     phi = self.phi
+    #     E = self.E
+    #     Avogadro = 6.02214129e26
 
-        csvfile = open(filename, 'w')
-        writer = _csv.writer(csvfile)
-        writer.writerow(['z (m)', 'u (m/s)', 'V (1/s)', 'T (K)',
-                         'phi (V)', 'E (V/m)', 'ND (1/m3)'] + self.gas.species_names)
-        for n in range(self.flame.n_points):
-            self.set_gas_state(n)
-            writer.writerow([z[n], u[n], V[n], T[n], phi[n], E[n], self.gas.density_mole*Avogadro] +
-                            list(getattr(self.gas, species)))
-        csvfile.close()
-        if not quiet:
-            print("Solution saved to '{0}'.".format(filename))
+    #     csvfile = open(filename, 'w')
+    #     writer = _csv.writer(csvfile)
+    #     writer.writerow(['z (m)', 'u (m/s)', 'V (1/s)', 'T (K)',
+    #                      'phi (V)', 'E (V/m)', 'ND (1/m3)'] + self.gas.species_names)
+    #     for n in range(self.flame.n_points):
+    #         self.set_gas_state(n)
+    #         writer.writerow([z[n], u[n], V[n], T[n], phi[n], E[n], self.gas.density_mole*Avogadro] +
+    #                         list(getattr(self.gas, species)))
+    #     csvfile.close()
+    #     if not quiet:
+    #         print("Solution saved to '{0}'.".format(filename))
 
     @property
     def plasma_enabled(self):

@@ -9,6 +9,7 @@
 extern "C"
 {
     void zdplaskinInit();
+    void zdplaskinSetConfig(const double* atol, const double* rtol);
     void zdplaskinSetDensity(const char* cstring, const double* DENS);
 
     void zdplaskinSetConditions(const double* gas_temperature,
