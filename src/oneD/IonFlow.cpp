@@ -95,13 +95,15 @@ void IonFlow::updateTransport(double* x, size_t j0, size_t j1)
         if (m_kElectron != npos) {
             if (m_do_plasma) {
                 // set number density to mid point
-                for (size_t k = 0; k < m_nsp; k++) {
-                    m_ND[k] = 0.5*(ND(x,k,j+1) + ND(x,k,j));
-                }
-                m_ND_t = 0.5 * (ND_t(j+1) + ND_t(j));
-                updateEEDF(x,j);
-                m_mobility[m_kElectron+m_nsp*j] = zdplaskinGetElecMobility(&m_ND_t);
-                m_diff[m_kElectron+m_nsp*j] = zdplaskinGetElecDiffCoeff();
+                // for (size_t k = 0; k < m_nsp; k++) {
+                //     m_ND[k] = 0.5*(ND(x,k,j+1) + ND(x,k,j));
+                // }
+                // m_ND_t = 0.5 * (ND_t(j+1) + ND_t(j));
+                // updateEEDF(x,j);
+                // m_mobility[m_kElectron+m_nsp*j] = zdplaskinGetElecMobility(&m_ND_t);
+                // m_diff[m_kElectron+m_nsp*j] = zdplaskinGetElecDiffCoeff();
+                m_mobility[m_kElectron+m_nsp*j] = 0.4;
+                m_diff[m_kElectron+m_nsp*j] = 0.4*(Boltzmann * T(x,j)) / ElectronCharge;
             } else {
                 m_mobility[m_kElectron+m_nsp*j] = 0.4;
                 m_diff[m_kElectron+m_nsp*j] = 0.4*(Boltzmann * T(x,j)) / ElectronCharge;
