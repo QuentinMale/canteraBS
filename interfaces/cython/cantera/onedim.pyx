@@ -502,7 +502,7 @@ cdef class IonFlow(_FlowBase):
     def set_plasmaSourceMultiplier(self, multiplier):
         (<CxxIonFlow*>self.flow).setPlasmaSourceMultiplier(multiplier)
 
-    def enable_ElecHeat(self, withElecHeat):
+    def enable_elecHeat(self, withElecHeat):
         (<CxxIonFlow*>self.flow).enableElecHeat(withElecHeat) 
 
     property poisson_enabled:

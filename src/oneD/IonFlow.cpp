@@ -96,15 +96,22 @@ void IonFlow::updateTransport(double* x, size_t j0, size_t j1)
             if (m_do_plasma) {
                 // set number density to mid point
                 for (size_t k = 0; k < m_nsp; k++) {
-                    m_ND[k] = 0.5*(ND(x,k,j+1) + ND(x,k,j));
+                    if (ND(x,k,j) > 0.0) {
+                        m_ND[k] = ND(x,k,j);
+                    } else {
+                        m_ND[k] = 0.0;
+                    }
+                    // m_ND[k] = abs(0.5*(ND(x,k,j+1) + ND(x,k,j)));
+                    // m_ND[k] = 0.5*(ND(x,k,j+1) + ND(x,k,j));
                 }
-                m_ND_t = 0.5 * (ND_t(j+1) + ND_t(j));
+                m_ND_t = 0.5 * (ND_t(j) + ND_t(j+1));
                 updateEEDF(x,j);
                 size_t k = m_kElectron;
                 m_mobility[k+m_nsp*j] = 0.4 * (1.0-m_plasma_multiplier);
-                m_diff[k+m_nsp*j] = m_mobility[k+m_nsp*j]*(Boltzmann * T(x,j)) / ElectronCharge;
+                m_diff[k+m_nsp*j] = m_mobility[k+m_nsp*j] * Boltzmann / ElectronCharge;
+                m_diff[k+m_nsp*j] *= m_thermo->temperature();
                 m_mobility[k+m_nsp*j] += zdplaskinGetElecMobility(&m_ND_t) * m_plasma_multiplier;
-                m_diff[k+m_nsp*j] = zdplaskinGetElecDiffCoeff() * m_plasma_multiplier;
+                m_diff[k+m_nsp*j] += zdplaskinGetElecDiffCoeff() * m_plasma_multiplier;
             } else {
                 m_mobility[m_kElectron+m_nsp*j] = 0.4;
                 m_diff[m_kElectron+m_nsp*j] = 0.4*(Boltzmann * T(x,j)) / ElectronCharge;
