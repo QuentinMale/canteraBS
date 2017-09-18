@@ -76,6 +76,9 @@ public:
     void enableElecHeat(bool withElecHeat);
     void setTransverseElecField(double reduced_field);
     void setPlasmaSourceMultiplier(double multiplier);
+    double getElecMobility(size_t j);
+    double getElecDiffCoeff(size_t j);
+    double getElecTemperature(size_t j);
 
 protected:
     virtual void evalResidual(double* x, double* rsd, int* diag,
@@ -96,6 +99,7 @@ protected:
     //! flag for solving plasma
     bool m_do_plasma;
     bool m_do_elec_heat;
+    bool m_maxwellian_electron;
 
     //! electrical properties
     vector_int m_speciesCharge;
@@ -167,8 +171,14 @@ protected:
         return Avogadro * m_rho[j] / m_wtm[j];
     }
 
+    //! electron temperature
+    double ET(size_t j) const {
+        return m_elecTemp[j];
+    }
+
     //! a copy of number density
     vector<double> m_ND;
+    vector<double> m_elecTemp;
     double m_ND_t;
     double m_elec_num_density;
     double m_elec_field;

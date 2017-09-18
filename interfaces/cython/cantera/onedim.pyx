@@ -503,7 +503,16 @@ cdef class IonFlow(_FlowBase):
         (<CxxIonFlow*>self.flow).setPlasmaSourceMultiplier(multiplier)
 
     def enable_elecHeat(self, withElecHeat):
-        (<CxxIonFlow*>self.flow).enableElecHeat(withElecHeat) 
+        (<CxxIonFlow*>self.flow).enableElecHeat(withElecHeat)
+
+    def get_elecMobility(self, j):
+        return (<CxxIonFlow*>self.flow).getElecMobility(j)
+
+    def get_elecDiffCoeff(self, j):
+        return (<CxxIonFlow*>self.flow).getElecDiffCoeff(j)
+
+    def get_elecTemperature(self, j):
+        return (<CxxIonFlow*>self.flow).getElecTemperature(j)
 
     property poisson_enabled:
         """ Determines whether or not to solve the energy equation."""

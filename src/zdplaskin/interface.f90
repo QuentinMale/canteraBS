@@ -55,6 +55,22 @@ subroutine zdplaskinSetConditions(gasTemperature, elec_field, elec_frequency, nu
   call ZDPlasKin_set_conditions(GAS_TEMPERATURE=gasTemperature, REDUCED_FIELD=reduced_field, REDUCED_FREQUENCY=reduced_freqency)
 end subroutine zdplaskinSetConditions
 
+subroutine zdplaskinSoftReset() bind(C,name='zdplaskinSoftReset')
+  use, intrinsic :: iso_c_binding
+  use ZDPlasKin
+  implicit none
+  call ZDPlasKin_set_conditions(SOFT_RESET=.true.)
+end subroutine zdplaskinSoftReset
+
+subroutine zdplaskinSetElecTemp(Te) bind(C,name='zdplaskinSetElecTemp')
+  use, intrinsic :: iso_c_binding
+  use ZDPlasKin
+  implicit none
+  ! input variables in SI unit 
+  real(c_double), intent(in) :: Te ![K]
+  call ZDPlasKin_set_conditions(ELEC_TEMPERATURE=Te)
+end subroutine zdplaskinSetElecTemp
+
 function zdplaskinGetElecTemp() bind(C,name='zdplaskinGetElecTemp') result(eTemperature)
   use, intrinsic :: iso_c_binding
   use ZDPlasKin

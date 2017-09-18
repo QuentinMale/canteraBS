@@ -19,6 +19,7 @@ IonFlow::IonFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
     FreeFlame(ph, nsp, points),
     m_do_plasma(false),
     m_do_elec_heat(false),
+    m_maxwellian_electron(false),
     m_stage(1),
     m_inletVoltage(0.0),
     m_outletVoltage(0.0),
@@ -71,7 +72,8 @@ IonFlow::IonFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
     m_do_poisson.resize(m_points,false);
     m_do_velocity.resize(m_points,true);
     m_elec_power.resize(m_points, 0.0);
-    m_ND.resize(m_points, 0.0);
+    m_ND.resize(m_nsp, 0.0);
+    m_elecTemp.resize(m_points, 0.0);
 }
 
 void IonFlow::resize(size_t components, size_t points){
@@ -83,7 +85,8 @@ void IonFlow::resize(size_t components, size_t points){
     m_fixedElecPoten.resize(m_points,0.0);
     m_fixedVelocity.resize(m_points);
     m_elec_power.resize(m_points, 0.0);
-    m_ND.resize(m_points, 0.0);
+    m_ND.resize(m_nsp, 0.0);
+    m_elecTemp.resize(m_points, 0.0);
 }
 
 void IonFlow::updateTransport(double* x, size_t j0, size_t j1)
@@ -96,13 +99,11 @@ void IonFlow::updateTransport(double* x, size_t j0, size_t j1)
             if (m_do_plasma) {
                 // set number density to mid point
                 for (size_t k = 0; k < m_nsp; k++) {
-                    if (ND(x,k,j) > 0.0) {
-                        m_ND[k] = ND(x,k,j);
+                    if ((ND(x,k,j)+ND(x,k,j+1)) > 0.0) {
+                        m_ND[k] = 0.5*(ND(x,k,j)+ND(x,k,j+1));
                     } else {
                         m_ND[k] = 0.0;
                     }
-                    // m_ND[k] = abs(0.5*(ND(x,k,j+1) + ND(x,k,j)));
-                    // m_ND[k] = 0.5*(ND(x,k,j+1) + ND(x,k,j));
                 }
                 m_ND_t = 0.5 * (ND_t(j) + ND_t(j+1));
                 updateEEDF(x,j);
@@ -123,6 +124,21 @@ void IonFlow::updateTransport(double* x, size_t j0, size_t j1)
     }
 }
 
+double IonFlow::getElecMobility(size_t j)
+{
+    return m_mobility[m_kElectron+m_nsp*j];
+}
+
+double IonFlow::getElecDiffCoeff(size_t j)
+{
+    return m_diff[m_kElectron+m_nsp*j];
+}
+
+double IonFlow::getElecTemperature(size_t j)
+{
+    return ET(j);
+}
+
 void IonFlow::updateEEDF(double* x, size_t j)
 {
     for (size_t k : m_plasmaSpeciesIndex) {
@@ -134,9 +150,22 @@ void IonFlow::updateEEDF(double* x, size_t j)
         }
     }
 
-    const double temperature = m_thermo->temperature();
+    const double Tgas = m_thermo->temperature();
     // m_elec_field = abs(E(x,j));
-    zdplaskinSetConditions(&temperature, &m_elec_field, &m_elec_frequency, &m_ND_t);
+    // reset 
+    // if (m_maxwellian_electron) {
+    //     zdplaskinSetElecTemp(NULL);
+    // }
+    zdplaskinSetConditions(&Tgas, &m_elec_field, &m_elec_frequency, &m_ND_t);
+    // get electron temperature
+    m_elecTemp[j] = zdplaskinGetElecTemp();
+    // if (m_elecTemp[j] < Tgas) {
+    //     double Te = Tgas + 1;
+    //     zdplaskinSetElecTemp(&Te);
+    //     m_maxwellian_electron = true;
+    // } else {
+    //     m_maxwellian_electron = false;
+    // }
 }
 
 void IonFlow::updateDiffFluxes(const double* x, size_t j0, size_t j1)
@@ -362,16 +391,22 @@ void IonFlow::evalResidual(double* x, double* rsd, int* diag,
                 }
 
                 // update electron power
-                if (m_do_elec_heat) {
-                    const double number_density = ND_t(j);
-                    m_elec_power[j] = zdplaskinGetElecPower(&number_density);
-                    if (m_kElectron != npos) {
-                        m_elec_num_density = m_ND[m_kElectron];
+                if (m_do_energy[j]) {
+                    if (m_do_elec_heat) {
+                        const double number_density = ND_t(j);
+                        m_elec_power[j] = zdplaskinGetElecPower(&number_density);
+                        if (m_elec_power[j] < 0.0) {
+                            m_elec_power[j] = 0.0;
+                        }
+                        if (m_kElectron != npos) {
+                            m_elec_num_density = m_ND[m_kElectron];
+                        }
+
+                        rsd[index(c_offset_T, j)] += m_elec_power[j]
+                                                     * m_elec_num_density
+                                                     / (m_rho[j] * m_cp[j])
+                                                     * m_plasma_multiplier;
                     }
-                    rsd[index(c_offset_T, j)] += m_elec_power[j]
-                                                 * m_elec_num_density
-                                                 / (m_rho[j] * m_cp[j])
-                                                 * m_plasma_multiplier;           
                 }
             }
         }

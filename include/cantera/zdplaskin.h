@@ -16,6 +16,8 @@ extern "C"
                                 const double* elec_field,
                                 const double* elec_frequency,
                                 const double* num_density);
+    void zdplaskinSetElecTemp(const double* Te);
+    void zdplaskinSoftReset();
     double zdplaskinGetElecTemp();
     double zdplaskinGetElecDiffCoeff();
     double zdplaskinGetElecMobility(const double*);

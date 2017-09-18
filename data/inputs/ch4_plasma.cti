@@ -5,7 +5,7 @@ ideal_gas(name='gas',
           species=['''gri30: H2      H       O       O2      OH      H2O     HO2
                      H2O2    C       CH      CH2     CH2(S)  CH3     CH4
                      CO      CO2     HCO     CH2O    CH3O    N2''',
-                   '''HCO+   H3O+    E       O2^-'''],
+                   '''HCO^+   H3O^+    E     O2^-'''],
           reactions=['gri30: all', 'all'],
           transport='Mix',
           options=['skip_undeclared_species', 'skip_undeclared_third_bodies'],
@@ -15,7 +15,7 @@ ideal_gas(name='gas',
 # Species data
 #-------------------------------------------------------------------------------
 
-species(name = 'HCO+',
+species(name = 'HCO^+',
     atoms = ' H:1  C:1  O:1  E:-1 ',
     thermo = (
        NASA( [  300.00,  1000.00], [  2.473973600E+00,   8.671559000E-03, 
@@ -32,7 +32,7 @@ species(name = 'HCO+',
                                 rot_relax=0.0),
     note = 'J12/70')
 
-species(name = 'H3O+',
+species(name = 'H3O^+',
     atoms = ' H:3  O:1  E:-1 ',
     thermo = (
        NASA( [  298.15,  1000.00], [  3.792952700E+00,  -9.108540000E-04, 
@@ -108,14 +108,14 @@ species(name = "O2^-",
 # Reaction data
 #-------------------------------------------------------------------------------
 # chemical ionization
-#reaction('CH + O => HCO+ + E', [(2.51E+11,'cm3/mol/s'), 0.0, (1700, 'cal/mol')])
-reaction('CH + O => HCO+ + E', [(2.75E+11,'cm3/mol/s'), 0.0, (1700, 'cal/mol')])
-reaction('HCO+ + H2O => H3O+ + CO', [(1.51E+15, 'cm3/mol/s'), 0.0, 0.0])
-#reaction('H3O+ + E => H2O + H', [(2.29E+18, 'cm3/mol/s'), -0.5, 0.0])
-reaction('H3O+ + E => H2O + H', [(1.30E+18, 'cm3/mol/s'), -0.5, 0.0])
-reaction('H3O+ + E => OH + H + H', [(7.95E+21, 'cm3/mol/s'), -1.4, 0.0])
-reaction('H3O+ + E => H2 + OH', [(1.25E+19, 'cm3/mol/s'), -0.5, 0.0])
-reaction('H3O+ + E =>  O + H2 + H', [(6.0E+17, 'cm3/mol/s'), -0.3, 0.0])
+reaction('CH + O => HCO^+ + E', [(2.51E+11,'cm3/mol/s'), 0.0, (1700, 'cal/mol')])
+#reaction('CH + O => HCO^+ + E', [(2.75E+11,'cm3/mol/s'), 0.0, (1700, 'cal/mol')])
+reaction('HCO^+ + H2O => H3O^+ + CO', [(1.51E+15, 'cm3/mol/s'), 0.0, 0.0])
+reaction('H3O^+ + E => H2O + H', [(2.29E+18, 'cm3/mol/s'), -0.5, 0.0])
+#reaction('H3O^+ + E => H2O + H', [(1.30E+18, 'cm3/mol/s'), -0.5, 0.0])
+reaction('H3O^+ + E => OH + H + H', [(7.95E+21, 'cm3/mol/s'), -1.4, 0.0])
+reaction('H3O^+ + E => H2 + OH', [(1.25E+19, 'cm3/mol/s'), -0.5, 0.0])
+reaction('H3O^+ + E =>  O + H2 + H', [(6.0E+17, 'cm3/mol/s'), -0.3, 0.0])
 
 
 #reaction("O2^- + N2 <=> E + O2 + N2", [1.10E-13, 0.5, 4990.0])

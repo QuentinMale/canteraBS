@@ -12,7 +12,7 @@
 !
 !-----------------------------------------------------------------------------------------------------------------------------------
 !
-! Thu Sep  7 12:55:34 2017
+! Wed Sep 13 16:24:38 2017
 !
 !-----------------------------------------------------------------------------------------------------------------------------------
 !
@@ -1072,6 +1072,8 @@ subroutine ZDPlasKin_reac_rates(Time)
   call ZDPlasKin_bolsig_rates()
   Tgas = ZDPlasKin_cfg(1)
   Te  = ZDPlasKin_cfg(4)
+  IF (TE < TGAS) TE = TGAS
+  !IF (TE < TGAS) ZDPlasKin_cfg(4) = TGAS
   rrt(1) = 1.1D-31*(300.0D0/TE)**2*EXP(-70.0D0/TGAS)*EXP(1500.0D0*(TE-TGAS)/(TE*TGAS))
   rrt(2) = 1.4D-29*(300.0D0/TE)**2*EXP(-600.0D0/TGAS)*EXP(700.0D0*(TE-TGAS)/(TE*TGAS))
   rrt(3) = 1.10D-13*TGAS**0.5*EXP(4990.0/TGAS)
