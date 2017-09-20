@@ -10,7 +10,8 @@ namespace Cantera
 {
 IonGasTransport::IonGasTransport(ThermoPhase* thermo) :
     GasTransport(thermo),
-    m_mmw(0.0)
+    m_mmw(0.0),
+    m_kElectron(npos)
 {
     m_thermo = thermo;
     m_nsp = m_thermo->nSpecies();
@@ -52,41 +53,32 @@ void IonGasTransport::updateDiff_T()
     m_bindiff_ok = true;
 }
 
-double IonGasTransport::getCoulombDiffusion(const size_t i,const size_t j)
+double IonGasTransport::getCoulombDiffusion(const size_t i, const size_t j)
 {
-    m_reducedMass(i,j) = m_mw[i] * m_mw[j] / (Avogadro * (m_mw[i] + m_mw[j]));
+    const double reducedMass = m_mw[i] * m_mw[j] / (m_mw[i] + m_mw[j]);
+    const double number_density = Avogadro * m_rho / m_mmw;
     double sum = 0.0;
     for (size_t k : m_kCharge) {
-        const double number_density = Avogadro * m_rho * m_molefracs[k] / m_mmw;
-        sum += number_density * m_speciesCharge[k] * m_speciesCharge[k];
+        sum += number_density * m_molefracs[k] * m_speciesCharge[k] * m_speciesCharge[k];
     }
     // the collision diameter is equal to debye length
-    m_diam(i,j) = sqrt(epsilon_0 * Boltzmann * m_temp /
-                  (ElectronCharge * ElectronCharge * sum));
-    m_epsilon(i,j) = abs(m_speciesCharge[i] * m_speciesCharge[j]) * ElectronCharge * 
-                     ElectronCharge / (4 * Pi * epsilon_0 * m_diam(i,j));
-    // properties are symmetric
-    m_reducedMass(j,i) = m_reducedMass(i,j);
-    m_diam(j,i) = m_diam(i,j);
-    m_epsilon(j,i) = m_epsilon(i,j);
-    double sigma = m_diam(j,i);
-    double tstar = Boltzmann * m_temp / m_epsilon(j,i);
+    double lambda_D = sqrt(epsilon_0 * Boltzmann * m_temp /
+                           (ElectronCharge * ElectronCharge * sum));
+    // The well depth
+    double epsilon = abs(m_speciesCharge[i] * m_speciesCharge[j]) * ElectronCharge * ElectronCharge
+                     / (4 * Pi * epsilon_0 * lambda_D);
+
     // The collision integral is calculated using the fitting curve in references:
     // Han, Jie, et al. "Numerical modelling of ion transport in flames."
     // Combustion Theory and Modelling 19.6 (2015): 744-772.
-    double om11 = 0.0;
-    if (tstar < 1000) {
-        if (m_speciesCharge[i]*m_speciesCharge[j] < 0.0) {
-            om11 = (0.027 * log(tstar) * log(tstar) + 0.25 * log(tstar)+0.47) / (tstar*tstar);
-        } else if (m_speciesCharge[i]*m_speciesCharge[j] > 0.0) {
-            om11 = 0.041 * log(tstar) * log(tstar) + 0.22 * log(tstar) + 0.28;
-        }
-    } else {
-        om11 = (0.5*log(tstar) - 0.14) / (tstar * tstar);
-    }
+    double tstar = Boltzmann * m_temp / epsilon;
+    // reduced collision integral
+    double om11 = (0.5*log(tstar) - 0.14) / (tstar * tstar);
+    // cross section
+    double sigma = Pi * lambda_D * lambda_D * om11;
 
-    double diffcoeff = 3.0/16.0 * sqrt(2.0 * Pi/m_reducedMass(i,j))
-                       * pow(Boltzmann * m_temp, 1.5) / (Pi * sigma * sigma * om11);
+    double diffcoeff = 3.0/16.0 * sqrt(2.0 * Pi * Avogadro * Boltzmann * m_temp / reducedMass)
+                       / (sigma * number_density);
 
     return diffcoeff;
 }

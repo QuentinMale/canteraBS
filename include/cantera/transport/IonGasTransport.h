@@ -23,9 +23,6 @@ protected:
     // get diffusion coefficient for charged-charged interaction
     double getCoulombDiffusion(const size_t i, const size_t j);
 
-        // get diffusion coefficient for charged-neutral interaction
-    double getn64Diffusion(const size_t i, const size_t j);
-
     //! electrical properties
     vector_int m_speciesCharge;
 
