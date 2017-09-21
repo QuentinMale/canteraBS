@@ -139,6 +139,11 @@ double IonFlow::getElecTemperature(size_t j)
     return ET(j);
 }
 
+double IonFlow::getElecCollisionHeat(size_t j)
+{
+    return m_elec_power[j];
+}
+
 void IonFlow::updateEEDF(double* x, size_t j)
 {
     for (size_t k : m_plasmaSpeciesIndex) {

@@ -711,6 +711,7 @@ cdef extern from "cantera/oneD/IonFlow.h":
         double getElecMobility(size_t)
         double getElecDiffCoeff(size_t)
         double getElecTemperature(size_t)
+        double getElecCollisionHeat(size_t)
 
 
 cdef extern from "cantera/oneD/PlasmaFlow.h":

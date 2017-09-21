@@ -79,6 +79,7 @@ public:
     double getElecMobility(size_t j);
     double getElecDiffCoeff(size_t j);
     double getElecTemperature(size_t j);
+    double getElecCollisionHeat(size_t j);
 
 protected:
     virtual void evalResidual(double* x, double* rsd, int* diag,
