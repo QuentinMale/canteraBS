@@ -495,7 +495,7 @@ class IonFlame(FreeFlame):
             self.flame = IonFlow(gas, name='flame')
         super(IonFlame, self).__init__(gas, grid, width)
 
-    def ionSolve(self, loglevel=1, refine_grid=True, auto=False, stage=1, enable_energy=True):
+    def solve(self, loglevel=1, refine_grid=True, auto=False, stage=1, enable_energy=True):
         if enable_energy == True:
             self.energy_enabled = True
             self.velocity_enabled = True
@@ -504,14 +504,14 @@ class IonFlame(FreeFlame):
             self.velocity_enabled = False
         if stage == 1:
             self.flame.set_solvingStage(stage)
-            self.solve(loglevel, refine_grid, auto)
+            super(IonFlame, self).solve(loglevel, refine_grid, auto)
         if stage == 2:
             self.flame.set_solvingStage(stage)
-            self.solve(loglevel, refine_grid, auto)
+            super(IonFlame, self).solve(loglevel, refine_grid, auto)
         if stage == 3:
             self.flame.set_solvingStage(stage)
             self.poisson_enabled = True
-            self.solve(loglevel, refine_grid, auto)
+            super(IonFlame, self).solve(loglevel, refine_grid, auto)
 
     def write_csv(self, filename, species='X', quiet=True):
         """
