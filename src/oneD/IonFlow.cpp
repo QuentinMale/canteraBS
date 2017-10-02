@@ -126,6 +126,7 @@ void IonFlow::updateTransport(double* x, size_t j0, size_t j1)
 
 double IonFlow::getElecMobility(size_t j)
 {
+    cout << m_mobility[m_kElectron+m_nsp*j] << endl;
     return m_mobility[m_kElectron+m_nsp*j];
 }
 
