@@ -92,6 +92,10 @@ protected:
     virtual void chargeNeutralityModel(const double* x, size_t j0, size_t j1);
     //! Solving phase three: the Poisson's equation is added coupled by the electrical drift
     virtual void poissonEqnMethod(const double* x, size_t j0, size_t j1);
+
+    double maxwellian(double energy, double temperature) {
+        return std::exp(-energy / (Boltzmann * temperature));
+    }
     //! flag for solving poisson's equation or not
     std::vector<bool> m_do_poisson;
     //! flag for solving the velocity or not
@@ -113,6 +117,12 @@ protected:
 
     //! index of plasma species
     vector<size_t> m_plasmaSpeciesIndex;
+
+    //! index of major species
+    vector<size_t> m_kMajorSpecies;
+
+    //! activation energy of vibration state of major species
+    vector<double> m_energyLevel;
 
     //! mobility
     vector_fp m_mobility;
