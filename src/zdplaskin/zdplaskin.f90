@@ -1,5 +1,5 @@
 !
-! ZDPLASKIN version 2.0
+! ZDPLASKIN version 2.0a
 ! (c) 2008, Sergey Pancheshnyi (pancheshnyi@gmail.com)
 !
 ! BOLSIG+
@@ -12,7 +12,7 @@
 !
 !-----------------------------------------------------------------------------------------------------------------------------------
 !
-! Mon Oct  2 12:10:35 2017
+! Wed Oct  4 08:47:59 2017
 !
 !-----------------------------------------------------------------------------------------------------------------------------------
 !
@@ -81,9 +81,9 @@ module ZDPlasKin
     subroutine ZDPlasKin_bolsig_ReadCollisions(a)
       character(*), intent(in) :: a
     end subroutine ZDPlasKin_bolsig_ReadCollisions
-    subroutine ZDPlasKin_bolsig_GetNumCollisions(i,j)
+    subroutine ZDPlasKin_bolsig_GetCollisions(i,j)
       integer, intent(out) :: i, j
-    end subroutine ZDPlasKin_bolsig_GetNumCollisions
+    end subroutine ZDPlasKin_bolsig_GetCollisions
     subroutine ZDPlasKin_bolsig_GetSpeciesName(a,i)
       integer, intent(in) :: i
       character(*), intent(out) :: a
@@ -97,9 +97,9 @@ module ZDPlasKin
       double precision, intent(in)  :: a(i)
       double precision, intent(out) :: b(j)
     end subroutine ZDPlasKin_bolsig_SolveBoltzmann
-    subroutine ZDPlasKin_bolsig_GetEEDF(a, i)
-      integer, intent(out) :: i
-      double precision, dimension(:,:), intent(out) :: a
+    subroutine ZDPlasKin_bolsig_GetEEDF(i,a,b)
+      integer, intent(in) :: i
+      double precision, intent(out) :: a,b
     end subroutine ZDPlasKin_bolsig_GetEEDF
   end interface
 !
@@ -123,7 +123,7 @@ subroutine ZDPlasKin_init()
   implicit none
   character(256) :: string
   integer :: i, j, k
-  write(*,"(/,A)") "ZDPlasKin (version " // "2.0" // ") INIT:"
+  write(*,"(/,A)") "ZDPlasKin (version " // "2.0a" // ") INIT:"
   if( lZDPlasKin_init ) call ZDPlasKin_stop("   ERROR: the ZDPlasKin library has been initialized")
   write(string,*) species_max
   write(*,"(2x,A)")  "species        ... " // trim(adjustl(string))
@@ -722,7 +722,8 @@ subroutine ZDPlasKin_get_conditions(GAS_TEMPERATURE,REDUCED_FREQUENCY,REDUCED_FI
                                              ELEC_MU_EPS_N, ELEC_DIFF_EPS_N, ELEC_FREQUENCY_N, &
                                              ELEC_POWER_N, ELEC_POWER_ELASTIC_N, ELEC_POWER_INELASTIC_N
   double precision, optional, dimension(:,:), intent(out) :: ELEC_EEDF
-  integer :: i,j
+  integer :: i
+  double precision :: x,y
   if(.not. lZDPlasKin_init) call ZDPlasKin_init()
   if( present(ELEC_EEDF) ) then
     call ZDPlasKin_bolsig_rates(lbolsig_force=.true.)
@@ -743,9 +744,24 @@ subroutine ZDPlasKin_get_conditions(GAS_TEMPERATURE,REDUCED_FREQUENCY,REDUCED_FI
   if( present(ELEC_POWER_ELASTIC_N)   ) ELEC_POWER_ELASTIC_N   = ZDPlasKin_cfg(11)
   if( present(ELEC_POWER_INELASTIC_N) ) ELEC_POWER_INELASTIC_N = ZDPlasKin_cfg(12)
   if( present(ELEC_EEDF) ) then
-    i = size(ELEC_EEDF(:,:),dim=2)
-    call ZDPlasKin_bolsig_GetEEDF(ELEC_EEDF(1:2,:),j)
-    if(lprint .and. i < j) write(*,"(A)") "ZDPlasKin WARNING: small size of array ELEC_EEDF (subroutine ZDPlasKin_get_conditions)"
+    ELEC_EEDF = 0d0
+  	 if( size(ELEC_EEDF,dim=1) < 2 ) then
+      if(lprint) write(*,"(A)") &
+  	     "ZDPlasKin WARNING: insufficient first dimention of array ELEC_EEDF (subroutine ZDPlasKin_get_conditions)"
+  	  else
+  		y = 1.0d0
+  		do i = 1, size(ELEC_EEDF,dim=2)
+  		  call ZDPlasKin_bolsig_GetEEDF(i,x,y)
+  		  if( x >= 0d0 .and. y > 0d0) then
+  			ELEC_EEDF(1,i) = x
+  			ELEC_EEDF(2,i) = y
+  		  else
+  			exit
+  		  endif
+  		enddo
+  		if(lprint .and. y>0d0) write(*,"(A)") &
+  		  "ZDPlasKin WARNING: insufficient second dimention of array ELEC_EEDF (subroutine ZDPlasKin_get_conditions)"
+     endif
   endif
 end subroutine ZDPlasKin_get_conditions
 !-----------------------------------------------------------------------------------------------------------------------------------
@@ -906,7 +922,7 @@ subroutine ZDPlasKin_write_qtplaskin(time,LFORCE_WRITE)
                                      "<qt_matrix.txt> (subroutine writer_save_qtplaskin)")
     close(ifile_unit)
     open(ifile_unit,file="qt_densities.txt",action="write",err=300)
-    write(ifile_unit,"(1x,A12,7(121x,i1.1))",err=300) "Time_s", ( i, i = 1, species_max )
+    write(ifile_unit,"(1x,A14,7(121x,i1.1))",err=300) "Time_s", ( i, i = 1, species_max )
     lerror = .false.
 300 if( lerror ) call ZDPlasKin_stop("ZDPlasKin ERROR: cannot write to file " // &
                                      "<qt_densities.txt> (subroutine writer_save_qtplaskin)")
@@ -931,7 +947,7 @@ subroutine ZDPlasKin_write_qtplaskin(time,LFORCE_WRITE)
   if( present(LFORCE_WRITE) ) then
     if( LFORCE_WRITE ) lfirst = .true.
   endif
-  rtol = 10.0d0 ** ( floor( log10( abs(densav(0,1)) + tiny(rtol) ) ) - 4 )
+  rtol = 10.0d0 ** ( floor( log10( abs(densav(0,1)) + tiny(rtol) ) ) - 6 )
   if( ( time - densav(0,1) ) >= rtol .or. lfirst ) then
     densav(0,2) = time
     densav(1:species_max,2) = density(:)
@@ -943,7 +959,7 @@ subroutine ZDPlasKin_write_qtplaskin(time,LFORCE_WRITE)
     endif
     if( rtol > qtplaskin_rtol .or. lfirst ) then
       open(ifile_unit,file="qt_densities.txt",access="append")
-      write(ifile_unit,"(8(1pe13.4))") densav(:,2)
+      write(ifile_unit,"(1pe15.6,7(1pe13.4))") densav(0,2), densav(1:,2)
       close(ifile_unit)
       open(ifile_unit,file="qt_conditions.txt",access="append")
       cond(1) = ZDPlasKin_cfg(3)
