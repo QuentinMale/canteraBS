@@ -5,7 +5,7 @@ ideal_gas(name='gas',
           species=['''gri30: H2      H       O       O2      OH      H2O     HO2
                      H2O2    C       CH      CH2     CH2(S)  CH3     CH4
                      CO      CO2     HCO     CH2O    CH3O    N2''',
-                   '''HCO^+   H3O^+    E     O2(a1dg)'''],
+                   '''HCO^+   H3O^+    E     O2(a1dg)  N2(c3pu)'''],
           reactions=['gri30: all', 'all'],
           transport='Mix',
           options=['skip_undeclared_species', 'skip_undeclared_third_bodies'],
@@ -84,6 +84,25 @@ species(name = "O2(a1dg)",
                      polar =     1.60,
                      rot_relax =     3.80),
     # note = "TPIS89"
+       )
+
+species(name = "N2(c3pu)",
+    atoms = " N:2 ",
+    thermo = (
+       NASA( [  300.00,  1000.00], [  3.298677000E+00,   1.408240400E-03, 
+               -3.963222000E-06,   5.641515000E-09,  -2.444854000E-12,
+               -1.020899900E+03,   3.950372000E+00] ),
+       NASA( [ 1000.00,  5000.00], [  2.926640000E+00,   1.487976800E-03, 
+               -5.684760000E-07,   1.009703800E-10,  -6.753351000E-15,
+               -9.227977000E+02,   5.980528000E+00] )
+             ),
+    transport = gas_transport(
+                     geom = "linear",
+                     diam =     3.62,
+                     well_depth =    97.53,
+                     polar =     1.76,
+                     rot_relax =     4.00),
+    note = "121286"
        )
 
 species(name = "O2^-",

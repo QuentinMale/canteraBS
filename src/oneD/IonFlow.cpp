@@ -53,24 +53,11 @@ IonFlow::IonFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
         zdplaskinGetSpeciesName(cstring, &i);
         string speciesName(cstring);
         size_t k = m_thermo->speciesIndex(speciesName);
-        if (k != npos) {
+        //if (k != npos) {
             m_plasmaSpeciesIndex.push_back(k);
             cout << speciesName << " " << k << endl;
-        }
+        //}
     }
-
-    // Find the major species
-    m_kMajorSpecies.resize(5, npos);
-    m_kMajorSpecies[0] = m_thermo->speciesIndex("O2");
-    m_kMajorSpecies[1] = m_thermo->speciesIndex("N2");
-    m_kMajorSpecies[2] = m_thermo->speciesIndex("CO");
-    //m_kMajorSpecies[3] = m_thermo->speciesIndex("H2O");
-    //m_kMajorSpecies[4] = m_thermo->speciesIndex("CO2");
-
-    // The energy level of major species vibrational state
-    m_energyLevel.push_back(0.19);
-    m_energyLevel.push_back(0.3);
-    m_energyLevel.push_back(0.266);
 
     // set zdplaskin tol
     // double atol = 1e-11;
@@ -128,10 +115,10 @@ void IonFlow::updateTransport(double* x, size_t j0, size_t j1)
                 m_diff[k+m_nsp*j] += zdplaskinGetElecDiffCoeff() * m_plasma_multiplier;
             } else {
                 m_mobility[m_kElectron+m_nsp*j] = 0.4;
-                m_diff[m_kElectron+m_nsp*j] = 0.4*(Boltzmann * T(x,j)) / ElectronCharge;
+                // m_diff[m_kElectron+m_nsp*j] = 0.4*(Boltzmann * T(x,j)) / ElectronCharge;
                 // Below will not pass test, but it is correct
-                // m_diff[m_kElectron+m_nsp*j] = 0.4 * Boltzmann / ElectronCharge;
-                // m_diff[m_kElectron+m_nsp*j] *= m_thermo->temperature();
+                m_diff[m_kElectron+m_nsp*j] = 0.4 * Boltzmann / ElectronCharge;
+                m_diff[m_kElectron+m_nsp*j] *= m_thermo->temperature();
             }
         }
     }
@@ -159,34 +146,13 @@ double IonFlow::getElecCollisionHeat(size_t j)
 
 void IonFlow::updateEEDF(double* x, size_t j)
 {
-    // need to  change back to major species
+    // need to change back to major species
     for (size_t k : m_plasmaSpeciesIndex) {
         if (k == m_kElectron) {
             zdplaskinSetDensity("E", &m_ND[m_kElectron]);
-        } else {
+        } else if (k != npos) {
             const char* species = m_thermo->speciesName(k).c_str();
             zdplaskinSetDensity(species, &m_ND[k]);
-        }
-    }
-
-    // vibrational state of major species
-    for (size_t i = 0; i < m_kMajorSpecies.size(); i++) {
-        size_t k = m_kMajorSpecies[i];
-        double total_number_density = ND(x,k,j);
-        double act_energy = m_energyLevel[i];
-        size_t total_level = 4;
-        string major_species = m_thermo->speciesName(k);
-        double sum = 1.0;
-        for (size_t level = 1; level <= total_level; level++) {
-            sum += maxwellian(act_energy*level, T(x,j));
-        }
-        for (size_t level = 1; level <= total_level; level++) {
-            double number_density = total_number_density
-                                    * maxwellian(act_energy*level, T(x,j)) / sum;
-            // some string process
-            string sub_species = major_species + "(v" + to_string(level) + ")";
-            const char* sub_species_cstr = sub_species.c_str();
-            zdplaskinSetDensity(sub_species_cstr, &number_density);
         }
     }
 
@@ -196,16 +162,13 @@ void IonFlow::updateEEDF(double* x, size_t j)
     // if (m_maxwellian_electron) {
     //     zdplaskinSetElecTemp(NULL);
     // }
-    zdplaskinSetConditions(&Tgas, &m_elec_field, &m_elec_frequency, &m_ND_t);
+    // set electron temperature
+    //double Thigh = 3000;
+    //zdplaskinSetElecTemp(&Thigh);
+    zdplaskinSetGasTemp(&Tgas);
+    zdplaskinSetElecField(&m_elec_field, &m_elec_frequency, &m_ND_t);
     // get electron temperature
     m_elecTemp[j] = zdplaskinGetElecTemp();
-    // if (m_elecTemp[j] < Tgas) {
-    //     double Te = Tgas + 1;
-    //     zdplaskinSetElecTemp(&Te);
-    //     m_maxwellian_electron = true;
-    // } else {
-    //     m_maxwellian_electron = false;
-    // }
 }
 
 void IonFlow::updateDiffFluxes(const double* x, size_t j0, size_t j1)
@@ -357,9 +320,10 @@ void IonFlow::setElectricPotential(const double v1, const double v2)
     m_outletVoltage = v2;
 }
 
-void IonFlow::setTransverseElecField(double elec_field)
+void IonFlow::setTransverseElecField(double elec_field, double elec_freq)
 {
     m_elec_field = elec_field;
+    m_elec_frequency = elec_freq;
 }
 
 void IonFlow::setPlasmaSourceMultiplier(double multiplier)
@@ -423,11 +387,13 @@ void IonFlow::evalResidual(double* x, double* rsd, int* diag,
                 updateEEDF(x, j);
                 double* wdot_plasma = NULL;
                 zdplaskinGetPlasmaSource(&wdot_plasma);
-                for (size_t i = 0; i < m_plasmaSpeciesIndex.size(); i++) {
+                for (size_t i = 0; i < zdplaskinNSpecies(); i++) {
                     size_t k = m_plasmaSpeciesIndex[i];
-                    // multiply by the multiplier
-                    wdot_plasma[i] *= m_plasma_multiplier;
-                    rsd[index(c_offset_Y + k, j)] += m_wt[k] * wdot_plasma[i] / m_rho[j];
+                    if (k != npos) {
+                        // multiply by the multiplier
+                        wdot_plasma[i] *= m_plasma_multiplier;
+                        rsd[index(c_offset_Y + k, j)] += m_wt[k] * wdot_plasma[i] / m_rho[j];
+                    }
                 }
 
                 // update electron power

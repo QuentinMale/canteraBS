@@ -594,56 +594,6 @@ class IonFlame(FreeFlame):
         return Efield
 
 
-class PlasmaFlame(IonFlame):
-    __slots__ = ('inlet', 'outlet', 'flame')
-
-    def __init__(self, gas, grid=None, width=None):
-        if not hasattr(self, 'flame'):
-            # Create flame domain if not already instantiated by a child class
-            self.flame = PlasmaFlow(gas, name='flame')
-        super(PlasmaFlame, self).__init__(gas, grid, width)
-
-    # def write_csv(self, filename, species='X', quiet=True):
-    #     """
-    #     Write the velocity, temperature, density, electric potential,
-    #     , electric field stregth, and species profiles to a CSV file.
-
-    #     :param filename:
-    #         Output file name
-    #     :param species:
-    #         Attribute to use obtaining species profiles, e.g. ``X`` for
-    #         mole fractions or ``Y`` for mass fractions.
-    #     """
-    #     z = self.grid
-    #     T = self.T
-    #     u = self.u
-    #     V = self.V
-    #     phi = self.phi
-    #     E = self.E
-    #     Avogadro = 6.02214129e26
-
-    #     csvfile = open(filename, 'w')
-    #     writer = _csv.writer(csvfile)
-    #     writer.writerow(['z (m)', 'u (m/s)', 'V (1/s)', 'T (K)',
-    #                      'phi (V)', 'E (V/m)', 'ND (1/m3)'] + self.gas.species_names)
-    #     for n in range(self.flame.n_points):
-    #         self.set_gas_state(n)
-    #         writer.writerow([z[n], u[n], V[n], T[n], phi[n], E[n], self.gas.density_mole*Avogadro] +
-    #                         list(getattr(self.gas, species)))
-    #     csvfile.close()
-    #     if not quiet:
-    #         print("Solution saved to '{0}'.".format(filename))
-
-    @property
-    def plasma_enabled(self):
-        """ Get/Set whether or not to solve the Plasma reaction."""
-        return self.flame.plasma_enabled
-
-    @plasma_enabled.setter
-    def plasma_enabled(self, enable):
-        self.flame.plasma_enabled = enable
-
-
 class BurnerFlame(FlameBase):
     """A burner-stabilized flat flame."""
     __slots__ = ('burner', 'flame', 'outlet')

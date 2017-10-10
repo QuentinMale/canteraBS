@@ -496,8 +496,8 @@ cdef class IonFlow(_FlowBase):
     def set_electricPotential(self, v_inlet, v_outlet):
         (<CxxIonFlow*>self.flow).setElectricPotential(v_inlet, v_outlet)
 
-    def set_transversElecField(self, E):
-        (<CxxIonFlow*>self.flow).setTransverseElecField(E)
+    def set_transversElecField(self, E, Ef):
+        (<CxxIonFlow*>self.flow).setTransverseElecField(E, Ef)
 
     def set_plasmaSourceMultiplier(self, multiplier):
         (<CxxIonFlow*>self.flow).setPlasmaSourceMultiplier(multiplier)
@@ -545,62 +545,6 @@ cdef class IonFlow(_FlowBase):
             if enable:
                 (<CxxIonFlow*>self.flow).solvePlasma()
 
-
-cdef class PlasmaFlow(_FlowBase):
-    """
-    An plasma flow domain.
-
-    In an ion flow dommain, the electric drift is added to the diffusion flux
-    """
-    def __cinit__(self, _SolutionBase thermo, *args, **kwargs):
-        gas = getIdealGasPhase(thermo)
-        self.flow = <CxxStFlow*>(new CxxPlasmaFlow(gas, thermo.n_species, 2))
-
-    def set_solvingStage(self, stage):
-        (<CxxPlasmaFlow*>self.flow).setSolvingStage(stage)
-
-    def set_electricPotential(self, v_inlet, v_outlet):
-        (<CxxPlasmaFlow*>self.flow).setElectricPotential(v_inlet, v_outlet)
-
-    def set_elecField(self, E):
-        (<CxxPlasmaFlow*>self.flow).setElecField(E)
-
-    def set_elecNumDensity(self, num_density):
-        (<CxxPlasmaFlow*>self.flow).setElecNumDensity(num_density)
-
-    def set_plasmaSourceMultiplier(self, multiplier):
-        (<CxxPlasmaFlow*>self.flow).setPlasmaSourceMultiplier(multiplier)
-
-    def enable_ElecHeat(self, withElecHeat):
-        (<CxxPlasmaFlow*>self.flow).enableElecHeat(withElecHeat) 
-
-    property poisson_enabled:
-        """ Determines whether or not to solve the energy equation."""
-        def __get__(self):
-            return (<CxxPlasmaFlow*>self.flow).doPoisson(0)
-        def __set__(self, enable):
-            if enable:
-                (<CxxPlasmaFlow*>self.flow).solvePoissonEqn()
-            else:
-                (<CxxPlasmaFlow*>self.flow).fixElectricPotential()
-
-    property velocity_enabled:
-        """ Determines whether or not to solve the velocity."""
-        def __get__(self):
-            return (<CxxPlasmaFlow*>self.flow).doVelocity(0)
-        def __set__(self, enable):
-            if enable:
-                (<CxxPlasmaFlow*>self.flow).solveVelocity()
-            else:
-                (<CxxPlasmaFlow*>self.flow).fixVelocity()
-
-    property plasma_enabled:
-        """ Determines whether or not to solve the energy equation."""
-        def __get__(self):
-            return (<CxxPlasmaFlow*>self.flow).doPlasma()
-        def __set__(self, enable):
-            if enable:
-                (<CxxPlasmaFlow*>self.flow).solvePlasma()
 
 cdef class AxisymmetricStagnationFlow(_FlowBase):
     """

@@ -38,12 +38,11 @@ subroutine zdplaskinGetDensity(cstring, num_density_SI) bind(C, name='zdplaskinG
   num_density_SI = DENS * 1e6
 end subroutine zdplaskinGetDensity
 
-subroutine zdplaskinSetConditions(gasTemperature, elec_field, elec_frequency, num_density) bind(C,name='zdplaskinSetConditions')
+subroutine zdplaskinSetElecField(elec_field, elec_frequency, num_density) bind(C,name='zdplaskinSetElecField')
   use, intrinsic :: iso_c_binding
   use ZDPlasKin
   implicit none
   ! input variables in SI unit 
-  real(c_double), intent(in) :: gasTemperature ![K]
   real(c_double), intent(in) :: elec_field ! [v/m] 
   real(c_double), intent(in) :: elec_frequency ! [1/s]
   real(c_double), intent(in) :: num_density ! [m-3]
@@ -52,8 +51,8 @@ subroutine zdplaskinSetConditions(gasTemperature, elec_field, elec_frequency, nu
   real(c_double) :: reduced_freqency
   reduced_field = elec_field / num_density * 1e21 ! [Td]
   reduced_freqency = elec_frequency / num_density * 1e6  ! [cm3 s-1]
-  call ZDPlasKin_set_conditions(GAS_TEMPERATURE=gasTemperature, REDUCED_FIELD=reduced_field, REDUCED_FREQUENCY=reduced_freqency)
-end subroutine zdplaskinSetConditions
+  call ZDPlasKin_set_conditions(REDUCED_FIELD=reduced_field, REDUCED_FREQUENCY=reduced_freqency)
+end subroutine zdplaskinSetElecField
 
 subroutine zdplaskinSoftReset() bind(C,name='zdplaskinSoftReset')
   use, intrinsic :: iso_c_binding
@@ -61,6 +60,15 @@ subroutine zdplaskinSoftReset() bind(C,name='zdplaskinSoftReset')
   implicit none
   call ZDPlasKin_set_conditions(SOFT_RESET=.true.)
 end subroutine zdplaskinSoftReset
+
+subroutine zdplaskinSetGasTemp(Tgas) bind(C,name='zdplaskinSetGasTemp')
+  use, intrinsic :: iso_c_binding
+  use ZDPlasKin
+  implicit none
+  ! input variables in SI unit 
+  real(c_double), intent(in) :: Tgas ![K]
+  call ZDPlasKin_set_conditions(GAS_TEMPERATURE=Tgas)
+end subroutine zdplaskinSetGasTemp
 
 subroutine zdplaskinSetElecTemp(Te) bind(C,name='zdplaskinSetElecTemp')
   use, intrinsic :: iso_c_binding

@@ -74,7 +74,7 @@ public:
         return m_do_plasma;
     }
     void enableElecHeat(bool withElecHeat);
-    void setTransverseElecField(double reduced_field);
+    void setTransverseElecField(double elec_field, double elec_freq);
     void setPlasmaSourceMultiplier(double multiplier);
     double getElecMobility(size_t j);
     double getElecDiffCoeff(size_t j);
@@ -94,7 +94,7 @@ protected:
     virtual void poissonEqnMethod(const double* x, size_t j0, size_t j1);
 
     double maxwellian(double energy, double temperature) {
-        return std::exp(-energy / (Boltzmann * temperature));
+        return std::exp(-energy*ElectronCharge / (Boltzmann * temperature));
     }
     //! flag for solving poisson's equation or not
     std::vector<bool> m_do_poisson;

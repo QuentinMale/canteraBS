@@ -706,31 +706,12 @@ cdef extern from "cantera/oneD/IonFlow.h":
         cbool doVelocity(size_t)
         cbool doPlasma()
         void solvePlasma()
-        void setTransverseElecField(double)
+        void setTransverseElecField(double, double)
         void setPlasmaSourceMultiplier(double)
         double getElecMobility(size_t)
         double getElecDiffCoeff(size_t)
         double getElecTemperature(size_t)
         double getElecCollisionHeat(size_t)
-
-
-cdef extern from "cantera/oneD/PlasmaFlow.h":
-    cdef cppclass CxxPlasmaFlow "Cantera::PlasmaFlow":
-        CxxPlasmaFlow(CxxIdealGasPhase*, int, int)
-        void setSolvingStage(int)
-        void setElectricPotential(const double, const double)
-        void solvePoissonEqn()
-        void fixElectricPotential()
-        cbool doPoisson(size_t)
-        void enableElecHeat(cbool)
-        void solveVelocity()
-        void fixVelocity()
-        cbool doVelocity(size_t)
-        cbool doPlasma()
-        void solvePlasma()
-        void setElecField(double)
-        void setElecNumDensity(double)
-        void setPlasmaSourceMultiplier(double)
 
 
 cdef extern from "cantera/oneD/Sim1D.h":
