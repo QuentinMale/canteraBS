@@ -93,6 +93,8 @@ protected:
     //! Solving phase three: the Poisson's equation is added coupled by the electrical drift
     virtual void poissonEqnMethod(const double* x, size_t j0, size_t j1);
 
+    void updateVibrationlStates(vector<pair<string,double>> vibration_states,
+                                double ND_total, double Tgas);
     double maxwellian(double energy, double temperature) {
         return std::exp(-energy*ElectronCharge / (Boltzmann * temperature));
     }
