@@ -708,6 +708,7 @@ cdef extern from "cantera/oneD/IonFlow.h":
         void solvePlasma()
         void setTransverseElecField(double, double)
         void setPlasmaSourceMultiplier(double)
+        void setElectronTransportMultiplier(double)
         double getElecMobility(size_t)
         double getElecDiffCoeff(size_t)
         double getElecTemperature(size_t)

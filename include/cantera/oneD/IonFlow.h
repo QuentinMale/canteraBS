@@ -76,6 +76,7 @@ public:
     void enableElecHeat(bool withElecHeat);
     void setTransverseElecField(double elec_field, double elec_freq);
     void setPlasmaSourceMultiplier(double multiplier);
+    void setElectronTransportMultiplier(double multiplier);
     double getElecMobility(size_t j);
     double getElecDiffCoeff(size_t j);
     double getElecTemperature(size_t j);
@@ -197,6 +198,7 @@ protected:
     double m_elec_field;
     double m_elec_frequency;
     double m_plasma_multiplier;
+    double m_electron_multiplier;
     vector<double> m_elec_power;
 };
 

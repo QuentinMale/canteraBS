@@ -502,6 +502,9 @@ cdef class IonFlow(_FlowBase):
     def set_plasmaSourceMultiplier(self, multiplier):
         (<CxxIonFlow*>self.flow).setPlasmaSourceMultiplier(multiplier)
 
+    def set_electronTransportMultiplier(self, multiplier):
+        (<CxxIonFlow*>self.flow).setElectronTransportMultiplier(multiplier)
+
     def enable_elecHeat(self, withElecHeat):
         (<CxxIonFlow*>self.flow).enableElecHeat(withElecHeat)
 

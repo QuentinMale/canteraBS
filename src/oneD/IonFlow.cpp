@@ -108,11 +108,11 @@ void IonFlow::updateTransport(double* x, size_t j0, size_t j1)
                 m_ND_t = 0.5 * (ND_t(j) + ND_t(j+1));
                 updateEEDF(x,j);
                 size_t k = m_kElectron;
-                m_mobility[k+m_nsp*j] = 0.4 * (1.0-m_plasma_multiplier);
+                m_mobility[k+m_nsp*j] = 0.4 * (1.0-m_electron_multiplier);
                 m_diff[k+m_nsp*j] = m_mobility[k+m_nsp*j] * Boltzmann / ElectronCharge;
                 m_diff[k+m_nsp*j] *= m_thermo->temperature();
-                m_mobility[k+m_nsp*j] += zdplaskinGetElecMobility(&m_ND_t) * m_plasma_multiplier;
-                m_diff[k+m_nsp*j] += zdplaskinGetElecDiffCoeff() * m_plasma_multiplier;
+                m_mobility[k+m_nsp*j] += zdplaskinGetElecMobility(&m_ND_t) * m_electron_multiplier;
+                m_diff[k+m_nsp*j] += zdplaskinGetElecDiffCoeff() * m_electron_multiplier;
             } else {
                 m_mobility[m_kElectron+m_nsp*j] = 0.4;
                 // m_diff[m_kElectron+m_nsp*j] = 0.4*(Boltzmann * T(x,j)) / ElectronCharge;
@@ -412,6 +412,11 @@ void IonFlow::setTransverseElecField(double elec_field, double elec_freq)
 void IonFlow::setPlasmaSourceMultiplier(double multiplier)
 {
     m_plasma_multiplier = multiplier;
+}
+
+void IonFlow::setElectronTransportMultiplier(double multiplier)
+{
+    m_electron_multiplier = multiplier;
 }
 
 void IonFlow::evalResidual(double* x, double* rsd, int* diag,
