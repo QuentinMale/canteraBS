@@ -227,8 +227,8 @@ void IonFlow::updateEEDF(double* x, size_t j)
     vibration_states.push_back(make_pair("H2O",0.0));
     vibration_states.push_back(make_pair("H2O(ROT)",0.04));
     vibration_states.push_back(make_pair("H2O(v010)",0.198));
-    vibration_states.push_back(make_pair("H2O(v100)",0.430));
-    vibration_states.push_back(make_pair("H2O(v001)",0.430));
+    // vibration_states.push_back(make_pair("H2O(v100)",0.430));
+    // vibration_states.push_back(make_pair("H2O(v001)",0.430));
     vibration_states.push_back(make_pair("H2O(v101)",0.453));
     updateVibrationlStates(vibration_states, ND_total, Tgas);
 
