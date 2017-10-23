@@ -140,6 +140,9 @@ protected:
     //! index of electron
     size_t m_kElectron;
 
+    //! index of collision species
+    vector<size_t> m_kCollision;
+
     //! fixed electric potential value
     vector_fp m_fixedElecPoten;
 

@@ -53,16 +53,28 @@ IonFlow::IonFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
         zdplaskinGetSpeciesName(cstring, &i);
         string speciesName(cstring);
         size_t k = m_thermo->speciesIndex(speciesName);
-        //if (k != npos) {
-            m_plasmaSpeciesIndex.push_back(k);
-            cout << speciesName << " " << k << endl;
-        //}
+        m_plasmaSpeciesIndex.push_back(k);
+        cout << speciesName << " " << k << endl;
     }
 
-    // set zdplaskin tol
-    // double atol = 1e-11;
-    // double rtol = 1e-6;
-    // zdplaskinSetConfig(&atol, &rtol);
+    // collision list
+    vector<string> collision_list;
+    collision_list.push_back("N2");
+    collision_list.push_back("O2");
+    collision_list.push_back("CH4");
+    collision_list.push_back("CO2");
+    collision_list.push_back("H2O");
+    collision_list.push_back("H2");
+    collision_list.push_back("CO");
+    collision_list.push_back("E");
+
+    for (size_t i = 0; i < collision_list.size(); i++) {
+        size_t k = m_thermo->speciesIndex(collision_list[i]);
+        if (k != npos ) {
+            m_kCollision.push_back(k);
+            cout << collision_list[i] << m_kCollision[i] << endl;
+        }
+    }
 
     // no bound for electric potential
     setBounds(c_offset_P, -1.0e20, 1.0e20);
@@ -146,91 +158,11 @@ double IonFlow::getElecCollisionHeat(size_t j)
 
 void IonFlow::updateEEDF(double* x, size_t j)
 {
-    // need to change back to major species
-    for (size_t k : m_plasmaSpeciesIndex) {
-        if (k == m_kElectron) {
-            zdplaskinSetDensity("E", &m_ND[m_kElectron]);
-        } else if (k != npos) {
-            const char* species = m_thermo->speciesName(k).c_str();
-            zdplaskinSetDensity(species, &m_ND[k]);
-        }
+    for (size_t k : m_kCollision) {
+        const char* species = m_thermo->speciesName(k).c_str();
+        zdplaskinSetDensity(species, &m_ND[k]);
     }
     const double Tgas = m_thermo->temperature();
-
-    // maxwellian distribution
-    double ND_total = 0.0;
-    vector<pair<string,double>> vibration_states;
-
-    // Nitrogen
-    ND_total = ND(x,m_thermo->speciesIndex("N2"),j);
-    vibration_states.resize(0);
-    vibration_states.push_back(make_pair("N2",0.0));
-    vibration_states.push_back(make_pair("N2(v1)",0.3));
-    vibration_states.push_back(make_pair("N2(v2)",0.6));
-    vibration_states.push_back(make_pair("N2(v3)",0.9));
-    updateVibrationlStates(vibration_states, ND_total, Tgas);
-
-    // Oxygen
-    ND_total = ND(x,m_thermo->speciesIndex("O2"),j);
-    vibration_states.resize(0);
-    vibration_states.push_back(make_pair("O2",0.0));
-    vibration_states.push_back(make_pair("O2(v1)",0.19));
-    vibration_states.push_back(make_pair("O2(v2)",0.38));
-    vibration_states.push_back(make_pair("O2(v3)",0.60));
-    vibration_states.push_back(make_pair("O2(v4)",0.80));
-    updateVibrationlStates(vibration_states, ND_total, Tgas);
-
-    // CH4
-    ND_total = ND(x,m_thermo->speciesIndex("CH4"),j);
-    vibration_states.resize(0);
-    vibration_states.push_back(make_pair("CH4",0.0));
-    vibration_states.push_back(make_pair("CH4(v24)",0.162));
-    vibration_states.push_back(make_pair("CH4(v13)",0.361));
-    updateVibrationlStates(vibration_states, ND_total, Tgas);
-
-    // CO2
-    ND_total = ND(x,m_thermo->speciesIndex("CO2"),j);
-    vibration_states.resize(0);
-    vibration_states.push_back(make_pair("CO2",0.0));
-    vibration_states.push_back(make_pair("CO2(v010)",0.083));
-    vibration_states.push_back(make_pair("CO2(v020)",0.167));
-    vibration_states.push_back(make_pair("CO2(v100)",0.167));
-    vibration_states.push_back(make_pair("CO2(v030)",0.252));
-    vibration_states.push_back(make_pair("CO2(v001)",0.291));
-    vibration_states.push_back(make_pair("CO2(v040)",0.339));
-    vibration_states.push_back(make_pair("CO2(v200)",0.339));
-    vibration_states.push_back(make_pair("CO2(v050)",0.422));
-    vibration_states.push_back(make_pair("CO2(v300)",0.500));
-    vibration_states.push_back(make_pair("CO2(v060)",0.505));
-    updateVibrationlStates(vibration_states, ND_total, Tgas);
-
-    // CO
-    ND_total = ND(x,m_thermo->speciesIndex("CO"),j);
-    vibration_states.resize(0);
-    vibration_states.push_back(make_pair("CO",0.0));
-    vibration_states.push_back(make_pair("CO(v1)",0.266));
-    vibration_states.push_back(make_pair("CO(v2)",0.528));
-    vibration_states.push_back(make_pair("CO(v3)",0.787));
-    updateVibrationlStates(vibration_states, ND_total, Tgas);
-
-    // H2
-    ND_total = ND(x,m_thermo->speciesIndex("H2"),j);
-    vibration_states.resize(0);
-    vibration_states.push_back(make_pair("H2",0.0));
-    vibration_states.push_back(make_pair("H2(v1)",0.516));
-    vibration_states.push_back(make_pair("H2(v2)",1.000));
-    updateVibrationlStates(vibration_states, ND_total, Tgas);
-
-    // H2O
-    ND_total = ND(x,m_thermo->speciesIndex("H2O"),j);
-    vibration_states.resize(0);
-    vibration_states.push_back(make_pair("H2O",0.0));
-    vibration_states.push_back(make_pair("H2O(ROT)",0.04));
-    vibration_states.push_back(make_pair("H2O(v010)",0.198));
-    // vibration_states.push_back(make_pair("H2O(v100)",0.430));
-    // vibration_states.push_back(make_pair("H2O(v001)",0.430));
-    vibration_states.push_back(make_pair("H2O(v101)",0.453));
-    updateVibrationlStates(vibration_states, ND_total, Tgas);
 
     // m_elec_field = abs(E(x,j));
     zdplaskinSetGasTemp(&Tgas);

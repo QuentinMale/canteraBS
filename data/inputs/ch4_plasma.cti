@@ -5,7 +5,7 @@ ideal_gas(name='gas',
           species=['''gri30: H2      H       O       O2      OH      H2O     HO2
                      H2O2    C       CH      CH2     CH2(S)  CH3     CH4
                      CO      CO2     HCO     CH2O    CH3O    N2''',
-                   '''HCO^+   H3O^+    E     O2^-    O2(a1dg)'''],
+                   '''HCO^+   H3O^+    E     O2(a1dg)'''],
           reactions=['gri30: all', 'all'],
           transport='Mix',
           options=['skip_undeclared_species', 'skip_undeclared_third_bodies'],
