@@ -83,9 +83,11 @@ IonFlow::IonFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
     m_mobility.resize(m_nsp*m_points);
     m_do_poisson.resize(m_points,false);
     m_do_velocity.resize(m_points,true);
-    m_elec_power.resize(m_points, 0.0);
-    m_ND.resize(m_nsp, 0.0);
-    m_elecTemp.resize(m_points, 0.0);
+    m_electronPower.resize(m_points, 0.0);
+    m_electronTemperature.resize(m_points, 0.0);
+    m_electronMobility.resize(m_points, 0.0);
+    m_electronDiff.resize(m_points, 0.0);
+    m_wdotPlasma.resize(zdplaskinNSpecies(),m_points,0.0);
 }
 
 void IonFlow::resize(size_t components, size_t points){
@@ -96,9 +98,52 @@ void IonFlow::resize(size_t components, size_t points){
     m_do_velocity.resize(m_points,true);
     m_fixedElecPoten.resize(m_points,0.0);
     m_fixedVelocity.resize(m_points);
-    m_elec_power.resize(m_points, 0.0);
-    m_ND.resize(m_nsp, 0.0);
-    m_elecTemp.resize(m_points, 0.0);
+    m_electronPower.resize(m_points, 0.0);
+    m_electronTemperature.resize(m_points, 0.0);
+    m_electronMobility.resize(m_points, 0.0);
+    m_electronDiff.resize(m_points, 0.0);
+    m_wdotPlasma.resize(zdplaskinNSpecies(),m_points,0.0);
+}
+
+void IonFlow::updateProperties(size_t jg, double* x, double* rsd, int* diag,
+                              double rdt, size_t jmin, size_t jmax)
+{
+    StFlow::updateProperties(jg, x, rsd, diag, rdt, jmin, jmax);
+    // properties are computed for grid points from j0 to j1
+    size_t j0 = std::max<size_t>(jmin, 1) - 1;
+    size_t j1 = std::min(jmax+1,m_points-1);
+    // update EEDF
+    if (m_do_plasma) {
+        for (size_t j = j0; j < j1; j++) {
+            for (size_t k : m_kCollision) {
+                double number_density = ND(x,k,j);
+                const char* species = m_thermo->speciesName(k).c_str();
+                zdplaskinSetDensity(species, &number_density);
+            }
+            const double Tgas = T(x,j);
+            double total_number_density = ND_t(j);
+            zdplaskinSetGasTemp(&Tgas);
+            zdplaskinSetElecField(&m_elec_field, &m_elec_frequency, &total_number_density);
+            // get plasma properties
+            m_electronTemperature[j] = zdplaskinGetElecTemp();
+            m_electronMobility[j] = zdplaskinGetElecMobility(&total_number_density);
+            m_electronDiff[j] = zdplaskinGetElecDiffCoeff();
+            m_electronTemperature[j] = zdplaskinGetElecTemp();
+            m_electronPower[j] = zdplaskinGetElecPower(&total_number_density);
+
+            double* wdot_plasma = NULL;
+            zdplaskinGetPlasmaSource(&wdot_plasma);
+            for (size_t i = 0; i < zdplaskinNSpecies(); i++) {
+                m_wdotPlasma(i,j) = wdot_plasma[i];
+            }
+            
+        }
+    } else {
+        for (size_t j = j0; j < j1; j++) {
+            m_electronMobility[j] = 0.4;
+            m_electronDiff[j] = 0.4*(Boltzmann * T(x,j)) / ElectronCharge;
+        }
+    }
 }
 
 void IonFlow::updateTransport(double* x, size_t j0, size_t j1)
@@ -108,81 +153,74 @@ void IonFlow::updateTransport(double* x, size_t j0, size_t j1)
         setGasAtMidpoint(x,j);
         m_trans->getMobilities(&m_mobility[j*m_nsp]);
         if (m_kElectron != npos) {
-            if (m_do_plasma) {
-                // set number density to mid point
-                for (size_t k = 0; k < m_nsp; k++) {
-                    if ((ND(x,k,j)+ND(x,k,j+1)) > 0.0) {
-                        m_ND[k] = 0.5*(ND(x,k,j)+ND(x,k,j+1));
-                    } else {
-                        m_ND[k] = 0.0;
-                    }
-                }
-                m_ND_t = 0.5 * (ND_t(j) + ND_t(j+1));
-                updateEEDF(x,j);
-                size_t k = m_kElectron;
-                m_mobility[k+m_nsp*j] = 0.4 * (1.0-m_electron_multiplier);
-                m_diff[k+m_nsp*j] = m_mobility[k+m_nsp*j] * Boltzmann / ElectronCharge;
-                m_diff[k+m_nsp*j] *= m_thermo->temperature();
-                m_mobility[k+m_nsp*j] += zdplaskinGetElecMobility(&m_ND_t) * m_electron_multiplier;
-                m_diff[k+m_nsp*j] += zdplaskinGetElecDiffCoeff() * m_electron_multiplier;
-            } else {
-                m_mobility[m_kElectron+m_nsp*j] = 0.4;
-                // m_diff[m_kElectron+m_nsp*j] = 0.4*(Boltzmann * T(x,j)) / ElectronCharge;
-                // Below will not pass test, but it is correct
-                m_diff[m_kElectron+m_nsp*j] = 0.4 * Boltzmann / ElectronCharge;
-                m_diff[m_kElectron+m_nsp*j] *= m_thermo->temperature();
-            }
+            m_mobility[m_kElectron+m_nsp*j] = m_electronMobility[j];
+            m_diff[m_kElectron+m_nsp*j] = m_electronDiff[j];
         }
     }
 }
 
-double IonFlow::getElecMobility(size_t j)
+void IonFlow::evalResidual(double* x, double* rsd, int* diag,
+                           double rdt, size_t jmin, size_t jmax)
 {
-    return m_mobility[m_kElectron+m_nsp*j];
-}
+    StFlow::evalResidual(x, rsd, diag, rdt, jmin, jmax);
+    if (m_stage == 3) {
+        for (size_t j = jmin; j <= jmax; j++) {
+            if (j == 0) {
+                //rsd[index(c_offset_P, j)] = -phi(x,j);
+                rsd[index(c_offset_P, j)] = E(x,j) - 0.0;
+                diag[index(c_offset_P, j)] = 0;
+            } else if (j == m_points - 1) {
+                rsd[index(c_offset_P, j)] = m_outletVoltage - phi(x,j);
+                //rsd[index(c_offset_P, j)] = E(x,j-1) - 0.0;
+                diag[index(c_offset_P, j)] = 0;
+            } else {
+                //-----------------------------------------------
+                //    Poisson's equation
+                //
+                //    dE/dz = e/eps_0 * sum(q_k*n_k)
+                //
+                //    E = -dV/dz
+                //-----------------------------------------------
+                double chargeDensity = 0.0;
+                for (size_t k : m_kCharge) {
+                    chargeDensity += m_speciesCharge[k] * ElectronCharge * ND(x,k,j);
+                }
+                rsd[index(c_offset_P, j)] = dEdz(x,j) - chargeDensity / epsilon_0;
+                diag[index(c_offset_P, j)] = 0;
 
-double IonFlow::getElecDiffCoeff(size_t j)
-{
-    return m_diff[m_kElectron+m_nsp*j];
-}
-
-double IonFlow::getElecTemperature(size_t j)
-{
-    return ET(j);
-}
-
-double IonFlow::getElecCollisionHeat(size_t j)
-{
-    return m_elec_power[j];
-}
-
-void IonFlow::updateEEDF(double* x, size_t j)
-{
-    for (size_t k : m_kCollision) {
-        const char* species = m_thermo->speciesName(k).c_str();
-        zdplaskinSetDensity(species, &m_ND[k]);
+                // This method is used when you disable energy equation
+                // but still maintain the velocity profile
+                if (!m_do_velocity[j]) {
+                    rsd[index(c_offset_U, j)] = u(x,j) - u_fixed(j);
+                    diag[index(c_offset_U, j)] = 0;
+                }
+            }
+        }
     }
-    const double Tgas = m_thermo->temperature();
 
-    // m_elec_field = abs(E(x,j));
-    zdplaskinSetGasTemp(&Tgas);
-    zdplaskinSetElecField(&m_elec_field, &m_elec_frequency, &m_ND_t);
-    // get electron temperature
-    m_elecTemp[j] = zdplaskinGetElecTemp();
-}
+    if (m_do_plasma) {
+        for (size_t j = jmin; j <= jmax; j++) {
+            if (j != 0 && j != m_points -1) {
+                for (size_t i = 0; i < zdplaskinNSpecies(); i++) {
+                    size_t k = m_plasmaSpeciesIndex[i];
+                    if (k != npos) {
+                        // multiply by the multiplier
+                        m_wdotPlasma(i,j) *= m_plasma_multiplier;
+                        rsd[index(c_offset_Y + k, j)] += m_wt[k] * m_wdotPlasma(i,j) / m_rho[j];
+                    }
+                }
 
-void IonFlow::updateVibrationlStates(vector<pair<string,double>> vibration_states,
-                                     double ND_total, double Tgas)
-{
-    double sum = 0.0;
-    for (size_t i = 0; i < vibration_states.size(); i++) {
-        sum += maxwellian(vibration_states[i].second, Tgas);
-    }
-    for (size_t i = 0; i < vibration_states.size(); i++) {
-        const char* species = vibration_states[i].first.c_str();
-        double ND_part = maxwellian(vibration_states[i].second, Tgas);
-        ND_part *= ND_total / sum;
-        zdplaskinSetDensity(species, &ND_part);
+                // update electron power
+                if (m_do_elec_heat) {
+                    if (m_do_energy[j]) {
+                        rsd[index(c_offset_T, j)] += m_electronPower[j]
+                                                     * abs(ND(x,m_kElectron,j))
+                                                     / (m_rho[j] * m_cp[j])
+                                                     * m_plasma_multiplier;
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -351,97 +389,29 @@ void IonFlow::setElectronTransportMultiplier(double multiplier)
     m_electron_multiplier = multiplier;
 }
 
-void IonFlow::evalResidual(double* x, double* rsd, int* diag,
-                           double rdt, size_t jmin, size_t jmax)
-{
-    StFlow::evalResidual(x, rsd, diag, rdt, jmin, jmax);
-    if (m_stage == 3) {
-        for (size_t j = jmin; j <= jmax; j++) {
-            if (j == 0) {
-                rsd[index(c_offset_P, j)] = E(x,j);
-                // rsd[index(c_offset_P, j)] = E(x,j) - 100.0;
-                diag[index(c_offset_P, j)] = 0;
-            } else if (j == m_points - 1) {
-                rsd[index(c_offset_P, j)] = m_outletVoltage - phi(x,j);
-                // rsd[index(c_offset_P, j)] = E(x,j-1) - 0.0;
-                diag[index(c_offset_P, j)] = 0;
-            } else {
-                //-----------------------------------------------
-                //    Poisson's equation
-                //
-                //    dE/dz = e/eps_0 * sum(q_k*n_k)
-                //
-                //    E = -dV/dz
-                //-----------------------------------------------
-                double chargeDensity = 0.0;
-                for (size_t k : m_kCharge) {
-                    chargeDensity += m_speciesCharge[k] * ElectronCharge * ND(x,k,j);
-                }
-                rsd[index(c_offset_P, j)] = dEdz(x,j) - chargeDensity / epsilon_0;
-                diag[index(c_offset_P, j)] = 0;
-
-                // This method is used when you disable energy equation
-                // but still maintain the velocity profile
-                if (!m_do_velocity[j]) {
-                    rsd[index(c_offset_U, j)] = u(x,j) - u_fixed(j);
-                    diag[index(c_offset_U, j)] = 0;
-                }
-            }
-        }
-    }
-
-    if (m_do_plasma) {
-        for (size_t j = jmin; j <= jmax; j++) {
-            if (j != 0 && j != m_points -1) {
-                // set gas
-                setGas(x,j);
-                for (size_t k = 0; k < m_nsp; k++) {
-                    // make sure number density is larger than zero.
-                    if (ND(x,k,j) > 0.0) {
-                        m_ND[k] = ND(x,k,j);
-                    } else {
-                        m_ND[k] = 0.0;
-                    }
-                }
-                m_ND_t = ND_t(j);
-                updateEEDF(x, j);
-                double* wdot_plasma = NULL;
-                zdplaskinGetPlasmaSource(&wdot_plasma);
-                for (size_t i = 0; i < zdplaskinNSpecies(); i++) {
-                    size_t k = m_plasmaSpeciesIndex[i];
-                    if (k != npos) {
-                        // multiply by the multiplier
-                        wdot_plasma[i] *= m_plasma_multiplier;
-                        rsd[index(c_offset_Y + k, j)] += m_wt[k] * wdot_plasma[i] / m_rho[j];
-                    }
-                }
-
-                // update electron power
-                if (m_do_energy[j]) {
-                    if (m_do_elec_heat) {
-                        const double number_density = ND_t(j);
-                        m_elec_power[j] = zdplaskinGetElecPower(&number_density);
-                        if (m_elec_power[j] < 0.0) {
-                            m_elec_power[j] = 0.0;
-                        }
-                        if (m_kElectron != npos) {
-                            m_elec_num_density = m_ND[m_kElectron];
-                        }
-
-                        rsd[index(c_offset_T, j)] += m_elec_power[j]
-                                                     * m_elec_num_density
-                                                     / (m_rho[j] * m_cp[j])
-                                                     * m_plasma_multiplier;
-                    }
-                }
-            }
-        }
-    }
-}
-
 void IonFlow::enableElecHeat(bool withElecHeat)
 {
     m_do_elec_heat = withElecHeat;
+}
+
+double IonFlow::getElecMobility(size_t j)
+{
+    return m_mobility[m_kElectron+m_nsp*j];
+}
+
+double IonFlow::getElecDiffCoeff(size_t j)
+{
+    return m_diff[m_kElectron+m_nsp*j];
+}
+
+double IonFlow::getElecTemperature(size_t j)
+{
+    return m_electronTemperature[j];
+}
+
+double IonFlow::getElecCollisionHeat(size_t j)
+{
+    return m_electronPower[j];
 }
 
 void IonFlow::solvePlasma()

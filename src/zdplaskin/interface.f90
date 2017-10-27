@@ -54,6 +54,16 @@ subroutine zdplaskinSetElecField(elec_field, elec_frequency, num_density) bind(C
   call ZDPlasKin_set_conditions(REDUCED_FIELD=reduced_field, REDUCED_FREQUENCY=reduced_freqency)
 end subroutine zdplaskinSetElecField
 
+subroutine zdplaskinSetReducedField(reduced_field, reduced_frequency) bind(C,name='zdplaskinSetReducedField')
+  use, intrinsic :: iso_c_binding
+  use ZDPlasKin
+  implicit none
+  ! input variables in SI unit 
+  real(c_double), intent(in) :: reduced_field ! [v/m] 
+  real(c_double), intent(in) :: reduced_frequency ! [1/s]
+  call ZDPlasKin_set_conditions(REDUCED_FIELD=reduced_field, REDUCED_FREQUENCY=reduced_frequency)
+end subroutine zdplaskinSetReducedField
+
 subroutine zdplaskinSoftReset() bind(C,name='zdplaskinSoftReset')
   use, intrinsic :: iso_c_binding
   use ZDPlasKin

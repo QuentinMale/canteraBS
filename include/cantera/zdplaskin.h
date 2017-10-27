@@ -13,8 +13,10 @@ extern "C"
     void zdplaskinSetDensity(const char* cstring, const double* DENS);
 
     void zdplaskinSetElecField(const double* elec_field,
-                            const double* elec_frequency,
-                            const double* num_density);
+                               const double* elec_frequency,
+                               const double* num_density);
+    void zdplaskinSetReducedField(const double* reduced_field,
+                               const double* reduced_frequency);
     void zdplaskinSetGasTemp(const double* Tgas);
     void zdplaskinSetElecTemp(const double* Te);
     void zdplaskinSoftReset();

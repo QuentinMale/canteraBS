@@ -5,7 +5,7 @@ ideal_gas(name='gas',
           species=['''gri30: H2      H       O       O2      OH      H2O     HO2
                      H2O2    C       CH      CH2     CH2(S)  CH3     CH4
                      CO      CO2     HCO     CH2O    CH3O    N2''',
-                   '''HCO^+   H3O^+    E     O2(a1dg)'''],
+                   '''HCO^+   H3O^+    E     O2^-    O2(a1dg)'''],
           reactions=['gri30: all', 'all'],
           transport='Mix',
           options=['skip_undeclared_species', 'skip_undeclared_third_bodies'],
@@ -127,17 +127,25 @@ species(name = "O2^-",
 # Reaction data
 #-------------------------------------------------------------------------------
 # chemical ionization
-reaction('CH + O => HCO^+ + E', [(2.51E+11,'cm3/mol/s'), 0.0, (1700, 'cal/mol')])
+#reaction('CH + O => HCO^+ + E', [(2.51E+11,'cm3/mol/s'), 0.0, (1700, 'cal/mol')])
 reaction('HCO^+ + H2O => H3O^+ + CO', [(1.51E+15, 'cm3/mol/s'), 0.0, 0.0])
-reaction('H3O^+ + E => H2O + H', [(2.29E+18, 'cm3/mol/s'), -0.5, 0.0])
+#reaction('H3O^+ + E => H2O + H', [(2.29E+18, 'cm3/mol/s'), -0.5, 0.0])
 reaction('H3O^+ + E => OH + H + H', [(7.95E+21, 'cm3/mol/s'), -1.4, 0.0])
 reaction('H3O^+ + E => H2 + OH', [(1.25E+19, 'cm3/mol/s'), -0.5, 0.0])
 reaction('H3O^+ + E =>  O + H2 + H', [(6.0E+17, 'cm3/mol/s'), -0.3, 0.0])
+reaction('CH + O => HCO^+ + E', [(2.75E+11,'cm3/mol/s'), 0.0, (1700, 'cal/mol')])
+reaction('H3O^+ + E => H2O + H', [(1.30E+18, 'cm3/mol/s'), -0.5, 0.0])
+
+reaction("E + O2 + N2 => N2 + O2^-", [8.33E-32, 0.0, 0.0])
+reaction("E + O2 + O2 => O2 + O2^-", [2.30E-30, 0.0, 0.0])
+
+reaction("O2^- + N2 <=> E + O2 + N2", [1.10E-13, 0.5, 4990.0])
+reaction("O2^- + O2 <=> E + O2 + O2", [1.60E-11, 0.5, 5590.0])
 
 # additional reactions correspond to plasma
-reaction("O2(a1dg) + H => O + OH", [6.50E-11, 0.0, 2530.0])
-reaction("O2(a1dg) + H2 => OH + OH", [2.80E-09, 0.0, 17900.0])
-reaction("O2(a1dg) => O2", [3.00E-04, 0.0, 0.0])
+#reaction("O2(a1dg) + H => O + OH", [6.50E-11, 0.0, 2530.0])
+#reaction("O2(a1dg) + H2 => OH + OH", [2.80E-09, 0.0, 17900.0])
+#reaction("O2(a1dg) => O2", [3.00E-04, 0.0, 0.0])
 
 # reaction('CH + O => HCO^+ + E', [(2.75E+11,'cm3/mol/s'), 0.0, (1700, 'cal/mol')])
 # reaction('H3O^+ + E => H2O + H', [(1.30E+18, 'cm3/mol/s'), -0.5, 0.0])

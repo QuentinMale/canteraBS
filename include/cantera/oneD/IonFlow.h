@@ -68,7 +68,6 @@ public:
 
     /**
     */
-    void updateEEDF(double* x, size_t j);
     void solvePlasma();
     bool doPlasma() {
         return m_do_plasma;
@@ -86,6 +85,8 @@ protected:
     virtual void evalResidual(double* x, double* rsd, int* diag,
                               double rdt, size_t jmin, size_t jmax);
     virtual void updateTransport(double* x, size_t j0, size_t j1);
+    virtual void updateProperties(size_t jg, double* x, double* rsd, int* diag,
+                                  double rdt, size_t jmin, size_t jmax);
     virtual void updateDiffFluxes(const double* x, size_t j0, size_t j1);
     //! Solving phase one: the fluxes of charged species are turned off
     virtual void frozenIonMethod(const double* x, size_t j0, size_t j1);
@@ -94,8 +95,6 @@ protected:
     //! Solving phase three: the Poisson's equation is added coupled by the electrical drift
     virtual void poissonEqnMethod(const double* x, size_t j0, size_t j1);
 
-    void updateVibrationlStates(vector<pair<string,double>> vibration_states,
-                                double ND_total, double Tgas);
     double maxwellian(double energy, double temperature) {
         return std::exp(-energy*ElectronCharge / (Boltzmann * temperature));
     }
@@ -188,21 +187,17 @@ protected:
         return Avogadro * m_rho[j] / m_wtm[j];
     }
 
-    //! electron temperature
-    double ET(size_t j) const {
-        return m_elecTemp[j];
-    }
-
     //! a copy of number density
-    vector<double> m_ND;
-    vector<double> m_elecTemp;
-    double m_ND_t;
+    vector<double> m_electronTemperature;
     double m_elec_num_density;
     double m_elec_field;
     double m_elec_frequency;
     double m_plasma_multiplier;
     double m_electron_multiplier;
-    vector<double> m_elec_power;
+    vector<double> m_electronPower;
+    vector<double> m_electronMobility;
+    vector<double> m_electronDiff;
+    Array2D m_wdotPlasma;
 };
 
 }
