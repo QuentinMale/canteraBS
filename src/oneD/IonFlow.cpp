@@ -27,7 +27,8 @@ IonFlow::IonFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
     m_elec_num_density(1e17),
     m_elec_field(0.0),
     m_elec_frequency(0.0),
-    m_plasma_multiplier(1.0)
+    m_plasma_multiplier(1.0),
+    m_electron_multiplier(0.0)
 {
     // make a local copy of species charge
     for (size_t k = 0; k < m_nsp; k++) {
@@ -66,13 +67,12 @@ IonFlow::IonFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
     collision_list.push_back("H2O");
     collision_list.push_back("H2");
     collision_list.push_back("CO");
-    collision_list.push_back("E");
 
     for (size_t i = 0; i < collision_list.size(); i++) {
         size_t k = m_thermo->speciesIndex(collision_list[i]);
         if (k != npos ) {
             m_kCollision.push_back(k);
-            cout << collision_list[i] << m_kCollision[i] << endl;
+            cout << collision_list[i] << " " << m_kCollision[i] << endl;
         }
     }
 
@@ -109,12 +109,10 @@ void IonFlow::updateProperties(size_t jg, double* x, double* rsd, int* diag,
                               double rdt, size_t jmin, size_t jmax)
 {
     StFlow::updateProperties(jg, x, rsd, diag, rdt, jmin, jmax);
-    // properties are computed for grid points from j0 to j1
-    size_t j0 = std::max<size_t>(jmin, 1) - 1;
-    size_t j1 = std::min(jmax+1,m_points-1);
+
     // update EEDF
     if (m_do_plasma) {
-        for (size_t j = j0; j < j1; j++) {
+        for (size_t j = 0; j < m_points; j++) {
             for (size_t k : m_kCollision) {
                 double number_density = ND(x,k,j);
                 const char* species = m_thermo->speciesName(k).c_str();
@@ -128,7 +126,6 @@ void IonFlow::updateProperties(size_t jg, double* x, double* rsd, int* diag,
             m_electronTemperature[j] = zdplaskinGetElecTemp();
             m_electronMobility[j] = zdplaskinGetElecMobility(&total_number_density);
             m_electronDiff[j] = zdplaskinGetElecDiffCoeff();
-            m_electronTemperature[j] = zdplaskinGetElecTemp();
             m_electronPower[j] = zdplaskinGetElecPower(&total_number_density);
 
             double* wdot_plasma = NULL;
@@ -136,12 +133,14 @@ void IonFlow::updateProperties(size_t jg, double* x, double* rsd, int* diag,
             for (size_t i = 0; i < zdplaskinNSpecies(); i++) {
                 m_wdotPlasma(i,j) = wdot_plasma[i];
             }
-            
         }
     } else {
-        for (size_t j = j0; j < j1; j++) {
+        for (size_t j = 0; j < m_points; j++) {
+            // get plasma properties
+            m_electronTemperature[j] = T(x,j);
             m_electronMobility[j] = 0.4;
             m_electronDiff[j] = 0.4*(Boltzmann * T(x,j)) / ElectronCharge;
+            m_electronPower[j] = 0.0;
         }
     }
 }
@@ -153,8 +152,9 @@ void IonFlow::updateTransport(double* x, size_t j0, size_t j1)
         setGasAtMidpoint(x,j);
         m_trans->getMobilities(&m_mobility[j*m_nsp]);
         if (m_kElectron != npos) {
-            m_mobility[m_kElectron+m_nsp*j] = m_electronMobility[j];
-            m_diff[m_kElectron+m_nsp*j] = m_electronDiff[j];
+            size_t k = m_kElectron;
+            m_mobility[k+m_nsp*j] = 0.5*(m_electronMobility[j]+m_electronMobility[j+1]);
+            m_diff[k+m_nsp*j] = 0.5*(m_electronDiff[j]+m_electronDiff[j+1]);
         }
     }
 }
@@ -396,12 +396,12 @@ void IonFlow::enableElecHeat(bool withElecHeat)
 
 double IonFlow::getElecMobility(size_t j)
 {
-    return m_mobility[m_kElectron+m_nsp*j];
+    return m_electronMobility[j];
 }
 
 double IonFlow::getElecDiffCoeff(size_t j)
 {
-    return m_diff[m_kElectron+m_nsp*j];
+    return m_electronDiff[j];
 }
 
 double IonFlow::getElecTemperature(size_t j)
