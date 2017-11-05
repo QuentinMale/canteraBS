@@ -277,6 +277,20 @@ void IonFlow::chargeNeutralityModel(const double* x, size_t j0, size_t j1)
             m_flux(k,j) *= (X(x,k,j) - X(x,k,j+1))/dz;
         }
 
+        // correction flux
+        double sum_flux = 0.0;
+        for (size_t k = 0; k < m_nsp; k++) {
+            sum_flux -= m_flux(k,j); // total net flux
+        }
+        double sum_ion = 0.0;
+        for (size_t k : m_kCharge) {
+            sum_ion += Y(x,k,j);
+        }
+        // The portion of correction for ions is taken off
+        for (size_t k : m_kNeutral) {
+            m_flux(k,j) += Y(x,k,j) / (1-sum_ion) * sum_flux;
+        }
+
         // ambipolar diffusion
         double sum_chargeFlux = 0.0;
         double sum = 0.0;
@@ -296,20 +310,6 @@ void IonFlow::chargeNeutralityModel(const double* x, size_t j0, size_t j1)
             drift *= -sum_chargeFlux * m_wt[k] / q_k;
             m_flux(k,j) += drift;
         }
-
-        // correction flux
-        double sum_flux = 0.0;
-        for (size_t k = 0; k < m_nsp; k++) {
-            sum_flux -= m_flux(k,j); // total net flux
-        }
-        double sum_ion = 0.0;
-        for (size_t k : m_kCharge) {
-            sum_ion += Y(x,k,j);
-        }
-        // The portion of correction for ions is taken off
-        for (size_t k : m_kNeutral) {
-            m_flux(k,j) += Y(x,k,j) / (1-sum_ion) * sum_flux;
-        }
     }
 }
 
@@ -328,15 +328,6 @@ void IonFlow::poissonEqnMethod(const double* x, size_t j0, size_t j1)
             sum -= m_flux(k,j);
         }
 
-        // ambipolar diffusion
-        double E_ambi = E(x,j);
-        for (size_t k : m_kCharge) {
-            double Yav = 0.5 * (Y(x,k,j) + Y(x,k,j+1));
-            double drift = rho * Yav * E_ambi
-                           * m_speciesCharge[k] * m_mobility[k+m_nsp*j];
-            m_flux(k,j) += drift;
-        }
-
         // correction flux
         double sum_flux = 0.0;
         for (size_t k = 0; k < m_nsp; k++) {
@@ -349,6 +340,15 @@ void IonFlow::poissonEqnMethod(const double* x, size_t j0, size_t j1)
         // The portion of correction for ions is taken off
         for (size_t k : m_kNeutral) {
             m_flux(k,j) += Y(x,k,j) / (1-sum_ion) * sum_flux;
+        }
+
+        // ambipolar diffusion
+        double E_ambi = E(x,j);
+        for (size_t k : m_kCharge) {
+            double Yav = 0.5 * (Y(x,k,j) + Y(x,k,j+1));
+            double drift = rho * Yav * E_ambi
+                           * m_speciesCharge[k] * m_mobility[k+m_nsp*j];
+            m_flux(k,j) += drift;
         }
     }
 }
