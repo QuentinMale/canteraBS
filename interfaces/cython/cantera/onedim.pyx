@@ -520,6 +520,9 @@ cdef class IonFlow(_FlowBase):
     def get_elecCollisionHeat(self, j):
         return (<CxxIonFlow*>self.flow).getElecCollisionHeat(j)
 
+    def get_elecField(self, j):
+        return (<CxxIonFlow*>self.flow).getElecField(j)  
+
     property poisson_enabled:
         """ Determines whether or not to solve the energy equation."""
         def __get__(self):

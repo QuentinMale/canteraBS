@@ -87,6 +87,7 @@ IonFlow::IonFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
     m_electronTemperature.resize(m_points, 0.0);
     m_electronMobility.resize(m_points, 0.0);
     m_electronDiff.resize(m_points, 0.0);
+    m_Eambi.resize(m_points, 0.0);
     m_wdotPlasma.resize(zdplaskinNSpecies(),m_points,0.0);
 }
 
@@ -102,6 +103,7 @@ void IonFlow::resize(size_t components, size_t points){
     m_electronTemperature.resize(m_points, 0.0);
     m_electronMobility.resize(m_points, 0.0);
     m_electronDiff.resize(m_points, 0.0);
+    m_Eambi.resize(m_points, 0.0);
     m_wdotPlasma.resize(zdplaskinNSpecies(),m_points,0.0);
 }
 
@@ -166,11 +168,11 @@ void IonFlow::evalResidual(double* x, double* rsd, int* diag,
     if (m_stage == 3) {
         for (size_t j = jmin; j <= jmax; j++) {
             if (j == 0) {
-                //rsd[index(c_offset_P, j)] = -phi(x,j);
-                rsd[index(c_offset_P, j)] = E(x,j) - 0.0;
+                rsd[index(c_offset_P, j)] = -phi(x,j);
+                //rsd[index(c_offset_P, j)] = 0.0 - E(x,j);
                 diag[index(c_offset_P, j)] = 0;
             } else if (j == m_points - 1) {
-                rsd[index(c_offset_P, j)] = m_outletVoltage - phi(x,j);
+                rsd[index(c_offset_P, j)] = phi(x,j);
                 //rsd[index(c_offset_P, j)] = E(x,j-1) - 0.0;
                 diag[index(c_offset_P, j)] = 0;
             } else {
@@ -181,11 +183,7 @@ void IonFlow::evalResidual(double* x, double* rsd, int* diag,
                 //
                 //    E = -dV/dz
                 //-----------------------------------------------
-                double chargeDensity = 0.0;
-                for (size_t k : m_kCharge) {
-                    chargeDensity += m_speciesCharge[k] * ElectronCharge * ND(x,k,j);
-                }
-                rsd[index(c_offset_P, j)] = dEdz(x,j) - chargeDensity / epsilon_0;
+                rsd[index(c_offset_P, j)] = dEdz(x,j) - rho_e(x,j) / epsilon_0;
                 diag[index(c_offset_P, j)] = 0;
 
                 // This method is used when you disable energy equation
@@ -277,7 +275,7 @@ void IonFlow::chargeNeutralityModel(const double* x, size_t j0, size_t j1)
             m_flux(k,j) *= (X(x,k,j) - X(x,k,j+1))/dz;
         }
 
-        // correction flux
+        // correction flux to insure that \sum_k Y_k V_k = 0.
         double sum_flux = 0.0;
         for (size_t k = 0; k < m_nsp; k++) {
             sum_flux -= m_flux(k,j); // total net flux
@@ -293,21 +291,18 @@ void IonFlow::chargeNeutralityModel(const double* x, size_t j0, size_t j1)
 
         // ambipolar diffusion
         double sum_chargeFlux = 0.0;
-        double sum = 0.0;
         for (size_t k : m_kCharge) {
-            double Xav = 0.5 * (X(x,k,j+1) + X(x,k,j));
-            int q_k = m_speciesCharge[k];
-            sum_chargeFlux += m_speciesCharge[k] / m_wt[k] * m_flux(k,j);
-            // The mobility is used because it is more general than
-            // using diffusion coefficient and Einstein relation
-            sum += m_mobility[k+m_nsp*j] * Xav * q_k * q_k;
+            double q_k = m_speciesCharge[k] * ElectronCharge;
+            sum_chargeFlux += q_k * Avogadro / m_wt[k] * m_flux(k,j);
         }
+        double u_av = 0.5 * (u(x,j) + u(x,j+1));
+        double rho_e_av = 0.5 * (rho_e(x,j) + rho_e(x,j+1));
+        m_Eambi[j] = -sum_chargeFlux / sigma(x,j) - u_av*rho_e_av;
         for (size_t k : m_kCharge) {
             double Xav = 0.5 * (X(x,k,j+1) + X(x,k,j));
-            double drift;
-            int q_k = m_speciesCharge[k];
-            drift = q_k * q_k * m_mobility[k+m_nsp*j] * Xav / sum;
-            drift *= -sum_chargeFlux * m_wt[k] / q_k;
+            int s_k = m_speciesCharge[k] / abs(m_speciesCharge[k]);
+            double drift = s_k * m_mobility[k+m_nsp*j] * m_Eambi[j] 
+                           * rho * m_wt[k] / wtm * Xav;
             m_flux(k,j) += drift;
         }
     }
@@ -321,14 +316,12 @@ void IonFlow::poissonEqnMethod(const double* x, size_t j0, size_t j1)
         double dz = z(j+1) - z(j);
 
         // mixture-average diffusion
-        double sum = 0.0;
         for (size_t k = 0; k < m_nsp; k++) {
             m_flux(k,j) = m_wt[k]*(rho*m_diff[k+m_nsp*j]/wtm);
             m_flux(k,j) *= (X(x,k,j) - X(x,k,j+1))/dz;
-            sum -= m_flux(k,j);
         }
 
-        // correction flux
+        // correction flux to insure that \sum_k Y_k V_k = 0.
         double sum_flux = 0.0;
         for (size_t k = 0; k < m_nsp; k++) {
             sum_flux -= m_flux(k,j); // total net flux
@@ -412,6 +405,11 @@ double IonFlow::getElecTemperature(size_t j)
 double IonFlow::getElecCollisionHeat(size_t j)
 {
     return m_electronPower[j];
+}
+
+double IonFlow::getElecField(size_t j)
+{
+    return m_Eambi[j];
 }
 
 void IonFlow::solvePlasma()

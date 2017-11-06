@@ -80,6 +80,7 @@ public:
     double getElecDiffCoeff(size_t j);
     double getElecTemperature(size_t j);
     double getElecCollisionHeat(size_t j);
+    double getElecField(size_t j);
 
 protected:
     virtual void evalResidual(double* x, double* rsd, int* diag,
@@ -187,6 +188,42 @@ protected:
         return Avogadro * m_rho[j] / m_wtm[j];
     }
 
+    //!
+    double uc(const double* x, size_t k, size_t j) const {
+        return u(x,j) + E_center(x,j) * m_speciesCharge[k] * m_mobility[k+m_nsp*j];
+    }
+
+    double uc_mid(const double* x, size_t k, size_t j) const {
+        double u_mid = 0.5 * (u(x,j) + u(x,j+1));
+        return u_mid + E(x,j) * m_speciesCharge[k] * m_mobility[k+m_nsp*j];
+    }
+
+    double Y_mid(const double* x, size_t k, size_t j) const {
+        return 0.5 * (Y(x,k,j) + Y(x,k,j+1));
+    }
+    //! electric field
+    double E_center(const double* x, size_t j) const {
+        return -(phi(x,j+1)-phi(x,j-1))/(z(j+1)-z(j-1));
+    }
+
+    //! conductivity
+    double sigma(const double* x, size_t j) const {
+        double conductivity = 0.0;
+        for (size_t k : m_kCharge) {
+            conductivity += ElectronCharge * abs(m_speciesCharge[k]) * ND_t(j)
+                            * 0.5 * (X(x,k,j) + X(x,k,j+1))* m_mobility[k+m_nsp*j];
+        }
+        return conductivity;
+    }
+
+    //! charge density
+    double rho_e(const double* x, size_t j) const {
+        double charge_density = 0.0;
+        for (size_t k : m_kCharge) {
+            charge_density += ElectronCharge * m_speciesCharge[k] * ND(x,k,j);
+        }
+        return charge_density;
+    }
     //! a copy of number density
     vector<double> m_electronTemperature;
     double m_elec_num_density;
@@ -197,6 +234,7 @@ protected:
     vector<double> m_electronPower;
     vector<double> m_electronMobility;
     vector<double> m_electronDiff;
+    vector<double> m_Eambi;
     Array2D m_wdotPlasma;
 };
 
