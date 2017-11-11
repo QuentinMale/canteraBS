@@ -67,6 +67,7 @@ IonFlow::IonFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
     collision_list.push_back("H2O");
     collision_list.push_back("H2");
     collision_list.push_back("CO");
+    collision_list.push_back("O2^-");
 
     for (size_t i = 0; i < collision_list.size(); i++) {
         size_t k = m_thermo->speciesIndex(collision_list[i]);
@@ -152,10 +153,12 @@ void IonFlow::updateTransport(double* x, size_t j0, size_t j1)
     StFlow::updateTransport(x, j0, j1);
     for (size_t j = j0; j < j1; j++) {
         setGasAtMidpoint(x,j);
+        //setGas(x,j);
         m_trans->getMobilities(&m_mobility[j*m_nsp]);
         if (m_kElectron != npos) {
             size_t k = m_kElectron;
             m_mobility[k+m_nsp*j] = 0.5*(m_electronMobility[j]+m_electronMobility[j+1]);
+            //m_mobility[k+m_nsp*j] = m_electronMobility[j];
             m_diff[k+m_nsp*j] = 0.5*(m_electronDiff[j]+m_electronDiff[j+1]);
         }
     }
@@ -172,9 +175,10 @@ void IonFlow::evalResidual(double* x, double* rsd, int* diag,
                 //rsd[index(c_offset_P, j)] = 0.0 - E(x,j);
                 diag[index(c_offset_P, j)] = 0;
             } else if (j == m_points - 1) {
-                rsd[index(c_offset_P, j)] = phi(x,j);
+                rsd[index(c_offset_P, j)] = -phi(x,j);
                 //rsd[index(c_offset_P, j)] = E(x,j-1) - 0.0;
                 diag[index(c_offset_P, j)] = 0;
+
             } else {
                 //-----------------------------------------------
                 //    Poisson's equation
@@ -295,9 +299,7 @@ void IonFlow::chargeNeutralityModel(const double* x, size_t j0, size_t j1)
             double q_k = m_speciesCharge[k] * ElectronCharge;
             sum_chargeFlux += q_k * Avogadro / m_wt[k] * m_flux(k,j);
         }
-        double u_av = 0.5 * (u(x,j) + u(x,j+1));
-        double rho_e_av = 0.5 * (rho_e(x,j) + rho_e(x,j+1));
-        m_Eambi[j] = -sum_chargeFlux / sigma(x,j) - u_av*rho_e_av;
+        m_Eambi[j] = -sum_chargeFlux / sigma(x,j);
         for (size_t k : m_kCharge) {
             double Xav = 0.5 * (X(x,k,j+1) + X(x,k,j));
             int s_k = m_speciesCharge[k] / abs(m_speciesCharge[k]);

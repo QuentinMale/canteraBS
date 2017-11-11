@@ -5,7 +5,7 @@ ideal_gas(name='gas',
           species=['''gri30: H2      H       O       O2      OH      H2O     HO2
                      H2O2    C       CH      CH2     CH2(S)  CH3     CH4
                      CO      CO2     HCO     CH2O    CH3O    N2''',
-                   '''HCO^+   H3O^+    E     O2^-    O2(a1dg)'''],
+                   '''HCO^+   H3O^+    E     O2^-    '''],
           reactions=['gri30: all', 'all'],
           transport='Mix',
           options=['skip_undeclared_species', 'skip_undeclared_third_bodies'],
@@ -123,6 +123,25 @@ species(name = "O2^-",
                      rot_relax =     3.80),
     # note = "L 4/89"
        )
+
+species(name = "O2^+",
+    atoms = " O:2  E:-1 ",
+    thermo = (
+       NASA( [  298.15,  1000.00], [  4.610171670E+00,  -6.359519520E-03, 
+                1.424256240E-05,  -1.209979230E-08,   3.709568780E-12,
+                1.397422290E+05,  -2.013268740E-01] ),
+       NASA( [ 1000.00,  6000.00], [  3.316759220E+00,   1.115222440E-03, 
+               -3.834925560E-07,   5.727846870E-11,  -2.776483810E-15,
+                1.398768230E+05,   5.447264760E+00] )
+             ),
+    transport = gas_transport(
+                     geom = "linear",
+                     diam =     3.46,
+                     well_depth =   107.40,
+                     polar =     1.60,
+                     rot_relax =     3.80),
+    # note = "L 4/89"
+       )
 #-------------------------------------------------------------------------------
 # Reaction data
 #-------------------------------------------------------------------------------
@@ -136,11 +155,13 @@ reaction('H3O^+ + E =>  O + H2 + H', [(6.0E+17, 'cm3/mol/s'), -0.3, 0.0])
 reaction('CH + O => HCO^+ + E', [(2.75E+11,'cm3/mol/s'), 0.0, (1700, 'cal/mol')])
 reaction('H3O^+ + E => H2O + H', [(1.30E+18, 'cm3/mol/s'), -0.5, 0.0])
 
-reaction("E + O2 + N2 => N2 + O2^-", [8.33E-32, 0.0, 0.0])
-reaction("E + O2 + O2 => O2 + O2^-", [2.30E-30, 0.0, 0.0])
+#reaction 110 - 113
+reaction("O2^- + O2 => E + O2 + O2", [1.60E-11, 0.5, 5590.0])
+reaction("O2^- + N2 => E + O2 + N2", [1.10E-13, 0.5, 4990.0])
+reaction("E + O2 + O2 => O2^- + O2", [4.20E-27, -1.0, 600.0])
+reaction("E + O2 + N2 => O2^- + N2", [9.63E-27, -2.0, 70.0])
 
-reaction("O2^- + N2 <=> E + O2 + N2", [1.10E-13, 0.5, 4990.0])
-reaction("O2^- + O2 <=> E + O2 + O2", [1.60E-11, 0.5, 5590.0])
+#reaction("O2^+ + E + E <=> O2 + E", [1.40E-08, -4.5, 0.0])
 
 # additional reactions correspond to plasma
 #reaction("O2(a1dg) + H => O + OH", [6.50E-11, 0.0, 2530.0])
