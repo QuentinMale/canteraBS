@@ -73,7 +73,6 @@ IonFlow::IonFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
         size_t k = m_thermo->speciesIndex(collision_list[i]);
         if (k != npos ) {
             m_kCollision.push_back(k);
-            cout << collision_list[i] << " " << m_kCollision[i] << endl;
         }
     }
 
@@ -116,8 +115,8 @@ void IonFlow::updateProperties(size_t jg, double* x, double* rsd, int* diag,
     // update EEDF
     if (m_do_plasma) {
         for (size_t j = 0; j < m_points; j++) {
-            for (size_t k : m_kCollision) {
-                double number_density = ND(x,k,j);
+            for (size_t k : m_plasmaSpeciesIndex) {
+                double number_density = abs(ND(x,k,j));
                 const char* species = m_thermo->speciesName(k).c_str();
                 zdplaskinSetDensity(species, &number_density);
             }
@@ -157,9 +156,9 @@ void IonFlow::updateTransport(double* x, size_t j0, size_t j1)
         m_trans->getMobilities(&m_mobility[j*m_nsp]);
         if (m_kElectron != npos) {
             size_t k = m_kElectron;
-            m_mobility[k+m_nsp*j] = 0.5*(m_electronMobility[j]+m_electronMobility[j+1]);
+            //m_mobility[k+m_nsp*j] = 0.5*(m_electronMobility[j]+m_electronMobility[j+1]);
             m_mobility[k+m_nsp*j] = m_electronMobility[j];
-            m_diff[k+m_nsp*j] = 0.5*(m_electronDiff[j]+m_electronDiff[j+1]);
+            //m_diff[k+m_nsp*j] = 0.5*(m_electronDiff[j]+m_electronDiff[j+1]);
             m_diff[k+m_nsp*j] = m_electronDiff[j];
         }
     }
@@ -173,13 +172,21 @@ void IonFlow::evalResidual(double* x, double* rsd, int* diag,
         for (size_t j = jmin; j <= jmax; j++) {
             if (j == 0) {
                 for (size_t k : m_kCharge) {
-                    rsd[index(c_offset_Y + k, 0)] = Y(x,k,j+1)-Y(x,k,j);
+                    // if ((s_k(k)*E(x,j)) >= 0) {
+                    //     rsd[index(c_offset_Y + k, 0)] = -Y(x,k,j);
+                    // } else {
+                    //     rsd[index(c_offset_Y + k, 0)] = -(m_flux(k,0) + rho_u(x,0)* Y(x,k,0));
+                    // }
                 }
-                rsd[index(c_offset_P, j)] = -phi(x,j);
+                rsd[index(c_offset_P, j)] = phi(x,j);
                 diag[index(c_offset_P, j)] = 0;
             } else if (j == m_points - 1) {
                 for (size_t k : m_kCharge) {
-                    rsd[index(c_offset_Y + k, j)] = Y(x,k,j)-Y(x,k,j-1);
+                    // if ((s_k(k)*E(x,j)) <= 0) {
+                    //     rsd[index(c_offset_Y + k, j)] = Y(x,k,j);
+                    // } else {
+                    //     rsd[index(c_offset_Y + k, j)] = m_flux(k,j-1) + rho_u(x,j)*Y(x,k,j);
+                    // }
                 }
                 rsd[index(c_offset_P, j)] = -phi(x,j);
                 diag[index(c_offset_P, j)] = 0;
@@ -211,8 +218,8 @@ void IonFlow::evalResidual(double* x, double* rsd, int* diag,
                     size_t k = m_plasmaSpeciesIndex[i];
                     if (k != npos) {
                         // multiply by the multiplier
-                        m_wdotPlasma(i,j) *= m_plasma_multiplier;
-                        rsd[index(c_offset_Y + k, j)] += m_wt[k] * m_wdotPlasma(i,j) / m_rho[j];
+                        rsd[index(c_offset_Y + k, j)] += m_wt[k] * m_wdotPlasma(i,j) / m_rho[j] *
+                                                         m_plasma_multiplier;
                     }
                 }
 
@@ -306,8 +313,7 @@ void IonFlow::chargeNeutralityModel(const double* x, size_t j0, size_t j1)
         m_Eambi[j] = -sum_chargeFlux / sigma(x,j);
         for (size_t k : m_kCharge) {
             double Xav = 0.5 * (X(x,k,j+1) + X(x,k,j));
-            int s_k = m_speciesCharge[k] / abs(m_speciesCharge[k]);
-            double drift = s_k * m_mobility[k+m_nsp*j] * m_Eambi[j] 
+            double drift = s_k(k) * m_mobility[k+m_nsp*j] * m_Eambi[j] 
                            * rho * m_wt[k] / wtm * Xav;
             m_flux(k,j) += drift;
         }

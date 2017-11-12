@@ -224,6 +224,10 @@ protected:
         }
         return charge_density;
     }
+
+    int s_k(size_t k) const {
+        return m_speciesCharge[k] / abs(m_speciesCharge[k]);
+    }
     //! a copy of number density
     vector<double> m_electronTemperature;
     double m_elec_num_density;
