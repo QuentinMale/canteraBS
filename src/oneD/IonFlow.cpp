@@ -158,8 +158,9 @@ void IonFlow::updateTransport(double* x, size_t j0, size_t j1)
         if (m_kElectron != npos) {
             size_t k = m_kElectron;
             m_mobility[k+m_nsp*j] = 0.5*(m_electronMobility[j]+m_electronMobility[j+1]);
-            //m_mobility[k+m_nsp*j] = m_electronMobility[j];
+            m_mobility[k+m_nsp*j] = m_electronMobility[j];
             m_diff[k+m_nsp*j] = 0.5*(m_electronDiff[j]+m_electronDiff[j+1]);
+            m_diff[k+m_nsp*j] = m_electronDiff[j];
         }
     }
 }
@@ -171,14 +172,17 @@ void IonFlow::evalResidual(double* x, double* rsd, int* diag,
     if (m_stage == 3) {
         for (size_t j = jmin; j <= jmax; j++) {
             if (j == 0) {
+                for (size_t k : m_kCharge) {
+                    rsd[index(c_offset_Y + k, 0)] = Y(x,k,j+1)-Y(x,k,j);
+                }
                 rsd[index(c_offset_P, j)] = -phi(x,j);
-                //rsd[index(c_offset_P, j)] = 0.0 - E(x,j);
                 diag[index(c_offset_P, j)] = 0;
             } else if (j == m_points - 1) {
+                for (size_t k : m_kCharge) {
+                    rsd[index(c_offset_Y + k, j)] = Y(x,k,j)-Y(x,k,j-1);
+                }
                 rsd[index(c_offset_P, j)] = -phi(x,j);
-                //rsd[index(c_offset_P, j)] = E(x,j-1) - 0.0;
                 diag[index(c_offset_P, j)] = 0;
-
             } else {
                 //-----------------------------------------------
                 //    Poisson's equation
