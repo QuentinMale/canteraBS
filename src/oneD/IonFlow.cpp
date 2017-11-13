@@ -111,19 +111,19 @@ void IonFlow::resize(size_t components, size_t points){
 void IonFlow::updateProperties(size_t jg, double* x, double* rsd, int* diag,
                               double rdt, size_t jmin, size_t jmax)
 {
+    StFlow::updateProperties(jg, x, rsd, diag, rdt, jmin, jmax);
+
     // update electron properties
-    for (size_t j = 0; j < m_points; j++) {
+    for (size_t j = jmin; j <= jmax; j++) {
         if (m_do_plasma[j]) {
             for (size_t k : m_plasmaSpeciesIndex) {
-                double number_density = abs(ND(x,k,j));
+                double number_density = ND(x,k,j);
                 const char* species = m_thermo->speciesName(k).c_str();
                 zdplaskinSetDensity(species, &number_density);
             }
             const double Tgas = T(x,j);
             double total_number_density = ND_t(j);
             zdplaskinSetGasTemp(&Tgas);
-            // double L = m_plasmaRange / 100;
-            // double Efield = m_elec_field * exp(-abs(z(j) - m_plasmaLocation) / L);
             zdplaskinSetElecField(&m_elec_field, &m_elec_frequency, &total_number_density);
             // get plasma properties
             m_electronTemperature[j] = zdplaskinGetElecTemp();
@@ -143,8 +143,13 @@ void IonFlow::updateProperties(size_t jg, double* x, double* rsd, int* diag,
             m_electronDiff[j] = 0.4*(Boltzmann * T(x,j)) / ElectronCharge;
             m_electronPower[j] = 0.0;
         }
+        // //update transport to overwrite false electron transport
+        // if (m_kElectron != npos) {
+        //     size_t k = m_kElectron;
+        //     m_mobility[k+m_nsp*j] = m_electronMobility[j];
+        //     m_diff[k+m_nsp*j] = m_electronDiff[j];
+        // }
     }
-    StFlow::updateProperties(jg, x, rsd, diag, rdt, jmin, jmax);
 }
 
 void IonFlow::updateTransport(double* x, size_t j0, size_t j1)
@@ -155,8 +160,8 @@ void IonFlow::updateTransport(double* x, size_t j0, size_t j1)
         m_trans->getMobilities(&m_mobility[j*m_nsp]);
         if (m_kElectron != npos) {
             size_t k = m_kElectron;
-            m_mobility[k+m_nsp*j] = m_electronMobility[j];
-            m_diff[k+m_nsp*j] = m_electronDiff[j];
+            m_mobility[k+m_nsp*j] = 0.4;
+            m_diff[k+m_nsp*j] = 0.4*(Boltzmann * T(x,j)) / ElectronCharge;
         }
     }
 }
