@@ -68,9 +68,9 @@ public:
 
     /**
     */
-    void solvePlasma();
-    bool doPlasma() {
-        return m_do_plasma;
+    void solvePlasma(size_t j=npos);
+    bool doPlasma(size_t j) {
+        return m_do_plasma[j];
     }
     void enableElecHeat(bool withElecHeat);
     void setTransverseElecField(double elec_field, double elec_freq);
@@ -105,9 +105,8 @@ protected:
     std::vector<bool> m_do_velocity;
 
     //! flag for solving plasma
-    bool m_do_plasma;
+    std::vector<bool> m_do_plasma;
     bool m_do_elec_heat;
-    bool m_maxwellian_electron;
 
     //! electrical properties
     vector_int m_speciesCharge;

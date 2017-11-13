@@ -546,7 +546,7 @@ cdef class IonFlow(_FlowBase):
     property plasma_enabled:
         """ Determines whether or not to solve plasma"""
         def __get__(self):
-            return (<CxxIonFlow*>self.flow).doPlasma()
+            return (<CxxIonFlow*>self.flow).doPlasma(0)
         def __set__(self, enable):
             if enable:
                 (<CxxIonFlow*>self.flow).solvePlasma()

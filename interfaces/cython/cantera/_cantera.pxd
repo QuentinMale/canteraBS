@@ -704,7 +704,7 @@ cdef extern from "cantera/oneD/IonFlow.h":
         void solveVelocity()
         void fixVelocity()
         cbool doVelocity(size_t)
-        cbool doPlasma()
+        cbool doPlasma(size_t)
         void solvePlasma()
         void setTransverseElecField(double, double)
         void setPlasmaSourceMultiplier(double)

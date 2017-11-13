@@ -146,14 +146,12 @@ species(name = "O2^+",
 # Reaction data
 #-------------------------------------------------------------------------------
 # chemical ionization
-#reaction('CH + O => HCO^+ + E', [(2.51E+11,'cm3/mol/s'), 0.0, (1700, 'cal/mol')])
+reaction('CH + O => HCO^+ + E', [(2.51E+11,'cm3/mol/s'), 0.0, (1700, 'cal/mol')])
 reaction('HCO^+ + H2O => H3O^+ + CO', [(1.51E+15, 'cm3/mol/s'), 0.0, 0.0])
-#reaction('H3O^+ + E => H2O + H', [(2.29E+18, 'cm3/mol/s'), -0.5, 0.0])
+reaction('H3O^+ + E => H2O + H', [(2.29E+18, 'cm3/mol/s'), -0.5, 0.0])
 reaction('H3O^+ + E => OH + H + H', [(7.95E+21, 'cm3/mol/s'), -1.4, 0.0])
 reaction('H3O^+ + E => H2 + OH', [(1.25E+19, 'cm3/mol/s'), -0.5, 0.0])
 reaction('H3O^+ + E =>  O + H2 + H', [(6.0E+17, 'cm3/mol/s'), -0.3, 0.0])
-reaction('CH + O => HCO^+ + E', [(2.75E+11,'cm3/mol/s'), 0.0, (1700, 'cal/mol')])
-reaction('H3O^+ + E => H2O + H', [(1.30E+18, 'cm3/mol/s'), -0.5, 0.0])
 
 #reaction 110 - 113
 #reaction("O2^- + O2 => E + O2 + O2", [1.60E-11, 0.5, 5590.0])
