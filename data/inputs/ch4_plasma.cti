@@ -5,7 +5,7 @@ ideal_gas(name='gas',
           species=['''gri30: H2      H       O       O2      OH      H2O     HO2
                      H2O2    C       CH      CH2     CH2(S)  CH3     CH4
                      CO      CO2     HCO     CH2O    CH3O    N2''',
-                   '''HCO^+   H3O^+    E     O2(a1dg)    '''],
+                   '''HCO^+   H3O^+    E     O2^-    O2(a1dg)'''],
           reactions=['gri30: all', 'all'],
           transport='Mix',
           options=['skip_undeclared_species', 'skip_undeclared_third_bodies'],
@@ -154,10 +154,10 @@ reaction('H3O^+ + E => H2 + OH', [(1.25E+19, 'cm3/mol/s'), -0.5, 0.0])
 reaction('H3O^+ + E =>  O + H2 + H', [(6.0E+17, 'cm3/mol/s'), -0.3, 0.0])
 
 #reaction 110 - 113
-#reaction("O2^- + O2 => E + O2 + O2", [1.60E-11, 0.5, 5590.0])
-#reaction("O2^- + N2 => E + O2 + N2", [1.10E-13, 0.5, 4990.0])
-#reaction("E + O2 + O2 => O2^- + O2", [4.20E-27, -1.0, 600.0])
-#reaction("E + O2 + N2 => O2^- + N2", [9.63E-27, -2.0, 70.0])
+reaction("O2^- + O2 => E + O2 + O2", [1.60E-11, 0.5, 5590.0])
+reaction("O2^- + N2 => E + O2 + N2", [1.10E-13, 0.5, 4990.0])
+reaction("E + O2 + O2 => O2^- + O2", [4.20E-27, -1.0, 600.0])
+reaction("E + O2 + N2 => O2^- + N2", [9.63E-27, -2.0, 70.0])
 
 #reaction("O2^+ + E + E <=> O2 + E", [1.40E-08, -4.5, 0.0])
 

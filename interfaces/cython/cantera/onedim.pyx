@@ -523,6 +523,9 @@ cdef class IonFlow(_FlowBase):
     def get_elecField(self, j):
         return (<CxxIonFlow*>self.flow).getElecField(j)  
 
+    def set_plasmaLocation(self, z1, z2):
+        return (<CxxIonFlow*>self.flow).setPlasmaLocation(z1, z2)
+
     property poisson_enabled:
         """ Determines whether or not to solve the energy equation."""
         def __get__(self):

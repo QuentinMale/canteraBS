@@ -111,9 +111,7 @@ void IonFlow::resize(size_t components, size_t points){
 void IonFlow::updateProperties(size_t jg, double* x, double* rsd, int* diag,
                               double rdt, size_t jmin, size_t jmax)
 {
-    StFlow::updateProperties(jg, x, rsd, diag, rdt, jmin, jmax);
-
-    // update EEDF
+    // update electron properties
     for (size_t j = 0; j < m_points; j++) {
         if (m_do_plasma[j]) {
             for (size_t k : m_plasmaSpeciesIndex) {
@@ -124,6 +122,8 @@ void IonFlow::updateProperties(size_t jg, double* x, double* rsd, int* diag,
             const double Tgas = T(x,j);
             double total_number_density = ND_t(j);
             zdplaskinSetGasTemp(&Tgas);
+            // double L = m_plasmaRange / 100;
+            // double Efield = m_elec_field * exp(-abs(z(j) - m_plasmaLocation) / L);
             zdplaskinSetElecField(&m_elec_field, &m_elec_frequency, &total_number_density);
             // get plasma properties
             m_electronTemperature[j] = zdplaskinGetElecTemp();
@@ -137,15 +137,14 @@ void IonFlow::updateProperties(size_t jg, double* x, double* rsd, int* diag,
                 m_wdotPlasma(i,j) = wdot_plasma[i];
             }
         } else {
-            for (size_t j = 0; j < m_points; j++) {
-                // get plasma properties
-                m_electronTemperature[j] = T(x,j);
-                m_electronMobility[j] = 0.4;
-                m_electronDiff[j] = 0.4*(Boltzmann * T(x,j)) / ElectronCharge;
-                m_electronPower[j] = 0.0;
-            }
+            // get plasma properties
+            m_electronTemperature[j] = T(x,j);
+            m_electronMobility[j] = 0.4;
+            m_electronDiff[j] = 0.4*(Boltzmann * T(x,j)) / ElectronCharge;
+            m_electronPower[j] = 0.0;
         }
     }
+    StFlow::updateProperties(jg, x, rsd, diag, rdt, jmin, jmax);
 }
 
 void IonFlow::updateTransport(double* x, size_t j0, size_t j1)
@@ -158,8 +157,6 @@ void IonFlow::updateTransport(double* x, size_t j0, size_t j1)
             size_t k = m_kElectron;
             m_mobility[k+m_nsp*j] = m_electronMobility[j];
             m_diff[k+m_nsp*j] = m_electronDiff[j];
-            //m_mobility[k+m_nsp*j] = 0.4;
-            //m_diff[k+m_nsp*j] = 0.4*(Boltzmann * T(x,j)) / ElectronCharge;
         }
     }
 }
@@ -171,10 +168,10 @@ void IonFlow::evalResidual(double* x, double* rsd, int* diag,
     if (m_stage == 3) {
         for (size_t j = jmin; j <= jmax; j++) {
             if (j == 0) {
-                rsd[index(c_offset_P, j)] = phi(x,j);
+                rsd[index(c_offset_P, j)] = -phi(x,j) + m_inletVoltage;
                 diag[index(c_offset_P, j)] = 0;
             } else if (j == m_points - 1) {
-                rsd[index(c_offset_P, j)] = -phi(x,j);
+                rsd[index(c_offset_P, j)] = m_outletVoltage - phi(x,j);
                 diag[index(c_offset_P, j)] = 0;
             } else {
                 //-----------------------------------------------
@@ -196,7 +193,6 @@ void IonFlow::evalResidual(double* x, double* rsd, int* diag,
             }
         }
     }
-
 
     for (size_t j = jmin; j <= jmax; j++) {
         if (m_do_plasma[j] && j != 0 && j != m_points -1) {
@@ -407,6 +403,17 @@ double IonFlow::getElecCollisionHeat(size_t j)
 double IonFlow::getElecField(size_t j)
 {
     return m_Eambi[j];
+}
+
+void IonFlow::setPlasmaLocation(double z1, double z2)
+{
+    for (size_t j = 0; j < m_points; j++) {
+        m_plasmaLocation = z1;
+        m_plasmaRange = z2;
+        if (z(j) >= (z1-0.5*z2) && z(j) <= (z1+0.5*z2)) {
+            solvePlasma(j);
+        }
+    }
 }
 
 void IonFlow::solvePlasma(size_t j)

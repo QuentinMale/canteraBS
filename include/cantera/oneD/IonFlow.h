@@ -76,6 +76,7 @@ public:
     void setTransverseElecField(double elec_field, double elec_freq);
     void setPlasmaSourceMultiplier(double multiplier);
     void setElectronTransportMultiplier(double multiplier);
+    void setPlasmaLocation(double z1, double z2);
     double getElecMobility(size_t j);
     double getElecDiffCoeff(size_t j);
     double getElecTemperature(size_t j);
@@ -135,6 +136,10 @@ protected:
     //! The voltage
     double m_inletVoltage;
     double m_outletVoltage;
+
+    //! 
+    double m_plasmaLocation;
+    double m_plasmaRange;
 
     //! index of electron
     size_t m_kElectron;
