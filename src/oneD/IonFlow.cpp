@@ -17,7 +17,6 @@ namespace Cantera
 
 IonFlow::IonFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
     FreeFlame(ph, nsp, points),
-    m_do_plasma(false),
     m_do_elec_heat(false),
     m_stage(1),
     m_inletVoltage(0.0),
@@ -111,7 +110,11 @@ void IonFlow::resize(size_t components, size_t points){
 void IonFlow::updateProperties(size_t jg, double* x, double* rsd, int* diag,
                               double rdt, size_t jmin, size_t jmax)
 {
-    StFlow::updateProperties(jg, x, rsd, diag, rdt, jmin, jmax);
+    // properties are computed for grid points from j0 to j1
+    size_t j0 = std::max<size_t>(jmin, 1) - 1;
+    size_t j1 = std::min(jmax+1,m_points-1);
+
+    updateThermo(x, j0, j1);
 
     // update electron properties
     for (size_t j = jmin; j <= jmax; j++) {
@@ -126,10 +129,13 @@ void IonFlow::updateProperties(size_t jg, double* x, double* rsd, int* diag,
             zdplaskinSetGasTemp(&Tgas);
             zdplaskinSetElecField(&m_elec_field, &m_elec_frequency, &total_number_density);
             // get plasma properties
+            double multi = m_electron_multiplier;
             m_electronTemperature[j] = zdplaskinGetElecTemp();
-            m_electronMobility[j] = zdplaskinGetElecMobility(&total_number_density);
-            m_electronDiff[j] = zdplaskinGetElecDiffCoeff();
-            m_electronPower[j] = zdplaskinGetElecPower(&total_number_density);
+            m_electronMobility[j] = zdplaskinGetElecMobility(&total_number_density) * multi
+                                    + 0.4 * (1.0 - multi);
+            m_electronDiff[j] = zdplaskinGetElecDiffCoeff() * multi
+                                + 0.4*(Boltzmann * T(x,j)) / ElectronCharge * (1.0 - multi);
+            m_electronPower[j] = zdplaskinGetElecPower(&total_number_density) * multi;
 
             double* wdot_plasma = NULL;
             zdplaskinGetPlasmaSource(&wdot_plasma);
@@ -143,13 +149,24 @@ void IonFlow::updateProperties(size_t jg, double* x, double* rsd, int* diag,
             m_electronDiff[j] = 0.4*(Boltzmann * T(x,j)) / ElectronCharge;
             m_electronPower[j] = 0.0;
         }
-        // //update transport to overwrite false electron transport
-        // if (m_kElectron != npos) {
-        //     size_t k = m_kElectron;
-        //     m_mobility[k+m_nsp*j] = m_electronMobility[j];
-        //     m_diff[k+m_nsp*j] = m_electronDiff[j];
-        // }
     }
+
+    if (jg == npos || m_force_full_update) {
+        // update transport properties only if a Jacobian is not being
+        // evaluated, or if specifically requested
+        updateTransport(x, j0, j1);
+    }
+
+    if (jg == npos) {
+        double* Yleft = x + index(c_offset_Y, jmin);
+        m_kExcessLeft = distance(Yleft, max_element(Yleft, Yleft + m_nsp));
+        double* Yright = x + index(c_offset_Y, jmax);
+        m_kExcessRight = distance(Yright, max_element(Yright, Yright + m_nsp));
+    }
+
+    // update the species diffusive mass fluxes whether or not a
+    // Jacobian is being evaluated
+    updateDiffFluxes(x, j0, j1);
 }
 
 void IonFlow::updateTransport(double* x, size_t j0, size_t j1)
@@ -160,8 +177,10 @@ void IonFlow::updateTransport(double* x, size_t j0, size_t j1)
         m_trans->getMobilities(&m_mobility[j*m_nsp]);
         if (m_kElectron != npos) {
             size_t k = m_kElectron;
-            m_mobility[k+m_nsp*j] = 0.4;
-            m_diff[k+m_nsp*j] = 0.4*(Boltzmann * T(x,j)) / ElectronCharge;
+            m_mobility[k+m_nsp*j] = 0.45;
+            m_diff[k+m_nsp*j] = 0.45*(Boltzmann * m_thermo->temperature()) / ElectronCharge;
+            // m_mobility[k+m_nsp*j] = m_electronMobility[j];
+            // m_diff[k+m_nsp*j] = m_electronDiff[j];
         }
     }
 }
@@ -195,30 +214,28 @@ void IonFlow::evalResidual(double* x, double* rsd, int* diag,
                     rsd[index(c_offset_U, j)] = u(x,j) - u_fixed(j);
                     diag[index(c_offset_U, j)] = 0;
                 }
-            }
-        }
-    }
+                if (m_do_plasma[j]) {
+                    for (size_t i = 0; i < zdplaskinNSpecies(); i++) {
+                        size_t k = m_plasmaSpeciesIndex[i];
+                        if (k != npos) {
+                            // multiply by the multiplier
+                            rsd[index(c_offset_Y + k, j)] += m_wt[k] * m_wdotPlasma(i,j) / m_rho[j] *
+                                                             m_plasma_multiplier;
+                        }
+                    }
 
-    for (size_t j = jmin; j <= jmax; j++) {
-        if (m_do_plasma[j] && j != 0 && j != m_points -1) {
-            for (size_t i = 0; i < zdplaskinNSpecies(); i++) {
-                size_t k = m_plasmaSpeciesIndex[i];
-                if (k != npos) {
-                    // multiply by the multiplier
-                    rsd[index(c_offset_Y + k, j)] += m_wt[k] * m_wdotPlasma(i,j) / m_rho[j] *
-                                                     m_plasma_multiplier;
+                    // update electron power
+                    if (m_do_elec_heat) {
+                        if (m_do_energy[j]) {
+                            size_t k = m_kElectron;
+                            double ND_e = (ND(x,k,j) > 0.0 ? ND(x,k,j) : 0.0);
+                            rsd[index(c_offset_T, j)] += m_electronPower[j]
+                                                         * ND_e / (m_rho[j] * m_cp[j])
+                                                         * m_plasma_multiplier;
+                        }
+                    }
                 }
             }
-
-            // update electron power
-            if (m_do_elec_heat) {
-                if (m_do_energy[j]) {
-                    rsd[index(c_offset_T, j)] += m_electronPower[j]
-                                                 * abs(ND(x,m_kElectron,j))
-                                                 / (m_rho[j] * m_cp[j])
-                                                 * m_plasma_multiplier;
-                }
-            }  
         }
     }
 }
@@ -387,12 +404,12 @@ void IonFlow::enableElecHeat(bool withElecHeat)
 
 double IonFlow::getElecMobility(size_t j)
 {
-    return m_electronMobility[j];
+    return m_mobility[m_kElectron+m_nsp*j];
 }
 
 double IonFlow::getElecDiffCoeff(size_t j)
 {
-    return m_electronDiff[j];
+    return m_diff[m_kElectron+m_nsp*j];
 }
 
 double IonFlow::getElecTemperature(size_t j)
@@ -566,6 +583,14 @@ void IonFlow::_finalize(const double* x)
     }
     if (v) {
         solveVelocity();
+    }
+
+    //
+    bool plasma = m_do_plasma[0];
+    for (size_t j = 0; j < m_points; j++) {
+        if (plasma) {
+            solvePlasma();
+        }
     }
 }
 
