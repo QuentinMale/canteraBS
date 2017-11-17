@@ -177,10 +177,8 @@ void IonFlow::updateTransport(double* x, size_t j0, size_t j1)
         m_trans->getMobilities(&m_mobility[j*m_nsp]);
         if (m_kElectron != npos) {
             size_t k = m_kElectron;
-            m_mobility[k+m_nsp*j] = 0.45;
-            m_diff[k+m_nsp*j] = 0.45*(Boltzmann * m_thermo->temperature()) / ElectronCharge;
-            // m_mobility[k+m_nsp*j] = m_electronMobility[j];
-            // m_diff[k+m_nsp*j] = m_electronDiff[j];
+            m_mobility[k+m_nsp*j] = 0.5*(m_electronMobility[j]+m_electronMobility[j+1]);
+            m_diff[k+m_nsp*j] = 0.5*(m_electronDiff[j]+m_electronDiff[j+1]);
         }
     }
 }
@@ -231,7 +229,7 @@ void IonFlow::evalResidual(double* x, double* rsd, int* diag,
                             double ND_e = (ND(x,k,j) > 0.0 ? ND(x,k,j) : 0.0);
                             rsd[index(c_offset_T, j)] += m_electronPower[j]
                                                          * ND_e / (m_rho[j] * m_cp[j])
-                                                         * m_plasma_multiplier;
+                                                         * m_electron_multiplier;
                         }
                     }
                 }
