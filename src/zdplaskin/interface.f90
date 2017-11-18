@@ -126,9 +126,30 @@ function zdplaskinGetElecPower(ND) bind(C,name='zdplaskinGetElecPower') result(e
   real(c_double), intent(in) :: ND
   real(c_double) :: ElectronCharge = 1.602176565e-19
   call ZDPlasKin_get_conditions(ELEC_POWER_N=ep)
-  ep = ep * ND * ElectronCharge * 1e-6   !power per electron
-
+  ep = ep * ND * ElectronCharge * 1e-6
 end function zdplaskinGetElecPower
+
+function zdplaskinGetElecPowerElastic(ND) bind(C,name='zdplaskinGetElecPowerElastic') result(ep)
+  use, intrinsic :: iso_c_binding
+  use ZDPlasKin
+  implicit none
+  real(c_double) :: ep
+  real(c_double), intent(in) :: ND
+  real(c_double) :: ElectronCharge = 1.602176565e-19
+  call ZDPlasKin_get_conditions(ELEC_POWER_ELASTIC_N=ep)
+  ep = ep * ND * ElectronCharge * 1e-6
+end function zdplaskinGetElecPowerElastic
+
+function zdplaskinGetElecPowerInelastic(ND) bind(C,name='zdplaskinGetElecPowerInelastic') result(ep)
+  use, intrinsic :: iso_c_binding
+  use ZDPlasKin
+  implicit none
+  real(c_double) :: ep
+  real(c_double), intent(in) :: ND
+  real(c_double) :: ElectronCharge = 1.602176565e-19
+  call ZDPlasKin_get_conditions(ELEC_POWER_INELASTIC_N=ep)
+  ep = ep * ND * ElectronCharge * 1e-6
+end function zdplaskinGetElecPowerInelastic
 
 subroutine zdplaskinGetPlasmaSource(carray) bind(C,name='zdplaskinGetPlasmaSource')
   use, intrinsic :: iso_c_binding

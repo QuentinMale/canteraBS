@@ -12,7 +12,7 @@
 !
 !-----------------------------------------------------------------------------------------------------------------------------------
 !
-! Mon Nov 13 18:56:10 2017
+! Sat Nov 18 06:16:43 2017
 !
 !-----------------------------------------------------------------------------------------------------------------------------------
 !
@@ -65,7 +65,7 @@ module ZDPlasKin
 !
   double precision, parameter, private      :: bolsig_rtol = 1.00D-03, bolsig_rtol_half = 3.16D-02, &
                                                bolsig_field_min = 1.00D-01, bolsig_field_max = 1.00D+03, &
-                                               bolsig_eecol_frac_def = 1.00D-03
+                                               bolsig_eecol_frac_def = 1.00D-05
   double precision, private                 :: bolsig_eecol_frac
   integer, parameter, private               :: bolsig_species_max = 7, bolsig_species_length = 3 
   character(*), parameter, private          :: bolsigfile = "bolsigdb.dat"

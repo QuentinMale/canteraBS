@@ -24,6 +24,8 @@ extern "C"
     double zdplaskinGetElecDiffCoeff();
     double zdplaskinGetElecMobility(const double*);
     double zdplaskinGetElecPower(const double*);
+    double zdplaskinGetElecPowerElastic(const double*);
+    double zdplaskinGetElecPowerInelastic(const double*);
     void zdplaskinGetPlasmaSource(double** array);
     size_t zdplaskinNSpecies();
     void zdplaskinGetSpeciesName(char* cstring, size_t* index);
