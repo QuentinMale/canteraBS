@@ -73,6 +73,9 @@ public:
     bool keepPoint(size_t j) {
         return (m_keep[j] != -1);
     }
+    bool newPoint(size_t j) {
+        return (m_loc[j-1] == 1);
+    }
     double value(const double* x, size_t i, size_t j);
 
     double maxRatio() {
