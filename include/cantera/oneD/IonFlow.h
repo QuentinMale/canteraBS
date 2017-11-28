@@ -118,7 +118,7 @@ protected:
     std::vector<size_t> m_kNeutral;
 
     //! index of plasma species
-    vector<size_t> m_plasmaSpeciesIndex;
+    vector<size_t> m_kPlasmaSpecies;
 
     //! index of major species
     vector<size_t> m_kMajorSpecies;

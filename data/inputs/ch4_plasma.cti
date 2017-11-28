@@ -5,7 +5,8 @@ ideal_gas(name='gas',
           species=['''gri30: H2      H       O       O2      OH      H2O     HO2
                      H2O2    C       CH      CH2     CH2(S)  CH3     CH4
                      CO      CO2     HCO     CH2O    CH3O    N2''',
-                   '''HCO^+   H3O^+    O2^-  O2(a1dg)   E    '''],
+                   '''HCO^+   H3O^+    O2^-  OH^-    E       
+                      O2(a1dg)   O2(b1sg)   '''],
           reactions=['gri30: all', 'all'],
           transport='Mix',
           options=['skip_undeclared_species', 'skip_undeclared_third_bodies'],
@@ -86,6 +87,42 @@ species(name = "O2(a1dg)",
     # note = "TPIS89"
        )
 
+species(name = "O2(b1sg)",
+    atoms = " O:2 ",
+    thermo = (
+       NASA( [  298.15,  1000.00], [  4.610171670E+00,  -6.359519520E-03, 
+                1.424256240E-05,  -1.209979230E-08,   3.709568780E-12,
+                1.397422290E+05,  -2.013268740E-01] ),
+       NASA( [ 1000.00,  6000.00], [  3.316759220E+00,   1.115222440E-03, 
+               -3.834925560E-07,   5.727846870E-11,  -2.776483810E-15,
+                1.398768230E+05,   5.447264760E+00] )
+             ),
+    transport = gas_transport(
+                     geom = "linear",
+                     diam =     3.46,
+                     well_depth =   107.40,
+                     polar =     1.60,
+                     rot_relax =     3.80),
+    # note = "TPIS89"
+       )
+
+species(name = "O(1D)",
+    atoms = " O:1 ",
+    thermo = (
+       NASA( [  200.00,  1000.00], [  3.168267100E+00,  -3.279318840E-03, 
+                6.643063960E-06,  -6.128066240E-09,   2.112659710E-12,
+                2.912225920E+04,   2.051933460E+00] ),
+       NASA( [ 1000.00,  3500.00], [  2.569420780E+00,  -8.597411370E-05, 
+                4.194845890E-08,  -1.001777990E-11,   1.228336910E-15,
+                2.921757910E+04,   4.784338640E+00] )
+             ),
+    transport = gas_transport(
+                     geom = "atom",
+                     diam =     2.75,
+                     well_depth =    80.00),
+    note = "L 1/90"
+       )
+
 species(name = "N2(c3pu)",
     atoms = " N:2 ",
     thermo = (
@@ -142,6 +179,23 @@ species(name = "O2^+",
                      rot_relax =     3.80),
     # note = "L 4/89"
        )
+
+species(name = "OH^-",
+    atoms = " O:1  H:1  E:1 ",
+    thermo = (
+       NASA( [  298.15,  1000.00], [  3.432799560E+00,   6.196563100E-04, 
+               -1.899309920E-06,   2.373659460E-09,  -8.551037550E-13,
+               -1.826130860E+04,   1.060536570E+00] ),
+       NASA( [ 1000.00,  6000.00], [  2.834057010E+00,   1.070580230E-03, 
+               -2.624593980E-07,   3.083764350E-11,  -1.313838620E-15,
+               -1.801869740E+04,   4.494647490E+00] )
+             ),
+    transport = gas_transport(
+                     geom = "linear",
+                     diam =     2.75,
+                     well_depth =    80.00),
+    note = "RUS 78"
+       )
 #-------------------------------------------------------------------------------
 # Reaction data
 #-------------------------------------------------------------------------------
@@ -154,16 +208,38 @@ reaction('H3O^+ + E => H2 + OH', [(1.25E+19, 'cm3/mol/s'), -0.5, 0.0])
 reaction('H3O^+ + E =>  O + H2 + H', [(6.0E+17, 'cm3/mol/s'), -0.3, 0.0])
 
 #reaction 110 - 113
-reaction("O2^- + O2 => E + O2 + O2", [1.60E-11, 0.5, 5590.0])
-reaction("O2^- + N2 => E + O2 + N2", [1.10E-13, 0.5, 4990.0])
 reaction("E + O2 + O2 => O2^- + O2", [4.20E-27, -1.0, 600.0])
 reaction("E + O2 + N2 => O2^- + N2", [9.63E-27, -2.0, 70.0])
+reaction("O2^- + O2 => E + O2 + O2", [1.60E-11, 0.5, 5590.0])
+reaction("O2^- + N2 => E + O2 + N2", [1.10E-13, 0.5, 4990.0])
+
+reaction("O2^- + H => O + OH^-", [1.20E-09, 0.0, 0.0])
+reaction("O2^- + OH => O2 + OH^-", [1.00E-09, 0.0, 0.0])
+reaction("OH^- + O => HO2 + E", [1.5E-09, 0.0, 0.0])
+reaction("OH^- + H => H2O + E", [1.40E-09, 0.0, 0.0])
+reaction("OH^- + C => HCO + E", [5.00E-10, 0.0, 0.0])
+reaction("OH^- + CH => CH2O + E", [5.00E-10, 0.0, 0.0])
 
 # additional reactions correspond to plasma
+# O2(a1dg)
 reaction("O2 + E => O2(a1dg) + E", [7.59E-11, 0.0, 12466.0])
 reaction("O2(a1dg) + H => O + OH", [6.50E-11, 0.0, 2530.0])
 reaction("O2(a1dg) + H2 => OH + OH", [2.80E-09, 0.0, 17900.0])
 reaction("O2(a1dg) => O2", [3.00E-04, 0.0, 0.0])
+reaction("O2(a1dg) + CH4 => CH3 + HO2", [6.14E-12, 0.0, 17920.0])
+
+reaction("O2 + E => O2(b1sg) + E", [9.31E-11, 0.0, 20578.6])
+reaction("O2(b1sg) + CH4 => CH3 + HO2", [6.14E-12, 0.0, 10000.0])
+reaction("O2(b1sg) + O2 => O2(a1dg) + O2", [1.50E-16, 0.0, 0.0])
+reaction("O2(b1sg) + N2 => O2(a1dg) + N2", [4.90E-15, 0.0, 253.0])
+
+# O2(6.0eV)
+#reaction("O2 + E => O + O + E", [1.17E-08, 0.0, 12537.0])
+#reaction("O2 + E => O + O(1D) + E", [4.74E-08, 0.0, 14944.7])
+#reaction("O(1D) + CH4 => CH3 + OH", [2.20E-10, 0.0, 0.0])
+#reaction("O(1D) + O2 => O + O2(a1dg)", [1.00E-12, 0.0, 0.0])
+#reaction("O(1D) + H2 => H + OH", [1.10E-10, 0.0, 0.0])
+#reaction("O(1D) + H2O => OH + OH", [2.20E-10, 0.0, 0.0])
 
 # reaction('CH + O => HCO^+ + E', [(2.75E+11,'cm3/mol/s'), 0.0, (1700, 'cal/mol')])
 # reaction('H3O^+ + E => H2O + H', [(1.30E+18, 'cm3/mol/s'), -0.5, 0.0])
