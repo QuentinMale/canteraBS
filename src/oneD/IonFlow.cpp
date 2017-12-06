@@ -57,7 +57,7 @@ IonFlow::IonFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
 
     // collision list
     vector<string> collision_list;
-    collision_list.push_back("N2");
+    // collision_list.push_back("N2");
     collision_list.push_back("O2");
     collision_list.push_back("CH4");
     collision_list.push_back("CO2");
@@ -169,7 +169,9 @@ void IonFlow::evalResidual(double* x, double* rsd, int* diag,
     if (m_stage == 3) {
         for (size_t j = jmin; j <= jmax; j++) {
             if (j == 0) {
-                rsd[index(c_offset_P, j)] = phi(x,j) - m_inletVoltage;
+                // force phi will result bad electron profile
+                //rsd[index(c_offset_P, j)] = phi(x,j) - m_inletVoltage;
+                rsd[index(c_offset_P, j)] = E(x,j);
                 diag[index(c_offset_P, j)] = 0;
             } else if (j == m_points - 1) {
                 rsd[index(c_offset_P, j)] = m_outletVoltage - phi(x,j);
