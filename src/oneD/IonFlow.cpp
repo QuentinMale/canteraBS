@@ -22,7 +22,6 @@ IonFlow::IonFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
     m_inletVoltage(0.0),
     m_outletVoltage(0.0),
     m_kElectron(npos),
-    m_elec_num_density(1e17),
     m_elec_field(0.0),
     m_elec_frequency(0.0),
     m_plasma_multiplier(1.0),
@@ -118,8 +117,13 @@ void IonFlow::updatePlasmaProperties(const double* x, size_t j)
 
         const double Tgas = T(x,j);
         double total_number_density = ND_t(j);
+        if (m_elec_field == 0) {
+            zdplaskinSetElecTemp(&Tgas);
+        } else {
+            zdplaskinSetElecField(&m_elec_field, &m_elec_frequency, &total_number_density);
+        }
         zdplaskinSetGasTemp(&Tgas);
-        zdplaskinSetElecField(&m_elec_field, &m_elec_frequency, &total_number_density);
+
         // get plasma properties
         double multi = m_electron_multiplier;
         m_electronTemperature[j] = zdplaskinGetElecTemp();

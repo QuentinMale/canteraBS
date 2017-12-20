@@ -237,7 +237,6 @@ protected:
     }
     //! a copy of number density
     vector<double> m_electronTemperature;
-    double m_elec_num_density;
     double m_elec_field;
     double m_elec_frequency;
     double m_plasma_multiplier;
