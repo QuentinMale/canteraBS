@@ -533,12 +533,14 @@ class IonFlame(FreeFlame):
 
         csvfile = open(filename, 'w')
         writer = _csv.writer(csvfile)
-        writer.writerow(['z (m)', 'u (m/s)', 'V (1/s)', 'T (K)', 'Te[K]',
+        writer.writerow(['z (m)', 'u (m/s)', 'V (1/s)', 'T (K)', 'Te[K]', 'De[m^2/s]', 'mu_e[m^2/s-V]',
                          'phi (V)', 'E (V/m)', 'rho (kmol/m3)'] + self.gas.species_names)
         for n in range(self.flame.n_points):
             self.set_gas_state(n)
             Te = self.flame.get_elecTemperature(n)
-            writer.writerow([z[n], u[n], V[n], T[n], Te, phi[n], E[n], self.gas.density_mole] +
+            De = self.flame.get_elecDiffCoeff(n)
+            mu_e = self.flame.get_elecMobility(n)
+            writer.writerow([z[n], u[n], V[n], T[n], Te, De, mu_e, phi[n], E[n], self.gas.density_mole] +
                             list(getattr(self.gas, species)))
         csvfile.close()
         if not quiet:
