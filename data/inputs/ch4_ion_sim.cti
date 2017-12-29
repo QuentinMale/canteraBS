@@ -8,8 +8,7 @@ ideal_gas(name='gas',
                    N  NH  NH2  NH3  NNH  NO  NO2  N2O  HNO  CN 
                    HCN  H2CN  HCNN  HCNO  HOCN  HNCO  NCO  N2  AR  C3H7 
                    C3H8  CH2CHO  CH3CHO''',
-                   '''E   O^-  O2^-  OH^-  HCO3^-  CHO2^-  CO3^-
-                      HCO^+   H3O^+  CH3CO^+ CH5O^+ C2H5OH'''],
+                   '''E   HCO^+   H3O^+ '''],
           reactions=['gri30: all', 'all'],
           transport='Mix',
           options=['skip_undeclared_species', 'skip_undeclared_third_bodies'],
@@ -255,75 +254,14 @@ species(name = "C2H5OH",
 # Reaction data
 #-------------------------------------------------------------------------------
 reaction('CH + O <=> HCO^+ + E',               [2.51E+11,   0.0, 7.12])
-reaction('HCO^+ + E <=> CO + H',               [7.40E+18, -0.68, 0.00])
 reaction('HCO^+ + H2O <=> H3O^+ + CO',         [1.51E+15,   0.0, 0.0])
-reaction('HCO^+ + C2H5OH <=> H3O^+ + CO + C2H4',      [6.000E+14,  0.0, 0.0])
 reaction('H3O^+ + E <=> H2O + H',              [2.29E+18,  -0.5, 0.0])
 reaction('H3O^+ + E <=> OH + H + H',           [7.95E+21, -1.37, 0.0])
 reaction('H3O^+ + E <=> H2 + OH',              [1.25E+19,  -0.5, 0.0])
 reaction('H3O^+ + E <=>  O + H2 + H',          [6.00E+17,  -0.3, 0.0])
-reaction('H3O^+ + C <=> HCO^+ + H2',           [6.02E+12,   0.0, 0.0])
-reaction('HCO^+ + CH2CO <=> CH3CO^+ + CO',     [1.26E+15, -0.05, 0.0])
-reaction('HCO^+ + CH3 <=> CH3CO^+ + H',        [7.76E+14, -0.01, 0.0])
-reaction('CH3CO^+ + E <=> CH2CO + H',          [2.29E+18,  -0.5, 0.0])
-reaction('H3O^+ + CH2CO <=> CH3CO^+ + H2O',    [1.20E+15,   0.0, 0.0])
-reaction('CH3CO^+ + E <=> CO + CH3',           [2.40E+17, -0.05, 0.0])
-reaction('CH3CO^+ + O <=> HCO^+ + CH2O',       [2.00E+14,   0.0, 0.0])
-reaction('HCO^+ + CH3OH <=> CH5O^+ + CO',      [8.71E+14, -0.06, 0.0])
-reaction('H3O^+ + CH3OH <=> CH5O^+ + H2O',     [1.51E+15,   0.0, 0.0])
-reaction('CH5O^+ + E <=> CH3OH + H',           [2.40E+17, -0.05, 0.0])
-reaction('CH5O^+ + CH2CO <=> CH3CO^+ + CH3OH', [1.49E+15, -0.08, -0.35])
-reaction('O2^- + H2 <=> H2O2 + E',             [6.02E+14,   0.0, 0.0])
 
-reaction("O2^- + H <=> HO2 + E",     [7.23E+14, 0.0, 0.0])
-reaction("O2^- + OH <=> OH^- + O2",  [6.02E+13, 0.0, 0.0])
-reaction("O2^- + H <=> OH^- + O",    [1.08E+15, 0.0, 0.0])
-reaction("OH^- + O <=> HO2 + E",     [1.20E+14, 0.0, 0.0])
-reaction("OH^- + H <=> H2O + E",     [1.08E+15, 0.0, 0.0])
-reaction("OH^- + C <=> HCO + E",     [3.00E+14, 0.0, 0.0])
-reaction("OH^- + CH <=> CH2O + E",    [3.00E+14, 0.0, 0.0])
-reaction('OH^- + CH3 <=> CH3OH + E', [6.02E+14, 0.0, 0.0])
-reaction('CO3^- + H <=> OH^- + CO2', [1.02E+14, 0.0 ,0.0])
-reaction('CO3^- + O <=> O2^- + CO2', [4.60E+13, 0.0, 0.0])
-reaction('CHO2^- + H <=> CO2 + H2 + E', [1.16E+14, 0.0, 0.0])
-reaction('OH^- + HCO <=> CHO2^- + H', [2.96E+15, -0.14, -0.44])
 
-reaction('O^- + C <=> CO + E',        [3.01E+14, 0.0, 0.0])
-reaction('O^- + H2 <=> OH^- + H',     [1.99E+13, 0.0, 0.0])
-reaction('O^- + CH4 <=> OH^- + CH3',  [6.02E+13, 0.0, 0.0])
-reaction('O^- + H2O <=> OH^- + OH',   [8.43E+14, 0.0, 0.0])
-reaction('O^- + CH2O <=> OH^- + HCO', [5.60E+14, 0.0, 0.0])
-reaction('O^- + CH2O <=> CHO2^- + H', [1.31E+15, 0.0, 0.0])
-reaction('O^- + C2H6 <=> C2H5 + OH^-', [6.13E+15, -0.50, 0.0])
-reaction('O^- + H <=> OH + E',         [3.01E+14, 0.0, 0.0])
-reaction('O^- + H2 => H2O + E',       [4.22E+14, 0.0, 0.0])
-reaction('O^- + CH <=> HCO + E',       [3.01E+14, 0.0, 0.0])
-reaction('O^- + CH2 <=> CH2O + E',     [3.01E+14, 0.0, 0.0])
-reaction('O^- + CO <=> CO2 + E',       [3.91E+14, 0.0, 0.0])
-reaction('O^- + O => O2 + E',         [8.43E+13, 0.0, 0.0])
-reaction('O^- + C2H2 <=> CH2CO + E',   [7.23E+14, 0.0, 0.0])
-reaction('O^- + H2O <=> H2O2 + E',     [3.61E+11, 0.0, 0.0])
 
-reaction('O2^- + O <=> O^- + O2',             [1.99E+14, 0.0, 0.0])
-reaction('O2^- + CH3CO^+ <=> O2 + CH2CHO',     [2.09E+18, -0.50, 0.0])
-reaction('O2^- + CH3CO^+ <=> O2 + CH2CO + H', [1.00E+18, 0.0, 0.0])
-reaction('O2^- + CH5O^+ <=> O2 + CH3 + H2O',  [1.00E+18, 0.0, 0.0])
-reaction('O^- + CH3CO^+ <=> O + CH2CHO',       [2.09E+18, -0.50, 0.0])
-reaction('O^- + CH3CO^+ <=> O + CH2CO + H',   [1.00E+18, 0.0, 0.0])
-reaction('O^- + CH3CO^+ <=> O + CH2CHO',      [1.00E+18, 0.0, 0.0])
-reaction('O^- + CH5O^+ <=> O + CH3 + H2O',    [1.00E+18, 0.0, 0.0])
-reaction('HCO3^- + CH3CO^+ <=> CH2CHO + CO2 + OH', [2.00E+18, 0.0, 0.0])
-reaction('HCO3^- + CH5O^+ <=> CH3OH + H2O + CO2', [2.00E+18, 0.0, 0.0])
 
-reaction('O2 + E + O <=> O2^- + O',     [3.63E+16, 0.0, 0.0])
-reaction('O2 + E + O2 <=> O2^- + O2',   [1.52E+21, -1.0, 4.99])
-reaction('O2 + E + H2O <=> O2^- + H2O', [5.08E+18, 0.0, 0.0])
-reaction('O2 + E + N2 <=> O2^- + N2',   [3.59E+21, -2.0, 0.58])
-three_body_reaction('E + OH + M <=> OH^- + M', [1.09E+17, 0.0, 0.0],
-         efficiencies = " H2:1.0  H2O:6.5  O2:0.4  N2:0.4  CO:0.75  CO2:1.5  CH4:3.0 ")
-reaction('OH^- + CO2 + O2 <=> HCO3^- + O2',   [2.76E+20, 0.0, 0.0])
-reaction('OH^- + CO2 + H2O <=> HCO3^- + H2O', [1.10E+21, 0.0, 0.0])
-reaction('E + O + O2 <=> O^- + O2',           [3.63E+16, 0.0, 0.0])
-reaction('E + O + O <=> O^- + O',             [3.02E+17, 0.0, 0.0])
-reaction('O^- + CO2 + O2 <=> CO3^- + O2',     [1.12E+20, 0.0, 0.0])
+
 

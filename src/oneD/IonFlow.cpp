@@ -44,6 +44,7 @@ IonFlow::IonFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
     // Find the index of electron
     if (m_thermo->speciesIndex("E") != npos ) {
         m_kElectron = m_thermo->speciesIndex("E");
+        //setBounds(c_offset_Y+m_kElectron, -1.0e-7, 1.0e-9);
     }
 
     for (size_t i = 0; i < zdplaskinNSpecies(); i++) {
@@ -110,7 +111,10 @@ void IonFlow::updatePlasmaProperties(const double* x, size_t j)
     // update electron properties
     if (j != m_points - 1) {
         for (size_t k : m_kCollision) {
-            double number_density = ND(x,k,j);
+            double number_density = 1.0;
+            if (ND(x,k,j) > 1.0) {
+                number_density = ND(x,k,j);
+            }
             const char* species = m_thermo->speciesName(k).c_str();
             zdplaskinSetDensity(species, &number_density);
         }
@@ -170,11 +174,29 @@ void IonFlow::evalResidual(double* x, double* rsd, int* diag,
                            double rdt, size_t jmin, size_t jmax)
 {
     StFlow::evalResidual(x, rsd, diag, rdt, jmin, jmax);
+    // if (m_stage == 1) {
+    //     for (size_t j = jmin; j <= jmax; j++) {
+    //         if (j == 0) {
+    //             for (size_t k : m_kCharge) {
+    //                 rsd[index(c_offset_Y + k, 0)] = Y(x,k,0);
+    //             }
+    //         } else if (j == m_points - 1) {
+    //             for (size_t k : m_kCharge) {
+    //                 rsd[index(c_offset_Y + k, 0)] = Y(x,k,j);
+    //             }
+    //         } else {
+    //             for (size_t k : m_kCharge) {
+    //                 rsd[index(c_offset_Y + k, 0)] = Y(x,k,j);
+    //             }
+    //         }
+    //     }
     if (m_stage == 3) {
         for (size_t j = jmin; j <= jmax; j++) {
             if (j == 0) {
                 // force phi will result bad electron profile
                 //rsd[index(c_offset_P, j)] = phi(x,j) - m_inletVoltage;
+                size_t k = m_kElectron;
+                rsd[index(c_offset_Y + k, 0)] = Y(x,k,0);
                 rsd[index(c_offset_P, j)] = E(x,j);
                 diag[index(c_offset_P, j)] = 0;
             } else if (j == m_points - 1) {
@@ -437,10 +459,10 @@ void IonFlow::solvePlasma(size_t j)
         }
         m_do_plasma[j] = true;
     }
-    m_refiner->setActive(c_offset_U, false);
-    m_refiner->setActive(c_offset_V, false);
-    m_refiner->setActive(c_offset_T, false);
-    m_refiner->setActive(c_offset_P, false);
+    m_refiner->setActive(c_offset_U, true);
+    m_refiner->setActive(c_offset_V, true);
+    m_refiner->setActive(c_offset_T, true);
+    m_refiner->setActive(c_offset_P, true);
     if (changed) {
         needJacUpdate();
     }

@@ -546,6 +546,39 @@ class IonFlame(FreeFlame):
         if not quiet:
             print("Solution saved to '{0}'.".format(filename))
 
+    def write_csv_ND(self, filename, species='X', quiet=True):
+        """
+        Write the velocity, temperature, density, electric potential,
+        , electric field stregth, and species profiles to a CSV file.
+
+        :param filename:
+            Output file name
+        :param species:
+            Attribute to use obtaining species profiles, e.g. ``X`` for
+            mole fractions or ``Y`` for mass fractions.
+        """
+        z = self.grid
+        T = self.T
+        u = self.u
+        V = self.V
+        phi = self.phi
+        E = self.E
+
+        csvfile = open(filename, 'w')
+        writer = _csv.writer(csvfile)
+        writer.writerow(['z (m)', 'u (m/s)', 'V (1/s)', 'T (K)', 'Te[K]', 'De[m^2/s]', 'mu_e[m^2/s-V]',
+                         'phi (V)', 'E (V/m)'] + self.gas.species_names)
+        for n in range(self.flame.n_points):
+            self.set_gas_state(n)
+            Te = self.flame.get_elecTemperature(n)
+            De = self.flame.get_elecDiffCoeff(n)
+            mu_e = self.flame.get_elecMobility(n)
+            writer.writerow([z[n], u[n], V[n], T[n], Te, De, mu_e, phi[n], E[n]] +
+                            list(getattr(self.gas, species)*self.gas.density_mole*6.022e26))
+        csvfile.close()
+        if not quiet:
+            print("Solution saved to '{0}'.".format(filename))
+
     @property
     def poisson_enabled(self):
         """ Get/Set whether or not to solve the Poisson's equation."""

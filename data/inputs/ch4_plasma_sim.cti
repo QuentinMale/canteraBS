@@ -8,9 +8,8 @@ ideal_gas(name='gas',
                    N  NH  NH2  NH3  NNH  NO  NO2  N2O  HNO  CN 
                    HCN  H2CN  HCNN  HCNO  HOCN  HNCO  NCO  N2  AR  C3H7 
                    C3H8  CH2CHO  CH3CHO''',
-                   '''ch4_ion: E   O^-  O2^-  OH^-  HCO3^-  CHO2^-  CO3^-
-                      HCO^+   H3O^+  CH3CO^+ CH5O^+ C2H5OH''',
-                   '''H^-'''],
+                   '''ch4_ion_sim: E  HCO^+   H3O^+''',
+                   '''O2(a1dg)  O2(b1sg)  O2^+'''],
           reactions=['gri30: all', 'ch4_ion: all', 'all'],
           transport='Mix',
           options=['skip_undeclared_species', 'skip_undeclared_third_bodies'],
@@ -112,87 +111,40 @@ species(name = "O2^+",
     # note = "L 4/89"
        )
 
-species(name = "H^-",
-    atoms = " H:1  E:1 ",
-    thermo = (
-       NASA( [  298.15,  1000.00], [  2.500000000E+00,   0.000000000E+00, 
-                0.000000000E+00,   0.000000000E+00,   0.000000000E+00,
-                1.597616700E+04,  -1.139015980E+00] ),
-       NASA( [ 1000.00,  6000.00], [  2.500000000E+00,   0.000000000E+00, 
-                0.000000000E+00,   0.000000000E+00,   0.000000000E+00,
-                1.597616700E+04,  -1.139015980E+00] )
-             ),
-    transport = gas_transport(
-                     geom = "atom",
-                     diam =     2.05,
-                     well_depth =   145.00),
-    note = "L 7/88"
-       )
 #-------------------------------------------------------------------------------
 # Reaction data
 #-------------------------------------------------------------------------------
-# electron excited states
-#reaction('E + O2 => e + O2(a1dg)', [4.57E+13, 0.0, 12466])
-#reaction('E + O2 => e + O2(b1sg)', [5.61E+13, 0.0, 20578])
+reaction('O2^+ + E + E => O2 + E', [5.42E+10, -2.0, 0.0])
+reaction('O2^+ + E + N2 <=> N2 + O2', [5.63E+03, -2.5, 0.0])
+reaction('O2^+ + E + O2 <=> O2 + O2', [5.63E+03, -2.5, 0.0])
+reaction('O2^+ + E + H2O <=> H2O + O2', [1.39E+03, -2.0, 0.0])
+reaction('O2^+ + E => O + O', [5.96E+18, -0.7, 0.0])
 
+# electron excited states
+reaction('E + O2 => e + O2(a1dg)', [4.57E+13, 0.0, 12466])
+reaction('E + O2 => e + O2(b1sg)', [5.61E+13, 0.0, 20578])
 
 # additional reactions correspond to plasma (Starik 2015)
-#reaction('H2 + O2 <=> H + HO2',       [7.39E+05, 2.43, 26926])
-#reaction('H2 + O2(a1dg) <=> H + HO2', [1.11E+08, 1.88, 17070])
-#reaction('H2 + O2(b1sg) <=> H + HO2', [2.10E+13, 0.0, 20500])
-# reaction('H + O2 <=> OH + O',        [1.04E+14, 0.0, 7705])
 
-# falloff_reaction( 'H + O2 (+ M) <=> HO2 (+ M)', 
-#          kLow= = [3.50E+16, -0.41, -565],
-#          kHigh   = [1.48E+12, 0.6, 0.0],
-#          efficiencies = " H2O:12  H2:2.5 ")
+reaction('H2 + O2(a1dg) <=> H + HO2', [1.11E+08, 1.88, 17070])
+reaction('H2 + O2(b1sg) <=> H + HO2', [2.10E+13, 0.0, 20500])
+reaction('H + O2(a1dg) <=> OH + O', [3.85E+10, 1.0, 2480], options = 'duplicate')
+reaction('H + O2(a1dg) <=> OH + O', [1.17E+07, 1.56, 630], options = 'duplicate')
 
-#reaction('H + O2(a1dg) <=> OH + O', [3.85E+10, 1.0, 2480], options = 'duplicate')
-#reaction('H + O2(a1dg) <=> OH + O', [1.17E+07, 1.56, 630], options = 'duplicate')
+reaction('O2(a1dg) + H <=> O2 + H', [5.29E+10, 0.68, 2825], options = 'duplicate')
+reaction('O2(a1dg) + H <=> O2 + H', [5.36E+06, 1.4, 810], options = 'duplicate')
+reaction('H + O2(b1sg) <=> OH + O', [2.64E+14, -0.03, 16210])
 
-# falloff_reaction( 'H + O2(a1dg) (+ M) <=> HO2 (+ M)', 
-#          kLow= = [9.89E+09, 2.03, 1690],
-#          kHigh   = [1.16E+07, 1.62, 663],
-#          efficiencies = " H2O:12  H2:2.5 ")
+reaction('O2(a1dg) + CO <=> O2 + CO', [5.40E+06, 0.0, 0.0])
+reaction('CO + O2(b1sg) <=> CO2 + O', [6.77E+07, 1.6, 28770])
 
-#reaction('O2(a1dg) + H <=> O2 + H',      [5.29E+10, 0.68, 2825], options = 'duplicate')
-#reaction('O2(a1dg) + H <=> O2 + H',      [5.36E+06, 1.4, 810], options = 'duplicate')
-#reaction('H + O2(b1sg) <=> OH + O',  [2.64E+14, -0.03, 16210])
-#reaction('CO + O2 <=> CO2 + O',          [7.63E+06, 1.67, 26950])
-#reaction('CO + O2 <=> CO2 + O',          [6.77E+07, 1.6, 13660])
-#reaction('O2(a1dg) + CO <=> O2 + CO',    [5.40E+06, 0.0, 0.0])
-#reaction('CO + O2(b1sg) <=> CO2 + O', [6.77E+07, 1.6, 28770])
-# reaction('CH4 + O2 <=> CH3 + HO2',       [4.88E+05, 2.5, 26370])
-#reaction('CH4 + O2(a1dg) <=> CH3 + HO2', [7.06E+07, 1.97, 16870])
-#reaction('CH4 + O2(b1sg) <=> CH3 + HO2', [2.22E+14, 0.0, 19970])
-# reaction('CH3 + O2 <=> CH3O2', [7.04E+28, -5.73, 2075])
-# reaction('CH3 + O2 <=> CH2O + OH',      [6.62E+11, 0.0, 7094])
-# reaction('CH3 + O2 <=> CH3O + O',        [2.11E+13, 0.0, 16340])
-#reaction('CH3 + O2(a1dg) <=> CH3O2',     [1.66E+17, -2.71, 4340])
-#reaction('CH3 + O2(a1dg) <=> CH2O + OH', [3.47E+07, 1.63, 3475])
-#reaction('CH3 + O2(a1dg) <=> CH3O + O',  [1.02E+04, 2.68, 3350])
-# reaction('C2H6 + O2 <=> C2H5 + HO2',     [2.92E+07, 1.90, 24950])
-#reaction('C2H6 + O2(a1dg) <=> C2H4 + H2O2', [5.47E-01, 3.66, 5130])
-#reaction('O2(a1dg) + C2H6 <=> O2 + C2H6', [0.22, 3.11, 1970])
-# reaction('N + O2(a1dg) <=> O + NO')
+reaction('CH4 + O2(a1dg) <=> CH3 + HO2', [7.06E+07, 1.97, 16870])
+reaction('CH4 + O2(b1sg) <=> CH3 + HO2', [2.22E+14, 0.0, 19970])
 
-#from starik 2017
-#reaction('H^- + O <=> OH + E', [6.02E+14, 0.0, 0.0])
-#reaction('H^- + O <=> H + O^-', [6.02E+14, 0.0, 0.0])
+reaction('CH3 + O2(a1dg) <=> CH2O + OH', [3.47E+07, 1.63, 3475])
+reaction('CH3 + O2(a1dg) <=> CH3O + O',  [1.02E+04, 2.68, 3350])
 
-#reaction('H^- + O2 <=> HO2 + E',   [7.23E+14, 0.0, 0.0])
-#reaction('H^- + H <=> H2 + E',      [7.83E+14, 0.0, 0.0])
-#reaction('H^- + H2O <=> OH^- + H2', [2.29E+15, 0.0, 0.0])
+reaction('C2H6 + O2(a1dg) <=> C2H4 + H2O2', [5.47E-01, 3.66, 5130])
+reaction('O2(a1dg) + C2H6 <=> O2 + C2H6', [0.22, 3.11, 1970])
 
-#reaction('H^- + HO2 <=> H2O + O + E',   [6.02E+14, 0.0, 0.0])
-#reaction('H^- + H2O2 <=> H2O + OH + E', [6.02E+14, 0.0, 0.0])
 
-#reaction('H^- + OH => H2O + E',  [6.02E+13, 0.0, 0.0])
-#reaction('H^- + OH <=> H + OH^-', [6.02E+14, 0.0, 0.0])
-
-#reaction('H^- + O2 <=> HO2 + E', [7.23E+14, 0.0, 0.0])
-#reaction('H^- + C <=> CH + E',   [6.02E+14, 0.0, 0.0])
-#reaction('H^- + CH <=> CH2 + E', [6.02E+13, 0.0, 0.0])
-#reaction('H^- + CH2 <=> CH3 + E', [6.02E+14, 0.0, 0.0])
-#reaction('H^- + CH3 => CH4 + E', [6.02E+14, 0.0, 0.0])
-#reaction('H^- + CO <=> HCO + E', [3.01E+14, 0.0, 0.0])
