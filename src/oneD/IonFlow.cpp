@@ -56,7 +56,7 @@ IonFlow::IonFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
 
     // collision list
     vector<string> collision_list;
-    // collision_list.push_back("N2");
+    collision_list.push_back("N2");
     collision_list.push_back("O2");
     collision_list.push_back("CH4");
     collision_list.push_back("CO2");
@@ -110,9 +110,6 @@ void IonFlow::updatePlasmaProperties(const double* x)
         // update electron properties
         if (m_do_plasma[j]) {
             for (size_t k : m_kCollision) {
-                // if (ND(x,k,j) < 0.0) {
-                //     number_density = -ND(x,k,j);
-                // }
                 double number_density = ND(x,k,j);
                 const char* species = m_thermo->speciesName(k).c_str();
                 zdplaskinSetDensity(species, &number_density);
@@ -185,7 +182,7 @@ void IonFlow::evalResidual(double* x, double* rsd, int* diag,
     StFlow::evalResidual(x, rsd, diag, rdt, jmin, jmax);
     if (m_stage == 3) {
         // update plasma properties
-        updatePlasmaProperties(x);
+        //updatePlasmaProperties(x);
         for (size_t j = jmin; j <= jmax; j++) {
             if (j == 0) {
                 // force phi will result bad electron profile
@@ -591,11 +588,7 @@ void IonFlow::_finalize(const double* x)
         solvePlasma();
     }
 
-    // for (size_t j = 0; j < m_points; j++) {
-    //     if (m_do_plasma[j]) {
-    //         updatePlasmaProperties(x,j);
-    //     }
-    // }
+    updatePlasmaProperties(x);
 }
 
 }

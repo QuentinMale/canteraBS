@@ -1,6 +1,6 @@
 units(length='cm', time='s', quantity='mol', act_energy='kJ/mol')
 
-ideal_gas(name='gas',
+ideal_gas(name='ch4_ion_sim',
           elements='O H C N E',
           species=['''gri30: H2      H       O       O2      OH      H2O     HO2
                      H2O2    C       CH      CH2     CH2(S)  CH3     CH4
@@ -174,6 +174,23 @@ species(name = "O^-",
     note = "L 1/90"
        )
 
+species(name = "H^-",
+    atoms = " H:1  E:1 ",
+    thermo = (
+       NASA( [  298.15,  1000.00], [  2.500000000E+00,   0.000000000E+00, 
+                0.000000000E+00,   0.000000000E+00,   0.000000000E+00,
+                1.597616700E+04,  -1.139015980E+00] ),
+       NASA( [ 1000.00,  6000.00], [  2.500000000E+00,   0.000000000E+00, 
+                0.000000000E+00,   0.000000000E+00,   0.000000000E+00,
+                1.597616700E+04,  -1.139015980E+00] )
+             ),
+    transport = gas_transport(
+                     geom = "atom",
+                     diam =     2.05,
+                     well_depth =   145.00),
+    note = "L 7/88"
+       )
+
 species(name = "CHO2^-",
     atoms = " H:1  C:1  O:2  E:1",
     thermo = (
@@ -256,9 +273,4 @@ reaction('H3O^+ + E <=> H2O + H',              [2.29E+18,  -0.5, 0.0])
 reaction('H3O^+ + E <=> OH + H + H',           [7.95E+21, -1.37, 0.0])
 reaction('H3O^+ + E <=> H2 + OH',              [1.25E+19,  -0.5, 0.0])
 reaction('H3O^+ + E <=>  O + H2 + H',          [6.00E+17,  -0.3, 0.0])
-
-
-
-
-
 

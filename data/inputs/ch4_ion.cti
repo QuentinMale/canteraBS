@@ -9,7 +9,7 @@ ideal_gas(name='gas',
                    HCN  H2CN  HCNN  HCNO  HOCN  HNCO  NCO  N2  AR  C3H7 
                    C3H8  CH2CHO  CH3CHO''',
                    '''E   O^-  O2^-  OH^-  HCO3^-  CHO2^-  CO3^-
-                      HCO^+   H3O^+  CH3CO^+ CH5O^+ C2H5OH'''],
+                      HCO^+   H3O^+  CH3CO^+ CH5O^+ C2H5OH  H^-'''],
           reactions=['gri30: all', 'all'],
           transport='Mix',
           options=['skip_undeclared_species', 'skip_undeclared_third_bodies'],
@@ -251,6 +251,23 @@ species(name = "C2H5OH",
                      rot_relax =     2.00),
     note = "L 8/88"
        )
+
+species(name = "H^-",
+    atoms = " H:1  E:1 ",
+    thermo = (
+       NASA( [  298.15,  1000.00], [  2.500000000E+00,   0.000000000E+00, 
+                0.000000000E+00,   0.000000000E+00,   0.000000000E+00,
+                1.597616700E+04,  -1.139015980E+00] ),
+       NASA( [ 1000.00,  6000.00], [  2.500000000E+00,   0.000000000E+00, 
+                0.000000000E+00,   0.000000000E+00,   0.000000000E+00,
+                1.597616700E+04,  -1.139015980E+00] )
+             ),
+    transport = gas_transport(
+                     geom = "atom",
+                     diam =     2.05,
+                     well_depth =   145.00),
+    note = "L 7/88"
+       )
 #-------------------------------------------------------------------------------
 # Reaction data
 #-------------------------------------------------------------------------------
@@ -326,4 +343,21 @@ reaction('OH^- + CO2 + H2O <=> HCO3^- + H2O', [1.10E+21, 0.0, 0.0])
 reaction('E + O + O2 <=> O^- + O2',           [3.63E+16, 0.0, 0.0])
 reaction('E + O + O <=> O^- + O',             [3.02E+17, 0.0, 0.0])
 reaction('O^- + CO2 + O2 <=> CO3^- + O2',     [1.12E+20, 0.0, 0.0])
+
+#from starik 2017
+reaction('H^- + O <=> OH + E', [6.02E+14, 0.0, 0.0])
+reaction('H^- + O <=> H + O^-', [6.02E+14, 0.0, 0.0])
+reaction('H^- + O2 <=> HO2 + E',   [7.23E+14, 0.0, 0.0])
+reaction('H^- + H <=> H2 + E',      [7.83E+14, 0.0, 0.0])
+reaction('H^- + H2O <=> OH^- + H2', [2.29E+15, 0.0, 0.0])
+reaction('H^- + HO2 <=> H2O + O + E',   [6.02E+14, 0.0, 0.0])
+reaction('H^- + H2O2 <=> H2O + OH + E', [6.02E+14, 0.0, 0.0])
+reaction('H^- + OH => H2O + E',  [6.02E+13, 0.0, 0.0])
+reaction('H^- + OH <=> H + OH^-', [6.02E+14, 0.0, 0.0])
+reaction('H^- + O2 <=> HO2 + E', [7.23E+14, 0.0, 0.0])
+reaction('H^- + C <=> CH + E',   [6.02E+14, 0.0, 0.0])
+reaction('H^- + CH <=> CH2 + E', [6.02E+13, 0.0, 0.0])
+reaction('H^- + CH2 <=> CH3 + E', [6.02E+14, 0.0, 0.0])
+reaction('H^- + CH3 => CH4 + E', [6.02E+14, 0.0, 0.0])
+reaction('H^- + CO <=> HCO + E', [3.01E+14, 0.0, 0.0])
 
