@@ -124,7 +124,8 @@ void IonFlow::updatePlasmaProperties(const double* x)
                 //set electron temperature if E = 0
                 zdplaskinSetElecTemp(&Tgas);
             } else {
-                zdplaskinSetElecField(&m_elec_field, &m_elec_frequency, &total_number_density);
+                //zdplaskinSetElecField(&m_elec_field, &m_elec_frequency, &total_number_density);
+                zdplaskinSetReducedField(&m_elec_field, &m_elec_frequency);
             }
             //set gas temperature
             zdplaskinSetGasTemp(&Tgas);
