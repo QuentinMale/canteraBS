@@ -9,7 +9,7 @@ ideal_gas(name='gas',
                    HCN  H2CN  HCNN  HCNO  HOCN  HNCO  NCO  N2  AR  C3H7 
                    C3H8  CH2CHO  CH3CHO''',
                    '''E   O^-  O2^-  OH^-  HCO3^-  CHO2^-  CO3^-
-                      HCO^+   H3O^+  CH3CO^+ CH5O^+ C2H5OH  H^-'''],
+                      HCO^+   H3O^+  CH3CO^+ CH5O^+ C2H5OH '''],
           reactions=['gri30: all', 'all'],
           transport='Mix',
           options=['skip_undeclared_species', 'skip_undeclared_third_bodies'],
@@ -271,7 +271,7 @@ species(name = "H^-",
 #-------------------------------------------------------------------------------
 # Reaction data
 #-------------------------------------------------------------------------------
-reaction('CH + O <=> HCO^+ + E',               [2.51E+11,   0.0, 7.12])
+reaction('CH + O <=> HCO^+ + E',               [2.51E+11,   0.0, 7.118])
 reaction('HCO^+ + E <=> CO + H',               [7.40E+18, -0.68, 0.00])
 reaction('HCO^+ + H2O <=> H3O^+ + CO',         [1.51E+15,   0.0, 0.0])
 reaction('HCO^+ + C2H5OH <=> H3O^+ + CO + C2H4',      [6.000E+14,  0.0, 0.0])
@@ -281,15 +281,15 @@ reaction('H3O^+ + E <=> H2 + OH',              [1.25E+19,  -0.5, 0.0])
 reaction('H3O^+ + E <=>  O + H2 + H',          [6.00E+17,  -0.3, 0.0])
 reaction('H3O^+ + C <=> HCO^+ + H2',           [6.02E+12,   0.0, 0.0])
 reaction('HCO^+ + CH2CO <=> CH3CO^+ + CO',     [1.26E+15, -0.05, 0.0])
-reaction('HCO^+ + CH3 <=> CH3CO^+ + H',        [7.76E+14, -0.01, 0.0])
+reaction('HCO^+ + CH3 <=> CH3CO^+ + H',        [7.76E+14, -0.006, 0.0])
 reaction('CH3CO^+ + E <=> CH2CO + H',          [2.29E+18,  -0.5, 0.0])
 reaction('H3O^+ + CH2CO <=> CH3CO^+ + H2O',    [1.20E+15,   0.0, 0.0])
 reaction('CH3CO^+ + E <=> CO + CH3',           [2.40E+17, -0.05, 0.0])
 reaction('CH3CO^+ + O <=> HCO^+ + CH2O',       [2.00E+14,   0.0, 0.0])
-reaction('HCO^+ + CH3OH <=> CH5O^+ + CO',      [8.71E+14, -0.06, 0.0])
+reaction('HCO^+ + CH3OH <=> CH5O^+ + CO',      [8.71E+14, -0.056, 0.0])
 reaction('H3O^+ + CH3OH <=> CH5O^+ + H2O',     [1.51E+15,   0.0, 0.0])
 reaction('CH5O^+ + E <=> CH3OH + H',           [2.40E+17, -0.05, 0.0])
-reaction('CH5O^+ + CH2CO <=> CH3CO^+ + CH3OH', [1.49E+15, -0.08, -0.35])
+reaction('CH5O^+ + CH2CO <=> CH3CO^+ + CH3OH', [1.49E+15, -0.077, -0.347])
 reaction('O2^- + H2 <=> H2O2 + E',             [6.02E+14,   0.0, 0.0])
 
 reaction("O2^- + H <=> HO2 + E",     [7.23E+14, 0.0, 0.0])
@@ -317,7 +317,7 @@ reaction('O^- + H2 => H2O + E',       [4.22E+14, 0.0, 0.0])
 reaction('O^- + CH <=> HCO + E',       [3.01E+14, 0.0, 0.0])
 reaction('O^- + CH2 <=> CH2O + E',     [3.01E+14, 0.0, 0.0])
 reaction('O^- + CO <=> CO2 + E',       [3.91E+14, 0.0, 0.0])
-reaction('O^- + O => O2 + E',         [8.43E+13, 0.0, 0.0])
+reaction('O^- + O <=> O2 + E',         [8.43E+13, 0.0, 0.0])
 reaction('O^- + C2H2 <=> CH2CO + E',   [7.23E+14, 0.0, 0.0])
 reaction('O^- + H2O <=> H2O2 + E',     [3.61E+11, 0.0, 0.0])
 
@@ -343,21 +343,4 @@ reaction('OH^- + CO2 + H2O <=> HCO3^- + H2O', [1.10E+21, 0.0, 0.0])
 reaction('E + O + O2 <=> O^- + O2',           [3.63E+16, 0.0, 0.0])
 reaction('E + O + O <=> O^- + O',             [3.02E+17, 0.0, 0.0])
 reaction('O^- + CO2 + O2 <=> CO3^- + O2',     [1.12E+20, 0.0, 0.0])
-
-#from starik 2017
-reaction('H^- + O <=> OH + E', [6.02E+14, 0.0, 0.0])
-reaction('H^- + O <=> H + O^-', [6.02E+14, 0.0, 0.0])
-reaction('H^- + O2 <=> HO2 + E',   [7.23E+14, 0.0, 0.0])
-reaction('H^- + H <=> H2 + E',      [7.83E+14, 0.0, 0.0])
-reaction('H^- + H2O <=> OH^- + H2', [2.29E+15, 0.0, 0.0])
-reaction('H^- + HO2 <=> H2O + O + E',   [6.02E+14, 0.0, 0.0])
-reaction('H^- + H2O2 <=> H2O + OH + E', [6.02E+14, 0.0, 0.0])
-reaction('H^- + OH => H2O + E',  [6.02E+13, 0.0, 0.0])
-reaction('H^- + OH <=> H + OH^-', [6.02E+14, 0.0, 0.0])
-reaction('H^- + O2 <=> HO2 + E', [7.23E+14, 0.0, 0.0])
-reaction('H^- + C <=> CH + E',   [6.02E+14, 0.0, 0.0])
-reaction('H^- + CH <=> CH2 + E', [6.02E+13, 0.0, 0.0])
-reaction('H^- + CH2 <=> CH3 + E', [6.02E+14, 0.0, 0.0])
-reaction('H^- + CH3 => CH4 + E', [6.02E+14, 0.0, 0.0])
-reaction('H^- + CO <=> HCO + E', [3.01E+14, 0.0, 0.0])
 

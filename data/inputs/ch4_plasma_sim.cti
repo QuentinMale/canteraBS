@@ -4,7 +4,7 @@ ideal_gas(name='ch4_plasma',
           species=['''gri30: H2      H       O       O2      OH      H2O     HO2
                      H2O2    C       CH      CH2     CH2(S)  CH3     CH4
                      CO      CO2     HCO     CH2O    CH3O    N2''',
-                   '''ch4_ion_sim: E  HCO^+   H3O^+''',
+                   '''ch4_ion_sim: E  HCO^+   H3O^+  ''',
                    '''ch4_starik: O2(a1dg)  O2(b1sg)  O3'''],
           reactions=['gri30: all', 'ch4_ion_sim: all', 'ch4_starik: all', 'all'],
           transport='Mix',

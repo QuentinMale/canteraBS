@@ -701,6 +701,7 @@ cdef extern from "cantera/oneD/IonFlow.h":
         void fixElectricPotential()
         cbool doPoisson(size_t)
         void enableElecHeat(cbool)
+        void enablePlasmaCouple(cbool)
         void solveVelocity()
         void fixVelocity()
         cbool doVelocity(size_t)

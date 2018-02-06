@@ -80,10 +80,6 @@ species(name = "O3",
 
 # Reaction with O2, H2, O, H, O, H2O
 
-# Reaction 3 (gri30: reaction 1)
-#####three_body_reaction( "O2 + M <=> 2 O + M", [5.4e18, -1.0, 59400],
-#####                      efficiencies = " N2:1  O2:1  CO:1  CO2:2  H2:1  H2O:1  CH4:1 ")
-
 # Reaction 4 (gri30: reaction 1)
 three_body_reaction( "O2(a1dg) + M <=> 2 O + M", [5.4e18, -1.0, 48008],
                       efficiencies = " N2:1  O2:1  CO:1  CO2:2  H2:1  H2O:1  CH4:1 ")
@@ -92,9 +88,6 @@ three_body_reaction( "O2(a1dg) + M <=> 2 O + M", [5.4e18, -1.0, 48008],
 three_body_reaction( "O2(b1sg) + M <=> 2 O + M", [5.4e18, -1.0, 40415],
                       efficiencies = " N2:1  O2:1  CO:1  CO2:2  H2:1  H2O:1  CH4:1 ")
 
-# Reaction 8 (gri30: reaction 38)
-#####reaction( "O2 + H <=> OH + O", [2.2e14, 0, 8455])
-
 # Reaction 9 (gri30: reaction 38)
 reaction( "O2(a1dg) + H <=> OH + O", [1.1e14, 0, 3188])
 
@@ -102,9 +95,6 @@ reaction( "O2(a1dg) + H <=> OH + O", [1.1e14, 0, 3188])
 reaction( "O2(b1sg) + H <=> OH + O", [1.1e14, 0, 1620])
 
 # Reaction with HO2
-
-# Reaction 14 (gri30: reaction 45)
-#####reaction( "H2 + O2 <=> H + HO2", [7.39e5, 2.43, 26926])
 
 # Reaction 15 (gri30: reaction 45)
 reaction( "H2 + O2(a1dg) => H + HO2", [2.1e13, 0, 18216])
@@ -121,51 +111,7 @@ reaction( "OH + O2(a1dg) <=> O + HO2", [1.3e13, 0, 17132])
 # Reaction 22 (gri30: reaction 4)
 reaction( "OH + O2(b1sg) <=> O + HO2", [1.3e13, 0, 10111])
 
-# Reaction with O3
-
-three_body_reaction( "O3 + M => O 2 + O + M", [4e14, 0, 11400],
-                      efficiencies = " N2:1  O2:1  CO:1  CO2:2  H2:1  H2O:1  CH4:1 ")
-three_body_reaction( "O 2 + O + M => O3 + M", [6.9e12, 0, -1050],
-                      efficiencies = " N2:1  O2:1  CO:1  CO2:2  H2:1  H2O:1  CH4:1 ")
-reaction( "O3 + H => OH + O2", [2.3e11, 0.75, 0])
-reaction( "OH + O2 => O3 + H", [4.4e7, 1.44, 38600])
-reaction( "O3 + O => 2 O2", [1.1e13, 0, 2300])
-reaction( "2 O2 => O3 + O", [1.2e13, 0, 50500])
-reaction( "O2 + O2(a1dg) <=> O3 + O", [1.2e13, 0, 39732])
-reaction( "O2 + O2(b1sg) <=> O3 + O", [1.2e13, 0, 32761])
-reaction( "O3 + OH <=> HO2 + O2", [9.6e11, 0, 1000])
-reaction( "O3 + H2 <=> OH + HO2", [6.02e10, 0, 10000])
-reaction( "O3 + HO2 <=> OH + 2 O2", [2e10, 0, 1000])
-reaction( "O3 + O2(a1dg) <=> O2 + O2 + O", [3.13e13, 0, 2840])
-reaction( "O3 + O2(b1sg) <=> O2 + O2 + O", [9e12, 0, 0])
-
-
-# Reaction with N, N2, NO, NO2
-#
-# Reaction 44
-reaction( "N + O2(a1dg) <=> O + NO", [6.46e9, 1, 2057])
-
-# Reaction 45
-reaction( "N + O2(b1sg) <=> O + NO", [6.46e9, 1, 1656])
-
-# Reaction 46 (gri30: reaction 188)
-#####reaction( "O2 + NO => O + NO2", [1e12, 0, 23568])
-#####reaction( "O + NO2 <=> O2 + NO", [1e13, 0, 302])
-
-# Reaction 47 (gri30: reaction 188)
-reaction( "O2(a1dg) + NO <=> O + NO2", [1e12, 0, 12447])
-
-# Reaction 48 (gri30: reaction 188)
-reaction( "O2(b1sg) + NO <=> O + NO2", [1e12, 0, 5562])
-
-# Reaction 51
-reaction( "O3 + NO <=> NO2 + O2", [1.2e12, 0, 1400])
-
 # Reaction with CHz (z=1-4), CO ,CO2, HCO, CH2O, CH3O
-
-# Reaction 60 (gri30: reaction 118)
-#####reaction( "CH4 + O2 => CH3 + HO2", [7.59e13, 0, 29529])
-#####reaction( "CH3 + HO2 => CH4 + O2", [1e12, 0, 201.6])
 
 # Reaction 61 (gri30: reaction 118)
 reaction( "CH4 + O2(a1dg) <=> CH3 + HO2", [7.59e13, 0, 18262])
@@ -173,17 +119,11 @@ reaction( "CH4 + O2(a1dg) <=> CH3 + HO2", [7.59e13, 0, 18262])
 # Reaction 62 (gri30: reaction 118)
 reaction( "CH4 + O2(b1sg) <=> CH3 + HO2", [7.59e13, 0, 10890])
 
-# Reaction 67 (gri30: reaction 156)
-#####reaction( "CH3 + O2 <=> CH2O + OH", [6.62e11, 0, 7094])
-
 # Reaction 68 (gri30: reaction 156)
 reaction( "CH3 + O2(a1dg) <=> CH2O + OH", [6.62e11, 0, 5473])
 
 # Reaction 69 (gri30: reaction 156)
 reaction( "CH3 + O2(b1sg) <=> CH2O + OH", [6.62e11, 0, 4718])
-
-# Reaction 70 (gri30: reaction 155)
-#####reaction( "CH3 + O2 <=> CH3O + O", [2.11e13, 0, 16340])
 
 # Reaction 71 (gri30: reaction 155)
 reaction( "CH3 + O2(a1dg) <=> CH3O + O", [2.11e13, 0, 7233])
@@ -191,18 +131,11 @@ reaction( "CH3 + O2(a1dg) <=> CH3O + O", [2.11e13, 0, 7233])
 # Reaction 72 (gri30: reaction 155)
 reaction( "CH3 + O2(b1sg) <=> CH3O + O", [2.11e13, 0, 3654])
 
-# Reaction 86 (gri30: reaction 291)
-#####reaction( "CH2 + O2 <=> CH2O + O", [4e10, 0, 0])
-
 # Reaction 87 (gri30: reaction 291)
 reaction( "CH2 + O2(a1dg) <=> CH2O + O", [4e10, 0, 0])
 
 # Reaction 88 (gri30: reaction 291)
 reaction( "CH2 + O2(b1sg) <=> CH2O + O", [4e10, 0, 0])
-
-# Reaction 94
-#####reaction( "CH + O2 => CO + OH", [1.4e11, 0.67, 13385])
-#####reaction( "CO + OH => CH + O2", [5.1e11, 0.67, 96667])
 
 # Reaction 95
 reaction( "CH + O2(a1dg) <=> CO + OH", [1.4e11, 0.67, 11688])
@@ -210,19 +143,11 @@ reaction( "CH + O2(a1dg) <=> CO + OH", [1.4e11, 0.67, 11688])
 # Reaction 96
 reaction( "CH + O2(b1sg) <=> CO + OH", [1.4e11, 0.67, 10962])
 
-# Reaction 97 (gri30: reaction 125)
-#####reaction( "CH + O2 => HCO + O", [1e13, 0, 0])
-#####reaction( "HCO + O => CH + O2", [1.4e13, 0, 37474])
-
 # Reaction 98 (gri30: reaction 125) one direction
 reaction( "HCO + O => CH + O2(a1dg)", [1.4e13, 0, 48865])
 
 # Reaction 99 (gri30: reaction 125) one direction
 reaction( "HCO + O => CH + O2(b1sg)", [1.4e13, 0, 56458])
-
-# Reaction 101 (gri30: reaction 31)
-#####reaction( "CO + O2 => CO2 + O", [3.16e11, 0, 18950])
-#####reaction( "CO2 + O => CO + O2", [2.75e12, 0, 22090])
 
 # Reaction 102 (gri30: reaction 31)
 reaction( "CO + O2(a1dg) <=> CO2 + O", [3.16e11, 0, 14446])
@@ -230,28 +155,17 @@ reaction( "CO + O2(a1dg) <=> CO2 + O", [3.16e11, 0, 14446])
 # Reaction 103 (gri30: reaction 31)
 reaction( "CO + O2(b1sg) <=> CO2 + O", [3.16e11, 0, 12197])
 
-# Reaction 106 (gri30: reaction 168)
-#####reaction( "CO + HO2 => HCO + O2", [8.91e12, 0, 16274])
-#####reaction( "HCO + O2 => CO + HO2", [3.02e12, 0, 0])
-
 # Reaction 107 (gri30: reaction 168)  one direction
 reaction( "CO + HO2 => HCO + O2(a1dg)", [8.91e12, 0, 27665])
 
 # Reaction 108 (gri30: reaction 168)  one direction
 reaction( "CO + HO2 => HCO + O2(b1sg)", [8.91e12, 0, 35258])
 
-# Reaction 121 (gri30: reaction 32)
-#####reaction( "CH2O + O2 => HO2 + HCO", [3.63e15, 0, 23204])
-#####reaction( "HO2 + HCO => CH2O + O2", [1e14, 0, 1512])
-
 # Reaction 122 (gri30: reaction 32)
 reaction( "CH2O + O2(a1dg) <=> HO2 + HCO", [3.63e15, 0, 13000])
 
 # Reaction 123 (gri30: reaction 32)
 reaction( "CH2O + O2(b1sg) <=> HO2 + HCO", [3.63e15, 0, 7430])
-
-# Reaction 129 (gri30: reaction 170)
-#####reaction( "CH3O + O2 <=> CH2O + HO2", [6.62e10, 0, 1310])
 
 # Reaction 130 (gri30: reaction 170)
 reaction( "CH3O + O2(a1dg) <=> CH2O + HO2", [6.62e10, 0, 755])
@@ -260,9 +174,6 @@ reaction( "CH3O + O2(a1dg) <=> CH2O + HO2", [6.62e10, 0, 755])
 reaction( "CH3O + O2(b1sg) <=> CH2O + HO2", [6.62e10, 0, 585])
 
 # Reaction with C2Hq (q = 1-6)
-
-# Reaction 148 (gri30: reaction 175)
-#####reaction( "C2H5 + O2 <=> C2H4 + HO2", [8.43e11, 0, 1950])
 
 # Reaction 149 (gri30: reaction 175)
 reaction( "C2H5 + O2(a1dg) <=> C2H4 + HO2", [8.43e11, 0, 862])
@@ -276,17 +187,11 @@ reaction( "C2H6 + O2(a1dg) <=> C2H5 + HO2", [4.03e13, 0, 14209])
 # Reaction 154
 reaction( "C2H6 + O2(b1sg) <=> C2H5 + HO2", [4.03e13, 0, 6616])
 
-# Reaction 172
-#####reaction( "C2H4 + O2 <=> C2H3 + HO2", [4.21e13, 0, 29000])
-
 # Reaction 173
 reaction( "C2H4 + O2(a1dg) <=> C2H3 + HO2", [4.21e13, 0, 17609])
 
 # Reaction 174
 reaction( "C2H4 + O2(b1sg) <=> C2H3 + HO2", [4.21e13, 0, 10016])
-
-# Reaction 185 (gri30: reaction 295)
-#####reaction( "C2H3 + O2 <=> C2H2 + HO2", [1.2e11, 0, 0])
 
 # Reaction 186 (gri30: reaction 295)
 reaction( "C2H3 + O2(a1dg) <=> C2H2 + HO2", [1.2e11, 0, 0])
@@ -294,19 +199,11 @@ reaction( "C2H3 + O2(a1dg) <=> C2H2 + HO2", [1.2e11, 0, 0])
 # Reaction 187 (gri30: reaction 295)
 reaction( "C2H3 + O2(b1sg) <=> C2H2 + HO2", [1.2e11, 0, 0])
 
-# Reaction 202
-#####reaction( "C2H2 + O2 => C2H + HO2", [1.2e13, 0, 37500])
-#####reaction( "C2H + HO2 => C2H2 + O2", [1.81e13, 0, 0])
-
 # Reaction 203
 reaction( "C2H2 + O2(a1dg) <=> C2H + HO2", [1.2e13, 0, 26109])
 
 # Reaction 204
 reaction( "C2H2 + O2(b1sg) <=> C2H + HO2", [1.2e13, 0, 18516])
-
-# Reaction 205
-#####reaction( "C2H2 + O2 => 2 HCO", [4e12, 0, 14583])
-#####reaction( "2 HCO => C2H2 + O2", [1.0e11, 0, 33151])
 
 # Reaction 206
 reaction( "C2H2 + O2(a1dg) <=> 2 HCO", [4e12, 0, 11625])
@@ -314,19 +211,11 @@ reaction( "C2H2 + O2(a1dg) <=> 2 HCO", [4e12, 0, 11625])
 # Reaction 207
 reaction( "C2H2 + O2(b1sg) <=> 2 HCO", [4e12, 0, 10137])
 
-# Reaction 215 (gri30: reaction 171)
-#####reaction( "C2H + O2 => CO + HCO", [1e13, 0, 3528])
-#####reaction( "CO + HCO => C2H + O2", [8.51e12, 0, 68754])
-
 # Reaction 216 (gri30: reaction 171)
 reaction( "C2H + O2(a1dg) <=> CO + HCO", [1e13, 0, 3045])
 
 # Reaction 217 (gri30: reaction 171)
 reaction( "C2H + O2(b1sg) <=> CO + HCO", [1e13, 0, 2788])
-
-# Reaction 228 (gri30: reaction 169)
-#####reaction( "CH2OH + O2 => CH2O + HO2", [1e12, 0, 3438])
-#####reaction( "CH2O + HO2 => CH2OH + O2", [8.7e17, 1.7, 14750])
 
 # Reaction 229 (gri30: reaction 169)
 reaction( "CH2OH + O2(a1dg) <=> CH2O + HO2", [1e12, 0, 2049])

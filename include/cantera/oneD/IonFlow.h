@@ -73,6 +73,7 @@ public:
         return m_do_plasma[j];
     }
     void enableElecHeat(bool withElecHeat);
+    void enablePlasmaCouple(bool withCouple);
     void setTransverseElecField(double elec_field, double elec_freq);
     void setPlasmaSourceMultiplier(double multiplier);
     void setElectronTransportMultiplier(double multiplier);
@@ -106,7 +107,12 @@ protected:
 
     //! flag for solving plasma
     std::vector<bool> m_do_plasma;
+
+    //! flag for ohmic heating
     bool m_do_elec_heat;
+
+    //! flag for coupling plasma
+    bool m_couple_plasma;
 
     //! electrical properties
     vector_int m_speciesCharge;

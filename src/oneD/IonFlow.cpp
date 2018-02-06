@@ -18,6 +18,7 @@ namespace Cantera
 IonFlow::IonFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
     FreeFlame(ph, nsp, points),
     m_do_elec_heat(false),
+    m_couple_plasma(false),
     m_stage(1),
     m_inletVoltage(0.0),
     m_outletVoltage(0.0),
@@ -124,8 +125,8 @@ void IonFlow::updatePlasmaProperties(const double* x)
                 //set electron temperature if E = 0
                 zdplaskinSetElecTemp(&Tgas);
             } else {
-                //zdplaskinSetElecField(&m_elec_field, &m_elec_frequency, &total_number_density);
-                zdplaskinSetReducedField(&m_elec_field, &m_elec_frequency);
+                zdplaskinSetElecField(&m_elec_field, &m_elec_frequency, &total_number_density);
+                //zdplaskinSetReducedField(&m_elec_field, &m_elec_frequency);
             }
             //set gas temperature
             zdplaskinSetGasTemp(&Tgas);
@@ -183,14 +184,18 @@ void IonFlow::evalResidual(double* x, double* rsd, int* diag,
     StFlow::evalResidual(x, rsd, diag, rdt, jmin, jmax);
     if (m_stage == 3) {
         // update plasma properties
-        //updatePlasmaProperties(x);
+        if (m_couple_plasma) {
+            updatePlasmaProperties(x);
+        }
         for (size_t j = jmin; j <= jmax; j++) {
             if (j == 0) {
                 // force phi will result bad electron profile
-                //rsd[index(c_offset_P, j)] = phi(x,j) - m_inletVoltage;
-                size_t k = m_kElectron;
-                rsd[index(c_offset_Y + k, 0)] = Y(x,k,0);
-                rsd[index(c_offset_P, j)] = E(x,j);
+                rsd[index(c_offset_P, j)] = phi(x,j) - m_inletVoltage;
+                for (size_t k : m_kCharge) {
+                    rsd[index(c_offset_Y + k, 0)] = Y(x,k,0) - Y(x,k,1);
+                    //rsd[index(c_offset_Y + k, 0)] = Y(x,k,0);
+                }
+                rsd[index(c_offset_P, j)] = E(x,j) - m_inletVoltage;
                 diag[index(c_offset_P, j)] = 0;
             } else if (j == m_points - 1) {
                 rsd[index(c_offset_P, j)] = m_outletVoltage - phi(x,j);
@@ -400,6 +405,11 @@ void IonFlow::enableElecHeat(bool withElecHeat)
     m_do_elec_heat = withElecHeat;
 }
 
+void IonFlow::enablePlasmaCouple(bool withCouple)
+{
+    m_couple_plasma = withCouple;
+}
+
 double IonFlow::getElecMobility(size_t j)
 {
     return m_mobility[m_kElectron+m_nsp*j];
@@ -481,6 +491,7 @@ void IonFlow::solvePoissonEqn(size_t j)
     m_refiner->setActive(c_offset_V, true);
     m_refiner->setActive(c_offset_T, true);
     m_refiner->setActive(c_offset_P, true);
+    m_refiner->setActive(c_offset_Y + m_kElectron, true);
     if (changed) {
         needJacUpdate();
     }
@@ -506,6 +517,7 @@ void IonFlow::fixElectricPotential(size_t j)
     m_refiner->setActive(c_offset_V, false);
     m_refiner->setActive(c_offset_T, false);
     m_refiner->setActive(c_offset_P, false);
+    m_refiner->setActive(c_offset_Y + m_kElectron, false);
     if (changed) {
         needJacUpdate();
     }
@@ -589,7 +601,9 @@ void IonFlow::_finalize(const double* x)
         solvePlasma();
     }
 
-    updatePlasmaProperties(x);
+    if (!m_couple_plasma) {
+        updatePlasmaProperties(x);
+    }
 }
 
 }

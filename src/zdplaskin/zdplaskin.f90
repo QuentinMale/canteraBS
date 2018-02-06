@@ -12,7 +12,7 @@
 !
 !-----------------------------------------------------------------------------------------------------------------------------------
 !
-! Thu Jan  4 06:35:39 2018
+! Mon Jan 29 19:26:34 2018
 !
 !-----------------------------------------------------------------------------------------------------------------------------------
 !
@@ -30,7 +30,7 @@ module ZDPlasKin
 !
 ! config
 !
-  integer, parameter :: species_max = 10, species_electrons = 10, species_length = 8, reactions_max = 4, reactions_length = 20
+  integer, parameter :: species_max = 10, species_electrons = 10, species_length = 8, reactions_max = 4, reactions_length = 19
   double precision                          :: density(species_max)
   integer                                   :: species_charge(species_max)
   character(species_length)                 :: species_name(species_max)
@@ -110,7 +110,7 @@ module ZDPlasKin
   data species_name(1:species_max) &
   /"O2      ","N2      ","H2      ","CO2     ","CO      ","H2O     ","CH4     ","O2(A1DG)","O2(B1SG)","E       "/
   data reaction_sign(1:reactions_max) &
-  /"bolsig:O2->O2(A1DG) ","E+O2=>E+O2(A1DG)    ","bolsig:O2->O2(B1SG+)","E+O2=>E+O2(B1SG)    "/
+  /"bolsig:O2->O2(A1DG)","E+O2=>E+O2(A1DG)   ","bolsig:O2->O2(B1SG)","E+O2=>E+O2(B1SG)   "/
   data bolsig_species(1:bolsig_species_max) &
   /"N2 ","O2 ","CH4","CO2","CO ","H2 ","H2O"/
 contains
@@ -834,7 +834,7 @@ subroutine ZDPlasKin_write_file(FILE_SPECIES,FILE_REACTIONS,FILE_SOURCE_MATRIX,F
 200 if( lerror ) call ZDPlasKin_stop("ZDPlasKin ERROR: cannot write to file <" &
                                     // trim(adjustl(FILE_REACTIONS)) // "> (subroutine ZDPlasKin_write_file)")
     close(ifile_unit)
-211 format(i1,1x,A20)
+211 format(i1,1x,A19)
   endif
   if( present(FILE_SOURCE_MATRIX) ) then
     if( lstat_accum ) then
@@ -854,9 +854,9 @@ subroutine ZDPlasKin_write_file(FILE_SPECIES,FILE_REACTIONS,FILE_SOURCE_MATRIX,F
 300 if( lerror ) call ZDPlasKin_stop("ZDPlasKin ERROR: cannot write to file <" &
                                     // trim(adjustl(FILE_SOURCE_MATRIX)) // "> (subroutine ZDPlasKin_write_file)")
     close(ifile_unit)
-311 format(231x,10(1x,i9))
-312 format(A1,1x,A20,1x,10(1x,A9))
-313 format(i1,1x,A20,1x,10(1x,1pd9.2))
+311 format(221x,10(1x,i9))
+312 format(A1,1x,A19,1x,10(1x,A9))
+313 format(i1,1x,A19,1x,10(1x,1pd9.2))
   endif
   return
 end subroutine ZDPlasKin_write_file

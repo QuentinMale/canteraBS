@@ -508,6 +508,9 @@ cdef class IonFlow(_FlowBase):
     def enable_elecHeat(self, withElecHeat):
         (<CxxIonFlow*>self.flow).enableElecHeat(withElecHeat)
 
+    def enable_plasma_couple(self, withCouple):
+        (<CxxIonFlow*>self.flow).enablePlasmaCouple(withCouple)
+
     def get_elecMobility(self, j):
         return (<CxxIonFlow*>self.flow).getElecMobility(j)
 
