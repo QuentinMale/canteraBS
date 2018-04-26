@@ -149,7 +149,8 @@ protected:
     /*!
      *  Uses polynomial fits to Monchick & Mason collision integrals.
      */
-    void setupMM();
+    virtual void setupMM();
+    void setupCollisionIntegral();
 
     //! Read the transport database
     /*!
@@ -203,6 +204,7 @@ protected:
      * @param integrals interpolator for the collision integrals
      */
     void fitProperties(MMCollisionInt& integrals);
+    virtual void fitDiffCoeffs(MMCollisionInt& integrals);
 
     //! Second-order correction to the binary diffusion coefficients
     /*!

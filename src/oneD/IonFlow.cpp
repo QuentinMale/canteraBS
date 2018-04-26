@@ -240,6 +240,9 @@ void IonFlow::evalResidual(double* x, double* rsd, int* diag,
 
     for (size_t j = jmin; j <= jmax; j++) {
         if (j == 0) {
+            for (size_t k : m_kCharge) {
+                rsd[index(c_offset_Y + k, 0)] = Y(x,k,0) - Y(x,k,1);
+            }
             rsd[index(c_offset_P, j)] = m_inletVoltage - phi(x,j);
             diag[index(c_offset_P, j)] = 0;
         } else if (j == m_points - 1) {
