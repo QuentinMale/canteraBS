@@ -101,9 +101,6 @@ protected:
     //! flag for importing transport of electron
     bool m_import_electron_transport;
 
-    //! flag for overwrite transport of electron or not
-    bool m_overwrite_eTransport;
-
     //! electrical properties
     vector_int m_speciesCharge;
 

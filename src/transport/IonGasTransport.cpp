@@ -15,10 +15,12 @@ IonGasTransport::IonGasTransport() :
 {
 }
 
-void IonGasTransport::setupMM()
+void IonGasTransport::init(thermo_t* thermo, int mode, int log_level)
 {
-    GasTransport::setupMM();
-    m_gamma.resize(m_nsp, m_nsp, 0.0);
+    m_thermo = thermo;
+    m_nsp = m_thermo->nSpecies();
+    m_mode = mode;
+    m_log_level = log_level;
     // make a local copy of species charge
     for (size_t k = 0; k < m_nsp; k++) {
         m_speciesCharge.push_back(m_thermo->charge(k));
@@ -33,13 +35,89 @@ void IonGasTransport::setupMM()
     for (size_t k = 0; k < m_nsp; k++){
         if (m_speciesCharge[k] != 0){
             if (k != m_kElectron) {
-                m_kCharge.push_back(k);
+                m_kIon.push_back(k);
             }
         } else {
             m_kNeutral.push_back(k);
         }
     }
+    // set up Monchick and Mason parameters
+    setupMM();
+    // set up n64 parameters
     setupN64();
+    // setup  collision integrals
+    setupCollisionIntegral();
+    m_molefracs.resize(m_nsp);
+    m_spwork.resize(m_nsp);
+    m_visc.resize(m_nsp);
+    m_sqvisc.resize(m_nsp);
+    m_phi.resize(m_nsp, m_nsp, 0.0);
+    m_bdiff.resize(m_nsp, m_nsp);
+    m_cond.resize(m_nsp);
+
+    // make a local copy of the molecular weights
+    m_mw = m_thermo->molecularWeights();
+
+    m_wratjk.resize(m_nsp, m_nsp, 0.0);
+    m_wratkj1.resize(m_nsp, m_nsp, 0.0);
+    for (size_t j = 0; j < m_nsp; j++) {
+        for (size_t k = j; k < m_nsp; k++) {
+            m_wratjk(j,k) = sqrt(m_mw[j]/m_mw[k]);
+            m_wratjk(k,j) = sqrt(m_wratjk(j,k));
+            m_wratkj1(j,k) = sqrt(1.0 + m_mw[k]/m_mw[j]);
+        }
+    }
+
+    // set flags all false
+    m_visc_ok = false;
+    m_viscwt_ok = false;
+    m_spvisc_ok = false;
+    m_bindiff_ok = false;
+    m_spcond_ok = false;
+    m_condmix_ok = false;
+}
+
+double IonGasTransport::viscosity()
+{
+    update_T();
+    update_C();
+
+    if (m_visc_ok) {
+        return m_viscmix;
+    }
+
+    double vismix = 0.0;
+    // update m_visc and m_phi if necessary
+    if (!m_viscwt_ok) {
+        updateViscosity_T();
+    }
+
+    multiply(m_phi, m_molefracs.data(), m_spwork.data());
+
+    for (size_t k : m_kNeutral) {
+        vismix += m_molefracs[k] * m_visc[k]/m_spwork[k]; //denom;
+    }
+    m_viscmix = vismix;
+    return vismix;
+}
+
+double IonGasTransport::thermalConductivity()
+{
+    update_T();
+    update_C();
+    if (!m_spcond_ok) {
+        updateCond_T();
+    }
+    if (!m_condmix_ok) {
+        doublereal sum1 = 0.0, sum2 = 0.0;
+        for (size_t k : m_kNeutral) {
+            sum1 += m_molefracs[k] * m_cond[k];
+            sum2 += m_molefracs[k] / m_cond[k];
+        }
+        m_lambda = 0.5*(sum1 + 1.0/sum2);
+        m_condmix_ok = true;
+    }
+    return m_lambda;
 }
 
 void IonGasTransport::fitDiffCoeffs(MMCollisionInt& integrals)
@@ -66,9 +144,31 @@ void IonGasTransport::fitDiffCoeffs(MMCollisionInt& integrals)
 
     vector_fp diff(np + 1);
     // The array order still not ideal
-    for (size_t k : m_kNeutral) {
-        for (size_t j : m_kCharge) {
-            if (j >= k && m_alpha[k] != 0.0) {
+    for (size_t k = 0; k < m_nsp; k++) {
+        for (size_t j = k; j < m_nsp; j++) {
+            bool do_n64 = true;
+            if (m_alpha[k] == 0.0) {
+                do_n64 = false;
+            }
+            if (m_alpha[j] == 0.0) {
+                do_n64 = false;
+            }
+            if (k == m_kElectron) {
+                do_n64 = false;
+            }
+            if (j == m_kElectron) {
+                do_n64 = false;
+            }
+            if (m_speciesCharge[k] == 0) {
+                if (m_speciesCharge[j] == 0) {
+                    do_n64 = false;
+                }
+            } else {
+                if (m_speciesCharge[j] != 0) {
+                    do_n64 = false;
+                }
+            }
+            if (do_n64) {
                 size_t sum = 0;
                 for (size_t i = 0; i <= k; i++) {
                     sum += i;
@@ -136,8 +236,8 @@ void IonGasTransport::setupN64()
     // "Range and strength of interatomic forces: dispersion and induction
     // contributions to the bonds of dications and of ionic molecules."
     // Chemical physics 209.2 (1996): 299-311.
-
-    for (size_t i : m_kCharge) {
+    m_gamma.resize(m_nsp, m_nsp, 0.0);
+    for (size_t i : m_kIon) {
         for (size_t j : m_kNeutral) {
             if (m_alpha[j] != 0.0) {
                 double r_alpha = m_alpha[i] / m_alpha[j];
@@ -153,9 +253,9 @@ void IonGasTransport::setupN64()
                 // the collision diameter
                 m_diam(i,j) = 1.767;
                 m_diam(i,j) *= pow(m_alpha[i],(1./3.)) + pow(m_alpha[j],(1./3.));
-                m_diam(i,j) /= pow((alphaA_i * alphaA_j * (1.0 + 1.0 / xi)),0.0095);
+                m_diam(i,j) /= pow((alphaA_i * alphaA_j * (1.0 + 1.0 / xi)),0.095);
 
-                double epsilon = 0.72 * ElectronCharge * ElectronCharge;
+                double epsilon = 0.72 * 2.0 * ElectronCharge * ElectronCharge;
                 epsilon *= m_speciesCharge[i] * m_speciesCharge[i];
                 epsilon *= m_alpha[j] * (1.0 + xi);
                 epsilon /= 8 * Pi * epsilon_0 * pow(m_diam(i,j),4);
@@ -243,6 +343,41 @@ double IonGasTransport::omega11_n64(const double tstar, const double gamma)
                            "tstar = ", tstar, " is larger than 1000");
     }
     return om11;
+}
+
+void IonGasTransport::getMixDiffCoeffs(double* const d)
+{
+    update_T();
+    update_C();
+
+    // update the binary diffusion coefficients if necessary
+    if (!m_bindiff_ok) {
+        updateDiff_T();
+    }
+
+    double mmw = m_thermo->meanMolecularWeight();
+    double p = m_thermo->pressure();
+    if (m_nsp == 1) {
+        d[0] = m_bdiff(0,0) / p;
+    } else {
+        for (size_t k = 0; k < m_nsp; k++) {
+            if (k == m_kElectron) {
+                d[k] = 0.4 * m_kbt / ElectronCharge;
+            } else {
+                double sum2 = 0.0;
+                for (size_t j : m_kNeutral) {
+                    if (j != k) {
+                        sum2 += m_molefracs[j] / m_bdiff(j,k);
+                    }
+                }
+                if (sum2 <= 0.0) {
+                    d[k] = m_bdiff(k,k) / p;
+                } else {
+                    d[k] = (mmw - m_molefracs[k] * m_mw[k])/(p * mmw * sum2);
+                }
+            }
+        }
+    }
 }
 
 }
