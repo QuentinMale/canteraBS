@@ -23,21 +23,23 @@ public:
         return "Ion";
     }
 
+    virtual void init(thermo_t* thermo, int mode, int log_level);
+    virtual double viscosity();
+    virtual double thermalConductivity();
+
 protected:
-    virtual void setupMM();
-
-    // setup parameters for n64 model
+    //! setup parameters for n64 model
     void setupN64();
-
-
     virtual void fitDiffCoeffs(MMCollisionInt& integrals);
     double omega11_n64(const double tstar, const double gamma);
+
+    virtual void getMixDiffCoeffs(doublereal* const d);
 
     //! electrical properties
     vector_int m_speciesCharge;
 
     //! index of species with charges
-    std::vector<size_t> m_kCharge;
+    std::vector<size_t> m_kIon;
 
     //! index of neutral species
     std::vector<size_t> m_kNeutral;

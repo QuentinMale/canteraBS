@@ -203,7 +203,7 @@ protected:
      *
      * @param integrals interpolator for the collision integrals
      */
-    void fitProperties(MMCollisionInt& integrals);
+    virtual void fitProperties(MMCollisionInt& integrals);
     virtual void fitDiffCoeffs(MMCollisionInt& integrals);
 
     //! Second-order correction to the binary diffusion coefficients

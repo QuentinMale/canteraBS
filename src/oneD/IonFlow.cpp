@@ -17,7 +17,6 @@ namespace Cantera
 IonFlow::IonFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
     FreeFlame(ph, nsp, points),
     m_import_electron_transport(false),
-    m_overwrite_eTransport(true),
     m_stage(1),
     m_inletVoltage(0.0),
     m_outletVoltage(0.0),
@@ -69,14 +68,9 @@ void IonFlow::updateTransport(double* x, size_t j0, size_t j1)
     for (size_t j = j0; j < j1; j++) {
         setGasAtMidpoint(x,j);
         m_trans->getMobilities(&m_mobility[j*m_nsp]);
-        if (m_overwrite_eTransport && (m_kElectron != npos)) {
-            if (m_import_electron_transport) {
-                m_mobility[m_kElectron+m_nsp*j] = m_elecMobility[j];
-                m_diff[m_kElectron+m_nsp*j] = m_elecDiffCoeff[j];
-            } else {
-                m_mobility[m_kElectron+m_nsp*j] = 0.4;
-                m_diff[m_kElectron+m_nsp*j] = 0.4*(Boltzmann * T(x,j)) / ElectronCharge;
-            }
+        if (m_import_electron_transport) {
+            m_mobility[m_kElectron+m_nsp*j] = m_elecMobility[j];
+            m_diff[m_kElectron+m_nsp*j] = m_elecDiffCoeff[j];
         }
     }
 }
