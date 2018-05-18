@@ -117,6 +117,8 @@ void IonFlow::frozenIonMethod(const double* x, size_t j0, size_t j1)
 
 void IonFlow::chargeNeutralityModel(const double* x, size_t j0, size_t j1)
 {
+    warn_deprecated("chargeNeutralityModel(const double* x, size_t j0, size_t j1)",
+                    "is deprecated. To be removed after Cantera 2.4.");
     for (size_t j = j0; j < j1; j++) {
         double wtm = m_wtm[j];
         double rho = density(j);
@@ -234,6 +236,9 @@ void IonFlow::evalResidual(double* x, double* rsd, int* diag,
 
     for (size_t j = jmin; j <= jmax; j++) {
         if (j == 0) {
+            // enforcing the flux for charged species is difficult
+            // since charged species are also affected by electric
+            // force, so Neumann boundary condition is used.
             for (size_t k : m_kCharge) {
                 rsd[index(c_offset_Y + k, 0)] = Y(x,k,0) - Y(x,k,1);
             }
@@ -259,6 +264,7 @@ void IonFlow::evalResidual(double* x, double* rsd, int* diag,
 
             // This method is used when you disable energy equation
             // but still maintain the velocity profile
+            // This is deprecated
             if (!m_do_velocity[j]) {
                 rsd[index(c_offset_U, j)] = u(x,j) - u_fixed(j);
                 diag[index(c_offset_U, j)] = 0;
@@ -319,6 +325,8 @@ void IonFlow::fixElectricPotential(size_t j)
 
 void IonFlow::solveVelocity(size_t j)
 {
+    warn_deprecated("solveVelocity(size_t j) are deprecated",
+         " To be removed after Cantera 2.4.");
     bool changed = false;
     if (j == npos) {
         for (size_t i = 0; i < m_points; i++) {
@@ -343,6 +351,8 @@ void IonFlow::solveVelocity(size_t j)
 
 void IonFlow::fixVelocity(size_t j)
 {
+    warn_deprecated("solveVelocity(size_t j) are deprecated",
+         " To be removed after Cantera 2.4.");
     bool changed = false;
     if (j == npos) {
         for (size_t i = 0; i < m_points; i++) {
@@ -388,6 +398,7 @@ void IonFlow::_finalize(const double* x)
         solvePoissonEqn();
     }
     // save the velocity profile if the velocity is disabled
+    // deprecated
     bool v = m_do_velocity[0];
     for (size_t j = 0; j < m_points; j++) {
         if (!v) {
