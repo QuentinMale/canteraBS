@@ -12,7 +12,29 @@
 
 namespace Cantera
 {
-
+//! Class IonGasTransport implements Stockmeyer-(n,6,4) model for transport of ions.
+/*!
+ * As implemented here, only binary transport between netrals and ions is considered
+ * for calculating mixture-average diffusion coefficients and mobilities. When
+ * polarizability is not provide for an ion, LJ model is used instead of n64 model.
+ * Only neutral species are considered for thermal conductivity and viscousity.
+ *
+ * References for Stockmeyer-(n,6,4) model:
+ *
+ * 1. Selle, Stefan, and Uwe Riedel. "Transport properties of ionized species."
+ *    Annals of the New York Academy of Sciences 891.1 (1999): 72-80.
+ * 2. Selle, Stefan, and Uwe Riedel. "Transport coefficients of reacting air at
+*     high temperatures." 38th Aerospace Sciences Meeting and Exhibit. 1999.
+ * 3. Han, Jie, et al. "Numerical modelling of ion transport in flames."
+ *    Combustion Theory and Modelling 19.6 (2015): 744-772.
+ * 4. Chiflikian, R. V. "The analog of Blanc’s law for drift velocities
+ *    of electrons in gas mixtures in weakly ionized plasma."
+ *    Physics of Plasmas 2.10 (1995): 3902-3909.
+ * 5. Viehland, L. A., et al. "Tables of transport collision integrals for
+ *    (n, 6, 4) ion-neutral potentials." Atomic Data and Nuclear Data Tables
+ *    16.6 (1975): 495-514.
+ * @ingroup tranprops
+ */
 class IonGasTransport : public MixTransport
 {
 public:
@@ -26,11 +48,8 @@ public:
     virtual void init(thermo_t* thermo, int mode, int log_level);
     virtual double viscosity();
     virtual double thermalConductivity();
+    //! The mobilities for ions in gas
     //! The ion mobilities are calculated by Blanc's law
-    /*! Chiflikian, R. V. "The analog of Blanc’s law for drift velocities
-     *  of electrons in gas mixtures in weakly ionized plasma."
-     *  Physics of Plasmas 2.10 (1995): 3902-3909.
-     */
     virtual void getMobilities(double* const mobi);
     //! The mixture transport for ionized gas
     //! The binary transport between two charged species is neglected.
@@ -40,12 +59,20 @@ protected:
     //! setup parameters for n64 model
     void setupN64();
     virtual void fitDiffCoeffs(MMCollisionInt& integrals);
+
+    /*!
+     * Collision integral of omega11 of n64 collision model.
+     * The collision integral was fitted by Han et al. using the table
+     * by Viehlan et al.
+     * Note: Han release the range to 1000, but Selle suggested that
+     * a high temperature model is needed for T* > 10.
+     */
     double omega11_n64(const double tstar, const double gamma);
 
     //! electrical properties
     vector_int m_speciesCharge;
 
-    //! index of species with charges
+    //! index of ions (exclude electron.)
     std::vector<size_t> m_kIon;
 
     //! index of neutral species
@@ -54,6 +81,7 @@ protected:
     //! index of electron
     size_t m_kElectron;
 
+    //! parameter of omega11 of n64
     DenseMatrix m_gamma;
 };
 

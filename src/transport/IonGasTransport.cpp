@@ -227,19 +227,10 @@ void IonGasTransport::fitDiffCoeffs(MMCollisionInt& integrals)
 
 void IonGasTransport::setupN64()
 {
-    // Reference:
-    // Selle, Stefan, and Uwe Riedel.
-    // "Transport coefficients of reacting air at high temperatures."
-    // AIAA 211 (2000): 10-13.
-    // The method of estimating the potential parameters is from:
-    // Aquilanti, Vincenzo, David Cappelletti, and Fernando Pirani.
-    // "Range and strength of interatomic forces: dispersion and induction
-    // contributions to the bonds of dications and of ionic molecules."
-    // Chemical physics 209.2 (1996): 299-311.
     m_gamma.resize(m_nsp, m_nsp, 0.0);
     for (size_t i : m_kIon) {
         for (size_t j : m_kNeutral) {
-            if (m_alpha[j] != 0.0) {
+            if (m_alpha[j] != 0.0 && m_alpha[i] != 0.0) {
                 double r_alpha = m_alpha[i] / m_alpha[j];
                 // save a copy of polarizability in Angstrom
                 double alphaA_i = m_alpha[i] * 1e30;
@@ -251,11 +242,16 @@ void IonGasTransport::setupN64()
                        xi = alphaA_i / xi;
 
                 // the collision diameter
-                m_diam(i,j) = 1.767;
+                double K1 = 1.767;
+                double kappa = 0.095;
+                m_diam(i,j) = K1;
                 m_diam(i,j) *= pow(m_alpha[i],(1./3.)) + pow(m_alpha[j],(1./3.));
-                m_diam(i,j) /= pow((alphaA_i * alphaA_j * (1.0 + 1.0 / xi)),0.095);
+                m_diam(i,j) /= pow((alphaA_i * alphaA_j * (1.0 + 1.0 / xi)),kappa);
 
-                double epsilon = 0.72 * 2.0 * ElectronCharge * ElectronCharge;
+                // The original K2 is 0.72, but Han et al. suggested that K2 = 1.44
+                // for better fit.
+                double K2 = 1.44;
+                double epsilon = K2 * ElectronCharge * ElectronCharge;
                 epsilon *= m_speciesCharge[i] * m_speciesCharge[i];
                 epsilon *= m_alpha[j] * (1.0 + xi);
                 epsilon /= 8 * Pi * epsilon_0 * pow(m_diam(i,j),4);
@@ -266,9 +262,6 @@ void IonGasTransport::setupN64()
 
                 // Calculate dipersion coefficient and quadrupole polarizability
                 // from curve fitting if not available.
-                // Reference:
-                // Han, Jie, et al. "Numerical modelling of ion transport in flames."
-                // Combustion Theory and Modelling 19.6 (2015): 744-772.
                 // Neutrals
                 if (m_disp[j] == 0.0) {
                     m_disp[j] = exp(1.8846*log(alphaA_j)-0.4737)* 1e-50;
@@ -306,15 +299,6 @@ void IonGasTransport::setupN64()
 
 double IonGasTransport::omega11_n64(const double tstar, const double gamma)
 {
-    // collision integral should be able to use proper table to do the polyfit
-    // Reference:
-    // Viehland, L. A., et al. "Tables of transport collision integrals for 
-    // (n, 6, 4) ion-neutral potentials." 
-    // Atomic Data and Nuclear Data Tables 16.6 (1975): 495-514.
-    // However, a known polyfit is used from
-    // Han, Jie, et al. "Numerical modelling of ion transport in flames." 
-    // Combustion Theory and Modelling 19.6 (2015): 744-772.
-    // Note: Han release the range to 1000, but Selle suggested to 10
     double logtstar = log(tstar);
     double om11 = 0.0;
     if (tstar < 0.01) {

@@ -33,6 +33,24 @@ class TestTransport(utilities.CanteraTest):
         self.assertArrayNear(Dbin1, Dbin2)
         self.assertArrayNear(Dbin1, Dbin1.T)
 
+    def test_ionGas(self):
+        self.phase.transport_model = 'Ion'
+        Dkm1 = self.phase.mix_diff_coeffs
+        Dkm1b = self.phase.mix_diff_coeffs_mole
+        Dkm1c = self.phase.mix_diff_coeffs_mass
+        Dbin1 = self.phase.binary_diff_coeffs
+
+        self.phase.transport_model = 'Mix'
+        Dkm2 = self.phase.mix_diff_coeffs
+        Dkm2b = self.phase.mix_diff_coeffs_mole
+        Dkm2c = self.phase.mix_diff_coeffs_mass
+        Dbin2 = self.phase.binary_diff_coeffs
+        self.assertArrayNear(Dkm1, Dkm2)
+        self.assertArrayNear(Dkm1b, Dkm2b)
+        self.assertArrayNear(Dkm1c, Dkm2c)
+        self.assertArrayNear(Dbin1, Dbin2)
+        self.assertArrayNear(Dbin1, Dbin1.T)
+
     def test_multiComponent(self):
         with self.assertRaises(ct.CanteraError):
             self.phase.multi_diff_coeffs

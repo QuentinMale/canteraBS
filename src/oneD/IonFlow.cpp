@@ -405,9 +405,6 @@ void IonFlow::_finalize(const double* x)
             m_fixedVelocity[j] = u(x,j);
         }
     }
-    if (v) {
-        solveVelocity();
-    }
 }
 
 }
