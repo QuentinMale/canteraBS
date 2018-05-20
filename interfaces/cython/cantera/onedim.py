@@ -306,7 +306,6 @@ class FlameBase(Sim1D):
         if not quiet:
             print("Solution saved to '{0}'.".format(filename))
 
-
 def _trim(docstring):
     """Remove block indentation from a docstring."""
     if not docstring:
@@ -604,6 +603,37 @@ class IonFlame(FreeFlame):
             self.set_gas_state(n)
             writer.writerow([z[n], u[n], V[n], T[n], phi[n], E[n], self.gas.density] +
                             list(getattr(self.gas, species)))
+        csvfile.close()
+        if not quiet:
+            print("Solution saved to '{0}'.".format(filename))
+
+    def write_csv_ND(self, filename, species='X', quiet=True):
+        """
+        Write the velocity, temperature, density, electric potential,
+        , electric field stregth, and species profiles to a CSV file.
+
+        :param filename:
+            Output file name
+        :param species:
+            Attribute to use obtaining species profiles, e.g. ``X`` for
+            mole fractions or ``Y`` for mass fractions.
+        """
+        z = self.grid
+        T = self.T
+        u = self.u
+        V = self.V
+        phi = self.phi
+        E = self.E
+        NA = 6.02214e26
+
+        csvfile = open(filename, 'w')
+        writer = _csv.writer(csvfile)
+        writer.writerow(['z (m)', 'u (m/s)', 'V (1/s)', 'T (K)',
+                         'phi (V)', 'E (V/m)'] + self.gas.species_names)
+        for n in range(self.flame.n_points):
+            self.set_gas_state(n)
+            writer.writerow([z[n], u[n], V[n], T[n], phi[n], E[n]] +
+                            list(getattr(self.gas, species)*self.gas.density_mole*NA))
         csvfile.close()
         if not quiet:
             print("Solution saved to '{0}'.".format(filename))
