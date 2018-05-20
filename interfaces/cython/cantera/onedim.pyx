@@ -496,6 +496,18 @@ cdef class IonFlow(_FlowBase):
     def set_electricPotential(self, v_inlet, v_outlet):
         (<CxxIonFlow*>self.flow).setElectricPotential(v_inlet, v_outlet)
 
+    def set_electronTransport(self, temp, diff, mobi):
+        (<CxxIonFlow*>self.flow).setElectronTransport(temp, diff, mobi)
+
+    def set_ohmicHeatingElectricField(self, efield):
+        (<CxxIonFlow*>self.flow).setOhmicHeatingElectricField(efield)
+
+    def set_plasmaRateCoeff(self, temp, k):
+        (<CxxIonFlow*>self.flow).setPlasmaRateCoeff(temp, k)
+
+    def set_electronTemperature(self, temp, Te):
+        (<CxxIonFlow*>self.flow).setElectronTemperature(temp, Te)
+
     property poisson_enabled:
         """ Determines whether or not to solve the energy equation."""
         def __get__(self):

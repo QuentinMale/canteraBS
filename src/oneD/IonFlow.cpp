@@ -8,6 +8,7 @@
 #include "cantera/base/ctml.h"
 #include "cantera/transport/TransportBase.h"
 #include "cantera/numerics/funcs.h"
+#include "cantera/numerics/polyfit.h"
 
 using namespace std;
 
@@ -17,6 +18,7 @@ namespace Cantera
 IonFlow::IonFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
     FreeFlame(ph, nsp, points),
     m_import_electron_transport(false),
+    m_ohmic_heat_E(0.0),
     m_stage(1),
     m_inletVoltage(0.0),
     m_outletVoltage(0.0),
@@ -65,9 +67,11 @@ void IonFlow::updateTransport(double* x, size_t j0, size_t j1)
     for (size_t j = j0; j < j1; j++) {
         setGasAtMidpoint(x,j);
         m_trans->getMobilities(&m_mobility[j*m_nsp]);
+        double tlog = log(m_thermo->temperature());
         if (m_import_electron_transport) {
-            m_mobility[m_kElectron+m_nsp*j] = m_elecMobility[j];
-            m_diff[m_kElectron+m_nsp*j] = m_elecDiffCoeff[j];
+            size_t k = m_kElectron;
+            m_mobility[k+m_nsp*j] = poly5(tlog, m_mobi_e_fix.data());
+            m_diff[k+m_nsp*j] = poly5(tlog, m_diff_e_fix.data());
         }
     }
 }
@@ -169,41 +173,82 @@ void IonFlow::setElectricPotential(const double v1, const double v2)
     m_outletVoltage = v2;
 }
 
+void IonFlow::getWdot(double* x, size_t j)
+{
+    StFlow::getWdot(x,j);
+    if (m_plasmaRateCoeff.size() > 0) {
+        // index
+        size_t k1 = m_thermo->speciesIndex("O2");
+        size_t k2 = m_thermo->speciesIndex("O2(a1dg)");
+        size_t k3 = m_thermo->speciesIndex("O2-");
+        // obtain rate
+        double Tg = T(x,j);
+        double tlog = log(T(x,j));
+        double Te = poly5(tlog, m_electronTemperature.data());
+        double rate = poly5(tlog, m_plasmaRateCoeff.data());
+        rate *= ND(x,k1,j) * ND(x,m_kElectron,j);
+        rate /= Avogadro;
+        m_wdot(k1,j) -= rate;
+        m_wdot(k2,j) += rate;
+        double rate1 = 1.4e-41 / Te * exp(-600.0/Tg) * exp(700.0*(Te-Tg)/Te/Tg);
+        rate1 -= 1.4e-41 / Tg * exp(-600.0/Tg);
+        rate1 *= ND(x,k1,j) * ND(x,k1,j) * ND(x,m_kElectron,j);
+        rate1 /= Avogadro;
+        m_wdot(k1,j) -= rate1;
+        m_wdot(m_kElectron,j) -= rate1;
+        m_wdot(k3,j) += rate1;
+    }
+}
+
+
 void IonFlow::evalResidual(double* x, double* rsd, int* diag,
                            double rdt, size_t jmin, size_t jmax)
 {
     StFlow::evalResidual(x, rsd, diag, rdt, jmin, jmax);
-    if (m_stage != 3) {
-        return;
-    }
-
     for (size_t j = jmin; j <= jmax; j++) {
-        if (j == 0) {
-            // enforcing the flux for charged species is difficult
-            // since charged species are also affected by electric
-            // force, so Neumann boundary condition is used.
-            for (size_t k : m_kCharge) {
-                rsd[index(c_offset_Y + k, 0)] = Y(x,k,0) - Y(x,k,1);
+        if (j != 0 && j != m_points - 1) {
+            // update electron power
+            if (m_ohmic_heat_E > 0.0) {
+                size_t k = m_kElectron;
+                double mu_av = 0.5 * (m_mobility[k+m_nsp*j] + m_mobility[k+m_nsp*(j-1)]);
+                if (m_do_energy[j]) {
+                    double ND_e = (ND(x,k,j) > 0.0 ? ND(x,k,j) : 0.0);
+                    rsd[index(c_offset_T, j)] += ElectronCharge * mu_av
+                                                 * m_ohmic_heat_E * m_ohmic_heat_E
+                                                 * ND_e / (m_rho[j] * m_cp[j]);
+                }
             }
-            rsd[index(c_offset_P, j)] = m_inletVoltage - phi(x,j);
-            diag[index(c_offset_P, j)] = 0;
-        } else if (j == m_points - 1) {
-            rsd[index(c_offset_P, j)] = m_outletVoltage - phi(x,j);
-            diag[index(c_offset_P, j)] = 0;
-        } else {
-            //-----------------------------------------------
-            //    Poisson's equation
-            //
-            //    dE/dz = e/eps_0 * sum(q_k*n_k)
-            //
-            //    E = -dV/dz
-            //-----------------------------------------------
-            double chargeDensity = 0.0;
-            for (size_t k : m_kCharge) {
-                chargeDensity += m_speciesCharge[k] * ElectronCharge * ND(x,k,j);
+        }
+    }
+    if (m_stage == 3) {
+        for (size_t j = jmin; j <= jmax; j++) {
+            if (j == 0) {
+                // enforcing the flux for charged species is difficult
+                // since charged species are also affected by electric
+                // force, so Neumann boundary condition is used.
+                for (size_t k : m_kCharge) {
+                    rsd[index(c_offset_Y + k, 0)] = Y(x,k,0) - Y(x,k,1);
+                }
+                rsd[index(c_offset_P, j)] = m_inletVoltage - phi(x,j);
+                diag[index(c_offset_P, j)] = 0;
+            } else if (j == m_points - 1) {
+                rsd[index(c_offset_P, j)] = m_outletVoltage - phi(x,j);
+                diag[index(c_offset_P, j)] = 0;
+            } else {
+                //-----------------------------------------------
+                //    Poisson's equation
+                //
+                //    dE/dz = e/eps_0 * sum(q_k*n_k)
+                //
+                //    E = -dV/dz
+                //-----------------------------------------------
+                double chargeDensity = 0.0;
+                for (size_t k : m_kCharge) {
+                    chargeDensity += m_speciesCharge[k] * ElectronCharge * ND(x,k,j);
+                }
+                rsd[index(c_offset_P, j)] = dEdz(x,j) - chargeDensity / epsilon_0;
+                diag[index(c_offset_P, j)] = 0;
             }
-            rsd[index(c_offset_P, j)] = dEdz(x,j) - chargeDensity / epsilon_0;
-            diag[index(c_offset_P, j)] = 0;
         }
     }
 }
@@ -258,13 +303,52 @@ void IonFlow::fixElectricPotential(size_t j)
     }
 }
 
-void IonFlow::setElectronTransport(vector_fp& zfixed, vector_fp& diff_e_fixed,
-                                   vector_fp& mobi_e_fixed)
+void IonFlow::setElectronTransport(vector_fp& tfix, vector_fp& diff_e,
+                                   vector_fp& mobi_e)
 {
-    m_ztfix = zfixed;
-    m_diff_e_fix = diff_e_fixed;
-    m_mobi_e_fix = mobi_e_fixed;
     m_import_electron_transport = true;
+    size_t degree = 5;
+    size_t n = tfix.size();
+    vector_fp tlog;
+    for (size_t i = 0; i < n; i++) {
+        tlog.push_back(log(tfix[i]));
+    }
+    vector_fp w(n, -1.0);
+    m_diff_e_fix.resize(degree + 1);
+    m_mobi_e_fix.resize(degree + 1);
+    polyfit(n, degree, tlog.data(), diff_e.data(), w.data(), m_diff_e_fix.data());
+    polyfit(n, degree, tlog.data(), mobi_e.data(), w.data(), m_mobi_e_fix.data());
+}
+
+void IonFlow::setPlasmaRateCoeff(vector_fp& tfix, vector_fp& k)
+{
+    size_t degree = 5;
+    size_t n = tfix.size();
+    vector_fp tlog;
+    for (size_t i = 0; i < n; i++) {
+        tlog.push_back(log(tfix[i]));
+    }
+    vector_fp w(n, -1.0);
+    m_plasmaRateCoeff.resize(degree + 1);
+    polyfit(n, degree, tlog.data(), k.data(), w.data(), m_plasmaRateCoeff.data());
+}
+
+void IonFlow::setElectronTemperature(vector_fp& tfix, vector_fp& Te)
+{
+    size_t degree = 5;
+    size_t n = tfix.size();
+    vector_fp tlog;
+    for (size_t i = 0; i < n; i++) {
+        tlog.push_back(log(tfix[i]));
+    }
+    vector_fp w(n, -1.0);
+    m_electronTemperature.resize(degree + 1);
+    polyfit(n, degree, tlog.data(), Te.data(), w.data(), m_electronTemperature.data());
+}
+
+void IonFlow::setOhmicHeatingElectricField(const double efield)
+{
+    m_ohmic_heat_E = efield;
 }
 
 void IonFlow::_finalize(const double* x)

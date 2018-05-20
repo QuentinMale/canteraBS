@@ -68,10 +68,17 @@ public:
      * If in the future the class GasTranport is improved, this method may
      * be discard. This method specifies this profile.
     */
-    void setElectronTransport(vector_fp& zfixed, vector_fp& diff_e_fixed,
-                              vector_fp& mobi_e_fixed);
+    void setElectronTransport(vector_fp& tfix, vector_fp& diff_e,
+                              vector_fp& mobi_e);
+    void setOhmicHeatingElectricField(const double efield);
+
+    void setPlasmaRateCoeff(vector_fp& tfix, vector_fp& k);
+
+    void setElectronTemperature(vector_fp& tfix, vector_fp& Te);
 
 protected:
+    //! Write the net production rates at point `j` into array `m_wdot`
+    virtual void getWdot(double* x, size_t j);
     /*!
      * This function overloads the original function. The residual function
      * of Poisson's equation is added.
@@ -90,6 +97,9 @@ protected:
     //! flag for importing transport of electron
     bool m_import_electron_transport;
 
+    //! Ohmic heating eletric field
+    double m_ohmic_heat_E;
+
     //! electrical properties
     vector_int m_speciesCharge;
 
@@ -99,9 +109,17 @@ protected:
     //! index of neutral species
     std::vector<size_t> m_kNeutral;
 
+    //! the polymonial coefficients of
     //! fixed transport profile of electron
     vector_fp m_elecMobility;
     vector_fp m_elecDiffCoeff;
+
+    //! the polymonial coefficient of
+    //! plasma rate coefficient
+    vector_fp m_plasmaRateCoeff;
+
+    //! the polynomial of electron temperature
+    vector_fp m_electronTemperature;
 
     //! mobility
     vector_fp m_mobility;
