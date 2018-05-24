@@ -83,6 +83,9 @@ protected:
 
     //! parameter of omega11 of n64
     DenseMatrix m_gamma;
+
+    //! polynomial of om11 for O2/O2-
+    vector_fp m_om11_O2;
 };
 
 }

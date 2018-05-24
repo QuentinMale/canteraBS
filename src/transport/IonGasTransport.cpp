@@ -43,10 +43,22 @@ void IonGasTransport::init(thermo_t* thermo, int mode, int log_level)
     }
     // set up Monchick and Mason parameters
     setupMM();
+    // set up O2 collision integral [A^2]
+    vector_fp temp{300.0, 400.0, 500.0, 600.0, 800.0, 1000.0,
+                   1200.0, 1500.0, 2000.0, 2500.0, 3000.0, 4000.0};
+    vector_fp om11_O2{120.0, 107.0, 98.1, 92.1, 83.0, 77.0,
+                      72.6, 67.9, 62.7, 59.3, 56.7, 53.8};
+    vector_fp w(temp.size(),-1);
+    int degree = 5;
+    m_om11_O2.resize(degree + 1);
+    polyfit(temp.size(), degree, temp.data(), om11_O2.data(),
+            w.data(), m_om11_O2.data());
     // set up n64 parameters
     setupN64();
     // setup  collision integrals
     setupCollisionIntegral();
+
+    // resize
     m_molefracs.resize(m_nsp);
     m_spwork.resize(m_nsp);
     m_visc.resize(m_nsp);
@@ -181,7 +193,23 @@ void IonGasTransport::fitDiffCoeffs(MMCollisionInt& integrals)
                     double om11 = omega11_n64(tstar, m_gamma(j,k));
                     double diffcoeff = 3.0/16.0 * sqrt(2.0 * Pi/m_reducedMass(k,j))
                         * pow(Boltzmann * t, 1.5) / (Pi * sigma * sigma * om11);
+                    //if O2^- or O2- present, the resonant collision is used.
+                    bool do_O2_om11 = false;
+                    if (k == m_thermo->speciesIndex("O2-")) {
+                        if (j == m_thermo->speciesIndex("O2")) {
+                            do_O2_om11 = true;
+                        }
+                    }
 
+                    if (k == m_thermo->speciesIndex("O2")) {
+                        if (j == m_thermo->speciesIndex("O2-")) {
+                            do_O2_om11 = true;
+                        }
+                    }
+                    if (do_O2_om11) {
+                        diffcoeff = 3.0/16.0 * sqrt(2.0 * Pi/m_reducedMass(k,j))
+                            * pow(Boltzmann * t, 1.5) / poly5(t, m_om11_O2.data()) * 1e20;
+                    }
                     if (m_mode == CK_Mode) {
                         diff[n] = log(diffcoeff);
                         w[n] = -1.0;
