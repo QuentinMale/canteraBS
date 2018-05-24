@@ -19,6 +19,7 @@ IonFlow::IonFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
     FreeFlame(ph, nsp, points),
     m_import_electron_transport(false),
     m_ohmic_heat_E(0.0),
+    m_plasma_multiplier(0.0),
     m_stage(1),
     m_inletVoltage(0.0),
     m_outletVoltage(0.0),
@@ -70,8 +71,10 @@ void IonFlow::updateTransport(double* x, size_t j0, size_t j1)
         double tlog = log(m_thermo->temperature());
         if (m_import_electron_transport) {
             size_t k = m_kElectron;
-            m_mobility[k+m_nsp*j] = poly5(tlog, m_mobi_e_fix.data());
-            m_diff[k+m_nsp*j] = poly5(tlog, m_diff_e_fix.data());
+            m_mobility[k+m_nsp*j] *= (1.0 - m_plasma_multiplier);
+            m_mobility[k+m_nsp*j] += m_plasma_multiplier * poly5(tlog, m_mobi_e_fix.data());
+            m_diff[k+m_nsp*j] *= (1.0 - m_plasma_multiplier);
+            m_diff[k+m_nsp*j] += m_plasma_multiplier * poly5(tlog, m_diff_e_fix.data());
         }
     }
 }
@@ -180,23 +183,17 @@ void IonFlow::getWdot(double* x, size_t j)
         // index
         size_t k1 = m_thermo->speciesIndex("O2");
         size_t k2 = m_thermo->speciesIndex("O2(a1dg)");
-        size_t k3 = m_thermo->speciesIndex("O2-");
         // obtain rate
-        double Tg = T(x,j);
         double tlog = log(T(x,j));
-        double Te = poly5(tlog, m_electronTemperature.data());
         double rate = poly5(tlog, m_plasmaRateCoeff.data());
         rate *= ND(x,k1,j) * ND(x,m_kElectron,j);
         rate /= Avogadro;
         m_wdot(k1,j) -= rate;
         m_wdot(k2,j) += rate;
-        double rate1 = 1.4e-41 / Te * exp(-600.0/Tg) * exp(700.0*(Te-Tg)/Te/Tg);
-        rate1 -= 1.4e-41 / Tg * exp(-600.0/Tg);
-        rate1 *= ND(x,k1,j) * ND(x,k1,j) * ND(x,m_kElectron,j);
-        rate1 /= Avogadro;
-        m_wdot(k1,j) -= rate1;
-        m_wdot(m_kElectron,j) -= rate1;
-        m_wdot(k3,j) += rate1;
+    }
+    if (m_electronTemperature.size() > 0) {
+        double Tg = T(x,j);
+        double Te = poly5(Tg, m_electronTemperature.data());
     }
 }
 
@@ -337,18 +334,19 @@ void IonFlow::setElectronTemperature(vector_fp& tfix, vector_fp& Te)
 {
     size_t degree = 5;
     size_t n = tfix.size();
-    vector_fp tlog;
-    for (size_t i = 0; i < n; i++) {
-        tlog.push_back(log(tfix[i]));
-    }
     vector_fp w(n, -1.0);
     m_electronTemperature.resize(degree + 1);
-    polyfit(n, degree, tlog.data(), Te.data(), w.data(), m_electronTemperature.data());
+    polyfit(n, degree, tfix.data(), Te.data(), w.data(), m_electronTemperature.data());
 }
 
 void IonFlow::setOhmicHeatingElectricField(const double efield)
 {
     m_ohmic_heat_E = efield;
+}
+
+void IonFlow::setPlasmaMultiplier(const double multi)
+{
+    m_plasma_multiplier = multi;
 }
 
 void IonFlow::_finalize(const double* x)

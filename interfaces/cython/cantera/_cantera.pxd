@@ -703,6 +703,7 @@ cdef extern from "cantera/oneD/IonFlow.h":
         void setOhmicHeatingElectricField(const double)
         void setPlasmaRateCoeff(vector[double]&, vector[double]&)
         void setElectronTemperature(vector[double]&, vector[double]&)
+        void setPlasmaMultiplier(const double)
         void solvePoissonEqn()
         void fixElectricPotential()
         cbool doPoisson(size_t)

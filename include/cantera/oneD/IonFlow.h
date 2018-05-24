@@ -76,6 +76,8 @@ public:
 
     void setElectronTemperature(vector_fp& tfix, vector_fp& Te);
 
+    void setPlasmaMultiplier(const double multi);
+
 protected:
     //! Write the net production rates at point `j` into array `m_wdot`
     virtual void getWdot(double* x, size_t j);
@@ -99,6 +101,9 @@ protected:
 
     //! Ohmic heating eletric field
     double m_ohmic_heat_E;
+
+    //! plasma multiplier
+    double m_plasma_multiplier;
 
     //! electrical properties
     vector_int m_speciesCharge;

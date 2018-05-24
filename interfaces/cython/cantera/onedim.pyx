@@ -508,6 +508,9 @@ cdef class IonFlow(_FlowBase):
     def set_electronTemperature(self, temp, Te):
         (<CxxIonFlow*>self.flow).setElectronTemperature(temp, Te)
 
+    def set_plasmaMultiplier(self, multi):
+        (<CxxIonFlow*>self.flow).setPlasmaMultiplier(multi)
+
     property poisson_enabled:
         """ Determines whether or not to solve the energy equation."""
         def __get__(self):
