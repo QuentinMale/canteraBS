@@ -1296,6 +1296,8 @@ class reaction(object):
         kfnode = r.addChild('rateCoeff')
         if self._type == '':
             self._kf = [self._kf]
+        elif self._type == 'electron':
+            self._kf = [self._kf]
         elif self._type == 'surface':
             self._kf = [self._kf]
         elif self._type == 'edge':
@@ -1342,6 +1344,19 @@ class reaction(object):
         return r
 
 #-------------------
+
+
+class electron_reaction(reaction):
+    def __init__(self,
+                 equation = '',
+                 kf = None,
+                 id = '',
+                 order = '',
+                 options = []):
+        """
+        """
+        reaction.__init__(self, equation, kf, id, '', options)
+        self._type = 'electron'
 
 
 class three_body_reaction(reaction):
