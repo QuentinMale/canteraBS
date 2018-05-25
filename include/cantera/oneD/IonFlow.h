@@ -48,6 +48,8 @@ public:
 
     virtual void resize(size_t components, size_t points);
 
+    virtual void setGas(const doublereal* x, size_t j);
+
     virtual void _finalize(const double* x);
     //! set to solve Poisson's equation on a point
     void solvePoissonEqn(size_t j=npos);

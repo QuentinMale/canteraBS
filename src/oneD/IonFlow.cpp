@@ -89,6 +89,17 @@ void IonFlow::updateDiffFluxes(const double* x, size_t j0, size_t j1)
     }
 }
 
+void IonFlow::setGas(const double* x, size_t j)
+{
+    StFlow::setGas(x,j);
+    if (m_electronTemperature.size() > 0) {
+        double Te = poly5(T(x,j), m_electronTemperature.data());
+        m_thermo->setElectronTemperature(Te); 
+    } else {
+        m_thermo->setElectronTemperature(T(x,j));
+    }
+}
+
 void IonFlow::frozenIonMethod(const double* x, size_t j0, size_t j1)
 {
     for (size_t j = j0; j < j1; j++) {
@@ -191,12 +202,7 @@ void IonFlow::getWdot(double* x, size_t j)
         m_wdot(k1,j) -= rate;
         m_wdot(k2,j) += rate;
     }
-    if (m_electronTemperature.size() > 0) {
-        double Tg = T(x,j);
-        double Te = poly5(Tg, m_electronTemperature.data());
-    }
 }
-
 
 void IonFlow::evalResidual(double* x, double* rsd, int* diag,
                            double rdt, size_t jmin, size_t jmax)

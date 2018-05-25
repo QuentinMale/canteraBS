@@ -190,7 +190,7 @@ public:
     virtual void setFixedPoint(int j0, doublereal t0) {}
 
     //! Set the gas object state to be consistent with the solution at point j.
-    void setGas(const doublereal* x, size_t j);
+    virtual void setGas(const doublereal* x, size_t j);
 
     //! Set the gas state to be consistent with the solution at the midpoint
     //! between j and j + 1.

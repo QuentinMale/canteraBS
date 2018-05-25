@@ -602,6 +602,10 @@ public:
         return m_temp;
     }
 
+    double electronTemperature() const {
+        return m_temp_e;
+    }
+
     //! Density (kg/m^3).
     //!     @return The density of the phase
     virtual doublereal density() const {
@@ -642,6 +646,18 @@ public:
                                "temperature must be positive. T = {}", temp);
         }
     }
+
+    //! Set the internally stored electron temperature of the phase (K).
+    //!     @param temp_e Temperature in Kelvin
+    virtual void setElectronTemperature(const double temp_e) {
+        if (temp_e > 0) {
+            m_temp_e = temp_e;
+        } else {
+            throw CanteraError("Phase::setTemperature",
+                               "electron temperature must be positive. T = {}", temp_e);
+        }
+    }
+
     //@}
 
     //! @name Mean Properties
@@ -812,6 +828,8 @@ private:
     std::string m_name;
 
     doublereal m_temp; //!< Temperature (K). This is an independent variable
+
+    double m_temp_e; //! electron temperature.
 
     //! Density (kg m-3). This is an independent variable except in the
     //! incompressible degenerate case. Thus, the pressure is determined from

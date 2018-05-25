@@ -127,6 +127,7 @@ cdef extern from "cantera/thermo/ThermoPhase.h" namespace "Cantera":
 
         # basic thermodynamic properties
         double temperature() except +translate_exception
+        double electronTemperature() except +translate_exception
         double pressure() except +translate_exception
         double density() except +translate_exception
         double molarDensity() except +translate_exception
@@ -189,6 +190,7 @@ cdef extern from "cantera/thermo/ThermoPhase.h" namespace "Cantera":
         void setState_VH(double, double) except +translate_exception
         void setState_TH(double, double) except +translate_exception
         void setState_SH(double, double) except +translate_exception
+        void setElectronTemperature(double) except +translate_exception
 
         # molar thermodynamic properties:
         double enthalpy_mole() except +translate_exception
@@ -277,6 +279,9 @@ cdef extern from "cantera/kinetics/Reaction.h" namespace "Cantera":
         double efficiency(string)
         Composition efficiencies
         double default_efficiency
+
+    cdef cppclass CxxElectronReaction "Cantera::ElectronReaction" (CxxElementaryReaction):
+        CxxElectronReaction()
 
     cdef cppclass CxxThreeBodyReaction "Cantera::ThreeBodyReaction" (CxxElementaryReaction):
         CxxThreeBodyReaction()

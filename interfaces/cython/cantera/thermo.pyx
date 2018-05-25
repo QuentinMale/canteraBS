@@ -717,6 +717,14 @@ cdef class ThermoPhase(_SolutionBase):
         def __get__(self):
             return self.thermo.pressure()
 
+    property Te:
+        """Electron Temperature [K]."""
+        def __get__(self):
+            return self.thermo.electronTemperature()
+        def __set__(self, value):
+            Te = value if value is not None else self.Te
+            self.thermo.setElectronTemperature(Te)
+
     property T:
         """Temperature [K]."""
         def __get__(self):

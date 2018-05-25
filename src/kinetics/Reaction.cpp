@@ -121,6 +121,19 @@ void ElementaryReaction::validate()
     }
 }
 
+ElectronReaction::ElectronReaction(const Composition& reactants_,
+                                   const Composition products_,
+                                   const Arrhenius& rate_)
+    : ElementaryReaction(reactants_, products_, rate_)
+{
+    reaction_type = ELECTRON_RXN;
+}
+
+ElectronReaction::ElectronReaction()
+{
+    reaction_type = ELECTRON_RXN;
+}
+
 ThirdBody::ThirdBody(double default_eff)
     : default_efficiency(default_eff)
 {
@@ -372,6 +385,11 @@ void setupElementaryReaction(ElementaryReaction& R, const XML_Node& rxn_node)
     setupReaction(R, rxn_node);
 }
 
+void setupElectronReaction(ElectronReaction& R, const XML_Node& rxn_node)
+{
+    setupElementaryReaction(R, rxn_node);
+}
+
 void setupThreeBodyReaction(ThreeBodyReaction& R, const XML_Node& rxn_node)
 {
     readEfficiencies(R.third_body, rxn_node.child("rateCoeff"));
@@ -615,6 +633,10 @@ shared_ptr<Reaction> newReaction(const XML_Node& rxn_node)
     if (type == "elementary" || type == "arrhenius" || type == "") {
         auto R = make_shared<ElementaryReaction>();
         setupElementaryReaction(*R, rxn_node);
+        return R;
+    } else if (type == "electron") {
+        auto R = make_shared<ElectronReaction>();
+        setupElectronReaction(*R, rxn_node);
         return R;
     } else if (type == "threebody" || type == "three_body") {
         auto R = make_shared<ThreeBodyReaction>();
