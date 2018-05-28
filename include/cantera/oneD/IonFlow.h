@@ -93,13 +93,12 @@ protected:
     virtual void updateDiffFluxes(const double* x, size_t j0, size_t j1);
     //! Solving phase one: the fluxes of charged species are turned off
     virtual void frozenIonMethod(const double* x, size_t j0, size_t j1);
+    //! Solving phase two: ambipolar model
+    virtual void ambiPolarMethod(const double* x, size_t j0, size_t j1);
     //! Solving phase three: the Poisson's equation is added coupled by the electrical drift
     virtual void poissonEqnMethod(const double* x, size_t j0, size_t j1);
     //! flag for solving poisson's equation or not
     std::vector<bool> m_do_poisson;
-
-    //! flag for importing transport of electron
-    bool m_import_electron_transport;
 
     //! Ohmic heating eletric field
     double m_ohmic_heat_E;

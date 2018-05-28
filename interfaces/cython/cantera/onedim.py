@@ -572,6 +572,9 @@ class IonFlame(FreeFlame):
         if stage == 1:
             self.flame.set_solvingStage(stage)
             super(IonFlame, self).solve(loglevel, refine_grid, auto)
+        if stage == 2:
+            self.flame.set_solvingStage(stage)
+            super(IonFlame, self).solve(loglevel, refine_grid, auto)
         if stage == 3:
             self.flame.set_solvingStage(stage)
             self.poisson_enabled = True

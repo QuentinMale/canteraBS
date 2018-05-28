@@ -17,7 +17,6 @@ namespace Cantera
 
 IonFlow::IonFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
     FreeFlame(ph, nsp, points),
-    m_import_electron_transport(false),
     m_ohmic_heat_E(0.0),
     m_plasma_multiplier(0.0),
     m_stage(1),
@@ -69,7 +68,7 @@ void IonFlow::updateTransport(double* x, size_t j0, size_t j1)
         setGasAtMidpoint(x,j);
         m_trans->getMobilities(&m_mobility[j*m_nsp]);
         double tlog = log(m_thermo->temperature());
-        if (m_import_electron_transport) {
+        if (m_mobi_e_fix.size() > 0) {
             size_t k = m_kElectron;
             m_mobility[k+m_nsp*j] *= (1.0 - m_plasma_multiplier);
             m_mobility[k+m_nsp*j] += m_plasma_multiplier * poly5(tlog, m_mobi_e_fix.data());
@@ -84,6 +83,9 @@ void IonFlow::updateDiffFluxes(const double* x, size_t j0, size_t j1)
     if (m_stage == 1) {
         frozenIonMethod(x,j0,j1);
     }
+    if (m_stage == 2) {
+        ambiPolarMethod(x,j0,j1);
+    }
     if (m_stage == 3) {
         poissonEqnMethod(x,j0,j1);
     }
@@ -94,7 +96,9 @@ void IonFlow::setGas(const double* x, size_t j)
     StFlow::setGas(x,j);
     if (m_electronTemperature.size() > 0) {
         double Te = poly5(T(x,j), m_electronTemperature.data());
-        m_thermo->setElectronTemperature(Te); 
+        double temp = (1.0 - m_plasma_multiplier) * T(x,j)
+                      + Te * m_plasma_multiplier;
+        m_thermo->setElectronTemperature(temp);
     } else {
         m_thermo->setElectronTemperature(T(x,j));
     }
@@ -123,6 +127,53 @@ void IonFlow::frozenIonMethod(const double* x, size_t j0, size_t j1)
         // to run away
         for (size_t k : m_kCharge) {
             m_flux(k,j) = 0;
+        }
+    }
+}
+
+void IonFlow::ambiPolarMethod(const double* x, size_t j0, size_t j1)
+{
+    for (size_t j = j0; j < j1; j++) {
+        double wtm = m_wtm[j];
+        double rho = density(j);
+        double dz = z(j+1) - z(j);
+
+        // mixture-average diffusion
+        for (size_t k : m_kNeutral) {
+            m_flux(k,j) = m_wt[k]*(rho*m_diff[k+m_nsp*j]/wtm);
+            m_flux(k,j) *= (X(x,k,j) - X(x,k,j+1))/dz;
+        }
+
+        // ambipolar diffusion
+        double sum = 0.0;
+        for (size_t k : m_kCharge) {
+            if (k != m_kElectron) {
+                double r_i = m_diff[k+m_nsp*j] / m_mobility[k+m_nsp*j];
+                double r_e = m_diff[m_kElectron+m_nsp*j] /
+                             m_mobility[m_kElectron+m_nsp*j];
+                m_flux(k,j) = m_wt[k]*(rho*m_diff[k+m_nsp*j]/wtm);
+                m_flux(k,j) *= (X(x,k,j) - X(x,k,j+1))/dz;
+                m_flux(k,j) *= (1 + r_e/r_i);
+                sum -= m_flux(k,j) * m_speciesCharge[k] / m_wt[k];
+            }
+        }
+        m_flux(m_kElectron,j) = m_wt[m_kElectron] / m_speciesCharge[m_kElectron];
+        m_flux(m_kElectron,j) *= sum;
+
+        // correction flux
+        double sum_flux = 0.0;
+        for (size_t k = 0; k < m_nsp; k++) {
+            if (k != m_kElectron) {
+                sum_flux -= m_flux(k,j); // total net flux
+            }
+        }
+        double sum_ion = 0.0;
+        for (size_t k : m_kCharge) {
+            sum_ion += Y(x,k,j);
+        }
+        // The portion of correction for ions is taken off
+        for (size_t k : m_kNeutral) {
+            m_flux(k,j) += Y(x,k,j) / (1-sum_ion) * sum_flux;
         }
     }
 }
@@ -212,13 +263,14 @@ void IonFlow::evalResidual(double* x, double* rsd, int* diag,
         if (j != 0 && j != m_points - 1) {
             // update electron power
             if (m_ohmic_heat_E > 0.0) {
-                size_t k = m_kElectron;
-                double mu_av = 0.5 * (m_mobility[k+m_nsp*j] + m_mobility[k+m_nsp*(j-1)]);
                 if (m_do_energy[j]) {
+                    double tlog = log(T(x,j));
+                    size_t k = m_kElectron;
+                    double mu_av = poly5(tlog, m_mobi_e_fix.data());
                     double ND_e = (ND(x,k,j) > 0.0 ? ND(x,k,j) : 0.0);
                     rsd[index(c_offset_T, j)] += ElectronCharge * mu_av
-                                                 * m_ohmic_heat_E * m_ohmic_heat_E
-                                                 * ND_e / (m_rho[j] * m_cp[j]);
+                                             * m_ohmic_heat_E * m_ohmic_heat_E
+                                             * ND_e / (m_rho[j] * m_cp[j]);
                 }
             }
         }
@@ -309,7 +361,6 @@ void IonFlow::fixElectricPotential(size_t j)
 void IonFlow::setElectronTransport(vector_fp& tfix, vector_fp& diff_e,
                                    vector_fp& mobi_e)
 {
-    m_import_electron_transport = true;
     size_t degree = 5;
     size_t n = tfix.size();
     vector_fp tlog;
