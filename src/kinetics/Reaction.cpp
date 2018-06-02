@@ -123,15 +123,15 @@ void ElementaryReaction::validate()
 
 ElectronReaction::ElectronReaction(const Composition& reactants_,
                                    const Composition products_,
-                                   const Arrhenius& rate_)
-    : ElementaryReaction(reactants_, products_, rate_)
+                                   const ElectronArrhenius& rate_)
+    : Reaction(ELECTRON_RXN, reactants_, products_)
+    , rate(rate_)
 {
-    reaction_type = ELECTRON_RXN;
 }
 
 ElectronReaction::ElectronReaction()
+    : Reaction(ELECTRON_RXN)
 {
-    reaction_type = ELECTRON_RXN;
 }
 
 ThirdBody::ThirdBody(double default_eff)
@@ -290,6 +290,14 @@ Arrhenius readArrhenius(const XML_Node& arrhenius_node)
                      getFloat(arrhenius_node, "E", "actEnergy") / GasConstant);
 }
 
+ElectronArrhenius readElectronArrhenius(const XML_Node& arrhenius_node)
+{
+    return ElectronArrhenius(getFloat(arrhenius_node, "A", "toSI"),
+                     getFloat(arrhenius_node, "b"),
+                     getFloat(arrhenius_node, "E1", "actEnergy") / GasConstant,
+                     getFloat(arrhenius_node, "E2", "actEnergy") / GasConstant);
+}
+
 //! Parse falloff parameters, given a rateCoeff node
 /*!
  * @verbatim
@@ -387,7 +395,13 @@ void setupElementaryReaction(ElementaryReaction& R, const XML_Node& rxn_node)
 
 void setupElectronReaction(ElectronReaction& R, const XML_Node& rxn_node)
 {
-    setupElementaryReaction(R, rxn_node);
+    XML_Node& rc_node = rxn_node.child("rateCoeff");
+    if (rc_node.hasChild("ElectronArrhenius")) {
+        R.rate = readElectronArrhenius(rc_node.child("ElectronArrhenius"));
+    } else {
+        throw CanteraError("setupElementaryReaction", "Couldn't find Arrhenius node");
+    }
+    setupReaction(R, rxn_node);
 }
 
 void setupThreeBodyReaction(ThreeBodyReaction& R, const XML_Node& rxn_node)

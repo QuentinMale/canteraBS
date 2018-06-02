@@ -47,7 +47,7 @@ void GasKinetics::update_rates_T()
 
     if (Te != m_temp_e) {
         if (m_electron_rates.nReactions()) {
-            m_electron_rates.update(Te, logTe, m_rfn.data());
+            m_electron_rates.update(T, Te, logTe, m_rfn.data());
             m_ROP_ok = false;
         }
     }
@@ -382,7 +382,7 @@ void GasKinetics::modifyReaction(size_t i, shared_ptr<Reaction> rNew)
 
 void GasKinetics::modifyElectronReaction(size_t i, ElectronReaction& r)
 {
-    m_rates.replace(i, r.rate);
+    m_electron_rates.replace(i, r.rate);
 }
 
 void GasKinetics::modifyThreeBodyReaction(size_t i, ThreeBodyReaction& r)
