@@ -399,7 +399,7 @@ void setupElectronReaction(ElectronReaction& R, const XML_Node& rxn_node)
     if (rc_node.hasChild("ElectronArrhenius")) {
         R.rate = readElectronArrhenius(rc_node.child("ElectronArrhenius"));
     } else {
-        throw CanteraError("setupElementaryReaction", "Couldn't find Arrhenius node");
+        throw CanteraError("setupElectronReaction", "Couldn't find Arrhenius node");
     }
     setupReaction(R, rxn_node);
 }
