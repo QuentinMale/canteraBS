@@ -44,7 +44,7 @@ public:
     //! set the solving stage
     virtual void setSolvingStage(const size_t phase);
     //! set electric voltage at inlet and outlet
-    virtual void setElectricPotential(const double v1, const double v2);
+    virtual void setElectricPotential(const double dv);
 
     virtual void resize(size_t components, size_t points);
 
@@ -134,37 +134,23 @@ protected:
     int m_stage;
 
     //! The voltage
-    double m_inletVoltage;
-    double m_outletVoltage;
+    double m_deltaVoltage;
 
     //! index of electron
     size_t m_kElectron;
-
-    //! fixed electric potential value
-    vector_fp m_fixedElecPoten;
 
     //! fixed electron transport values
     vector_fp m_ztfix;
     vector_fp m_diff_e_fix;
     vector_fp m_mobi_e_fix;
 
-    //! The fixed electric potential value at point j
-    double phi_fixed(size_t j) const {
-        return m_fixedElecPoten[j];
-    }
-
-    //! electric potential
-    double phi(const double* x, size_t j) const {
+    //! electric field
+    double E(const double* x, size_t j) const {
         return x[index(c_offset_P, j)];
     }
 
-    //! electric field
-    double E(const double* x, size_t j) const {
-        return -(phi(x,j+1)-phi(x,j))/(z(j+1)-z(j));
-    }
-
     double dEdz(const double* x, size_t j) const {
-        return 2*(E(x,j)-E(x,j-1))/(z(j+1)-z(j-1));
+        return (E(x,j)-E(x,j-1))/(z(j)-z(j-1));
     }
 
     //! number density

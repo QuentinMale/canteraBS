@@ -625,17 +625,16 @@ class IonFlame(FreeFlame):
         T = self.T
         u = self.u
         V = self.V
-        phi = self.phi
         E = self.E
         NA = 6.02214e26
 
         csvfile = open(filename, 'w')
         writer = _csv.writer(csvfile)
         writer.writerow(['z (m)', 'u (m/s)', 'V (1/s)', 'T (K)',
-                         'phi (V)', 'E (V/m)'] + self.gas.species_names)
+                         'E (V/m)'] + self.gas.species_names)
         for n in range(self.flame.n_points):
             self.set_gas_state(n)
-            writer.writerow([z[n], u[n], V[n], T[n], phi[n], E[n]] +
+            writer.writerow([z[n], u[n], V[n], T[n], E[n]] +
                             list(getattr(self.gas, species)*self.gas.density_mole*NA))
         csvfile.close()
         if not quiet:
@@ -660,27 +659,11 @@ class IonFlame(FreeFlame):
         self.flame.velocity_enabled = enable
 
     @property
-    def phi(self):
+    def E(self):
         """
         Array containing the electric potential at each point.
         """
         return self.profile(self.flame, 'ePotential')
-
-    @property
-    def E(self):
-        """
-        Array containing the electric field strength at each point.
-        """
-        z = self.grid
-        phi = self.phi
-        np = self.flame.n_points
-        Efield = []
-        Efield.append((phi[0] - phi[1]) / (z[1] - z[0]))
-        # calculate E field strength
-        for n in range(1,np-1):
-            Efield.append((phi[n-1] - phi[n+1]) / (z[n+1] - z[n-1]))
-        Efield.append((phi[np-2] - phi[np-1]) / (z[np-1] - z[np-2]))
-        return Efield
 
 
 class BurnerFlame(FlameBase):

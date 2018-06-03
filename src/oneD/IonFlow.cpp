@@ -20,8 +20,7 @@ IonFlow::IonFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
     m_ohmic_heat_E(0.0),
     m_plasma_multiplier(0.0),
     m_stage(1),
-    m_inletVoltage(0.0),
-    m_outletVoltage(0.0),
+    m_deltaVoltage(0.0),
     m_kElectron(npos)
 {
     // make a local copy of species charge
@@ -56,7 +55,6 @@ void IonFlow::resize(size_t components, size_t points){
     m_mobility.resize(m_nsp*m_points);
     m_do_species.resize(m_nsp,true);
     m_do_poisson.resize(m_points,false);
-    m_fixedElecPoten.resize(m_points,0.0);
     m_elecMobility.resize(m_points);
     m_elecDiffCoeff.resize(m_points);
 }
@@ -194,7 +192,7 @@ void IonFlow::poissonEqnMethod(const double* x, size_t j0, size_t j1)
         }
 
         // ambipolar diffusion
-        double E_ambi = E(x,j);
+        double E_ambi = 0.5 * (E(x,j) + E(x,j+1));
         for (size_t k : m_kCharge) {
             double Yav = 0.5 * (Y(x,k,j) + Y(x,k,j+1));
             double drift = rho * Yav * E_ambi
@@ -231,11 +229,10 @@ void IonFlow::setSolvingStage(const size_t stage)
     }
 }
 
-void IonFlow::setElectricPotential(const double v1, const double v2)
+void IonFlow::setElectricPotential(const double dv)
 {
     // This method can be used when you want to add external voltage
-    m_inletVoltage = v1;
-    m_outletVoltage = v2;
+    m_deltaVoltage = dv;
 }
 
 void IonFlow::getWdot(double* x, size_t j)
@@ -276,6 +273,13 @@ void IonFlow::evalResidual(double* x, double* rsd, int* diag,
         }
     }
     if (m_stage == 3) {
+        double del_phi = 0.0;
+        // numerical integrals of electric field
+        for (size_t j = jmin; j <= jmax; j++) {
+            if (j != m_points - 1) {
+                del_phi += -0.5 * (E(x,j) + E(x,j+1)) * m_dz[j];
+            }
+        }
         for (size_t j = jmin; j <= jmax; j++) {
             if (j == 0) {
                 // enforcing the flux for charged species is difficult
@@ -284,10 +288,7 @@ void IonFlow::evalResidual(double* x, double* rsd, int* diag,
                 for (size_t k : m_kCharge) {
                     rsd[index(c_offset_Y + k, 0)] = Y(x,k,0) - Y(x,k,1);
                 }
-                rsd[index(c_offset_P, j)] = m_inletVoltage - phi(x,j);
-                diag[index(c_offset_P, j)] = 0;
-            } else if (j == m_points - 1) {
-                rsd[index(c_offset_P, j)] = m_outletVoltage - phi(x,j);
+                rsd[index(c_offset_P, j)] = del_phi - m_deltaVoltage;
                 diag[index(c_offset_P, j)] = 0;
             } else {
                 //-----------------------------------------------
@@ -299,7 +300,8 @@ void IonFlow::evalResidual(double* x, double* rsd, int* diag,
                 //-----------------------------------------------
                 double chargeDensity = 0.0;
                 for (size_t k : m_kCharge) {
-                    chargeDensity += m_speciesCharge[k] * ElectronCharge * ND(x,k,j);
+                    chargeDensity += 0.5 * m_speciesCharge[k] * ElectronCharge
+                                         * (ND(x,k,j) + ND(x,k,j-1));
                 }
                 rsd[index(c_offset_P, j)] = dEdz(x,j) - chargeDensity / epsilon_0;
                 diag[index(c_offset_P, j)] = 0;
@@ -411,11 +413,6 @@ void IonFlow::_finalize(const double* x)
     FreeFlame::_finalize(x);
 
     bool p = m_do_poisson[0];
-    for (size_t j = 0; j < m_points; j++) {
-        if (!p) {
-            m_fixedElecPoten[j] = phi(x, j);
-        }
-    }
     if (p) {
         solvePoissonEqn();
     }
