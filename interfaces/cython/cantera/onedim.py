@@ -663,7 +663,7 @@ class IonFlame(FreeFlame):
         """
         Array containing the electric potential at each point.
         """
-        return self.profile(self.flame, 'ePotential')
+        return self.profile(self.flame, 'eField')
 
 
 class BurnerFlame(FlameBase):

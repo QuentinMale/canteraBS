@@ -44,7 +44,8 @@ public:
     //! set the solving stage
     virtual void setSolvingStage(const size_t phase);
     //! set electric voltage at inlet and outlet
-    virtual void setElectricPotential(const double dv);
+    virtual void setElectricBoundaryCondition(std::string condition_type,
+                                              const double value);
 
     virtual void resize(size_t components, size_t points);
 
@@ -133,8 +134,14 @@ protected:
     //! solving stage
     int m_stage;
 
-    //! The voltage
-    double m_deltaVoltage;
+    //! The voltage difference boundary condition
+    double m_delV;
+
+    //! The electric field boundary consition
+    double m_E0;
+
+    //! The electric boundary condition type
+    size_t m_electric_condition;
 
     //! index of electron
     size_t m_kElectron;

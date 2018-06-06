@@ -558,7 +558,7 @@ string StFlow::componentName(size_t n) const
     case 3:
         return "lambda";
     case 4:
-        return "ePotential";
+        return "eField";
     default:
         if (n >= c_offset_Y && n < (c_offset_Y + m_nsp)) {
             return m_thermo->speciesName(n - c_offset_Y);
@@ -578,7 +578,7 @@ size_t StFlow::componentIndex(const std::string& name) const
         return 2;
     } else if (name=="lambda") {
         return 3;
-    } else if (name == "ePotential") {
+    } else if (name == "eField") {
         return 4;
     } else {
         for (size_t n=c_offset_Y; n<m_nsp+c_offset_Y; n++) {

@@ -20,7 +20,9 @@ IonFlow::IonFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
     m_ohmic_heat_E(0.0),
     m_plasma_multiplier(0.0),
     m_stage(1),
-    m_deltaVoltage(0.0),
+    m_delV(0.0),
+    m_E0(0.0),
+    m_electric_condition(0),
     m_kElectron(npos)
 {
     // make a local copy of species charge
@@ -229,11 +231,21 @@ void IonFlow::setSolvingStage(const size_t stage)
     }
 }
 
-void IonFlow::setElectricPotential(const double dv)
+void IonFlow::setElectricBoundaryCondition(std::string condition_type, const double value)
 {
-    // This method can be used when you want to add external voltage
-    m_deltaVoltage = dv;
-}
+    if (condition_type == "potential") {
+        m_delV = value;
+        m_electric_condition = 0;
+    } else if (condition_type == "field") {
+        m_E0 = value;
+        m_electric_condition = 1;
+    } else {
+        CanteraError("IonFlow::setElectricBoundaryCondition",
+                     "condition type must be set to:"
+                     "1: potential"
+                     "2: field");
+    }
+} 
 
 void IonFlow::getWdot(double* x, size_t j)
 {
@@ -275,9 +287,11 @@ void IonFlow::evalResidual(double* x, double* rsd, int* diag,
     if (m_stage == 3) {
         double del_phi = 0.0;
         // numerical integrals of electric field
-        for (size_t j = jmin; j <= jmax; j++) {
-            if (j != m_points - 1) {
-                del_phi += -0.5 * (E(x,j) + E(x,j+1)) * m_dz[j];
+        if (m_electric_condition == 0) {
+            for (size_t j = jmin; j <= jmax; j++) {
+                if (j != m_points - 1) {
+                    del_phi += -0.5 * (E(x,j) + E(x,j+1)) * m_dz[j];
+                }
             }
         }
         for (size_t j = jmin; j <= jmax; j++) {
@@ -288,7 +302,14 @@ void IonFlow::evalResidual(double* x, double* rsd, int* diag,
                 for (size_t k : m_kCharge) {
                     rsd[index(c_offset_Y + k, 0)] = Y(x,k,0) - Y(x,k,1);
                 }
-                rsd[index(c_offset_P, j)] = del_phi - m_deltaVoltage;
+                if (m_electric_condition == 0) {
+                    rsd[index(c_offset_P, j)] = del_phi - m_delV;
+                } else if (m_electric_condition == 1) {
+                    rsd[index(c_offset_P, j)] = E(x,j) - m_E0;
+                } else {
+                    CanteraError("IonFlow::evalResidual",
+                     "unknown boundary condition type");
+                }
                 diag[index(c_offset_P, j)] = 0;
             } else {
                 //-----------------------------------------------
