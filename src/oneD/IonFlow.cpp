@@ -269,7 +269,7 @@ void IonFlow::evalResidual(double* x, double* rsd, int* diag,
 {
     StFlow::evalResidual(x, rsd, diag, rdt, jmin, jmax);
     for (size_t j = jmin; j <= jmax; j++) {
-        if (j != 0 && j != m_points - 1) {
+        if (j != 0 && j < m_points - 3) {
             // update electron power
             if (m_ohmic_heat_E > 0.0) {
                 if (m_do_energy[j]) {
