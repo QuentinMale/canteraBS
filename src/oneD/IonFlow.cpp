@@ -250,13 +250,42 @@ void IonFlow::setElectricBoundaryCondition(std::string condition_type, const dou
 void IonFlow::getWdot(double* x, size_t j)
 {
     StFlow::getWdot(x,j);
+    double tlog = log(T(x,j));
+    //if (m_plasmaRateCoeff[0].size() > 0) {
     if (m_plasmaRateCoeff.size() > 0) {
+        // index
+        size_t k_hydronium = m_thermo->speciesIndex("H3O+");
+        size_t k_H2O = m_thermo->speciesIndex("H2O");
+        size_t k_H = m_thermo->speciesIndex("H");
+        size_t k_H2 = m_thermo->speciesIndex("H2");
+        size_t k_OH = m_thermo->speciesIndex("OH");
+        size_t k_O = m_thermo->speciesIndex("O");
+        // obtain rate
+        double rate = poly5(tlog, m_plasmaRateCoeff[0].data());
+        rate *= ND(x,k_hydronium,j) * ND(x,m_kElectron,j);
+        rate /= Avogadro;
+        m_wdot(k_hydronium,j) -= rate;
+        m_wdot(m_kElectron,j) -= rate;
+        // H2O + H
+        m_wdot(k_H2O,j) += 0.18 * rate;
+        m_wdot(k_H,j) += 0.18 * rate;
+        // OH + H2
+        m_wdot(k_OH,j) += 0.11 * rate;
+        m_wdot(k_H2,j) += 0.11 * rate;
+        // OH + H + H
+        m_wdot(k_OH,j) += 0.67 * rate;
+        m_wdot(k_H,j) += 2.0 * 0.67 * rate;
+        // O + H2 + H
+        m_wdot(k_O,j) += 0.04 * rate;
+        m_wdot(k_H2,j) += 0.04 * rate;
+        m_wdot(k_H,j) += 0.04 * rate;
+    }
+    if (m_plasmaRateCoeff.size() > 1) {
         // index
         size_t k1 = m_thermo->speciesIndex("O2");
         size_t k2 = m_thermo->speciesIndex("O2(a1dg)");
         // obtain rate
-        double tlog = log(T(x,j));
-        double rate = poly5(tlog, m_plasmaRateCoeff.data());
+        double rate = poly5(tlog, m_plasmaRateCoeff[1].data());
         rate *= ND(x,k1,j) * ND(x,m_kElectron,j);
         rate /= Avogadro;
         m_wdot(k1,j) -= rate;
@@ -401,13 +430,23 @@ void IonFlow::setPlasmaRateCoeff(vector_fp& tfix, vector_fp& k)
 {
     size_t degree = 5;
     size_t n = tfix.size();
+    size_t m = k.size() / n;
     vector_fp tlog;
     for (size_t i = 0; i < n; i++) {
         tlog.push_back(log(tfix[i]));
     }
     vector_fp w(n, -1.0);
-    m_plasmaRateCoeff.resize(degree + 1);
-    polyfit(n, degree, tlog.data(), k.data(), w.data(), m_plasmaRateCoeff.data());
+    m_plasmaRateCoeff.clear();
+
+    for (size_t j = 0; j < m; j++) {
+        vector_fp kk;
+        for (size_t i = 0; i < n; i++) {
+            kk.push_back(k[n*j + i]);
+        }
+        vector_fp c(degree + 1);
+        polyfit(n, degree, tlog.data(), kk.data(), w.data(), c.data());
+        m_plasmaRateCoeff.push_back(c);
+    }
 }
 
 void IonFlow::setElectronTemperature(vector_fp& tfix, vector_fp& Te)

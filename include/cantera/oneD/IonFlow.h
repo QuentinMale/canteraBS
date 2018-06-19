@@ -123,7 +123,7 @@ protected:
 
     //! the polymonial coefficient of
     //! plasma rate coefficient
-    vector_fp m_plasmaRateCoeff;
+    std::vector<vector_fp> m_plasmaRateCoeff;
 
     //! the polynomial of electron temperature
     vector_fp m_electronTemperature;
