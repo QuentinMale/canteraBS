@@ -322,25 +322,34 @@ void IonFlow::evalResidual(double* x, double* rsd, int* diag,
                     del_phi += -0.5 * (E(x,j) + E(x,j+1)) * m_dz[j];
                 }
             }
+            rsd[index(c_offset_P, 0)] = del_phi - m_delV;
+        } else if (m_electric_condition == 1) {
+            rsd[index(c_offset_P, 0)] = E(x,0) - m_E0;
+            if (m_E0 > 0.0) {
+                for (size_t k : m_kCharge) {
+                    if (m_speciesCharge[k] > 0) {
+                        rsd[index(c_offset_Y + k, 0)] = Y(x,k,0);
+                    } else {
+                        rsd[index(c_offset_Y + k, 0)] = Y(x,k,0) - Y(x,k,1);
+                    }
+                }
+            } else {
+                for (size_t k : m_kCharge) {
+                    size_t j = m_points - 1;
+                    if (m_speciesCharge[k] < 0) {
+                        rsd[index(c_offset_Y + k, j)] = Y(x,k,j);
+                    } else {
+                        rsd[index(c_offset_Y + k, j)] = Y(x,k,j) - Y(x,k,j-1);
+                    }
+                }
+            }
+            diag[index(c_offset_P, 0)] = 0;
+        } else {
+            CanteraError("IonFlow::evalResidual",
+             "unknown boundary condition type");
         }
         for (size_t j = jmin; j <= jmax; j++) {
-            if (j == 0) {
-                // enforcing the flux for charged species is difficult
-                // since charged species are also affected by electric
-                // force, so Neumann boundary condition is used.
-                for (size_t k : m_kCharge) {
-                    rsd[index(c_offset_Y + k, 0)] = Y(x,k,0) - Y(x,k,1);
-                }
-                if (m_electric_condition == 0) {
-                    rsd[index(c_offset_P, j)] = del_phi - m_delV;
-                } else if (m_electric_condition == 1) {
-                    rsd[index(c_offset_P, j)] = E(x,j) - m_E0;
-                } else {
-                    CanteraError("IonFlow::evalResidual",
-                     "unknown boundary condition type");
-                }
-                diag[index(c_offset_P, j)] = 0;
-            } else {
+            if (j != 0) {
                 //-----------------------------------------------
                 //    Poisson's equation
                 //
