@@ -308,7 +308,10 @@ void IonFlow::evalResidual(double* x, double* rsd, int* diag,
                 if (m_do_energy[j]) {
                     double tlog = log(T(x,j));
                     size_t k = m_kElectron;
-                    double mu_av = poly5(tlog, m_mobi_e_fix.data());
+                    double mu_av = m_mobility[k+m_nsp*j];
+                    if (m_mobi_e_fix.size() > 0) {
+                        mu_av = poly5(tlog, m_mobi_e_fix.data());
+                    }
                     double ND_e = (ND(x,k,j) > 0.0 ? ND(x,k,j) : 0.0);
                     rsd[index(c_offset_T, j)] += ElectronCharge * mu_av
                                              * m_ohmic_heat_E * m_ohmic_heat_E
