@@ -691,6 +691,7 @@ cdef extern from "cantera/oneD/StFlow.h":
         cbool doEnergy(size_t)
         void enableSoret(cbool) except +translate_exception
         cbool withSoret()
+        double getChemHeat(size_t)
 
     cdef cppclass CxxFreeFlame "Cantera::FreeFlame":
         CxxFreeFlame(CxxIdealGasPhase*, int, int)

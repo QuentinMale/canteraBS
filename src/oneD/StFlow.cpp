@@ -62,6 +62,7 @@ StFlow::StFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
     m_wdot.resize(m_nsp,m_points, 0.0);
     m_ybar.resize(m_nsp);
     m_qdotRadiation.resize(m_points, 0.0);
+    q_chem.resize(m_points);
 
     //-------------- default solution bounds --------------------
     setBounds(0, -1e20, 1e20); // no bounds on u
@@ -115,6 +116,7 @@ void StFlow::resize(size_t ncomponents, size_t points)
 
     m_dz.resize(m_points-1);
     m_z.resize(m_points);
+    q_chem.resize(m_points);
 }
 
 void StFlow::setupGrid(size_t n, const doublereal* z)
@@ -436,6 +438,7 @@ void StFlow::evalResidual(double* x, double* rsd, int* diag,
                     sum2 += flxk*cp_R[k]/m_wt[k];
                 }
                 sum *= GasConstant * T(x,j);
+                q_chem[j] = sum;
                 double dtdzj = dTdz(x,j);
                 sum2 *= GasConstant * dtdzj;
 

@@ -467,6 +467,9 @@ cdef class _FlowBase(Domain1D):
         def __set__(self, do_radiation):
             self.flow.enableRadiation(<cbool>do_radiation)
 
+    def get_chem_heat(self, j):
+        return self.flow.getChemHeat(j)
+
 
 cdef CxxIdealGasPhase* getIdealGasPhase(ThermoPhase phase) except *:
     if pystr(phase.thermo.type()) != "IdealGas":

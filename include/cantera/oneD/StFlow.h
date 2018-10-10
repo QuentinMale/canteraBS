@@ -236,6 +236,11 @@ public:
         return m_kExcessRight;
     }
 
+    double getChemHeat(size_t j)
+    {
+        return q_chem[j];
+    }
+
 protected:
     doublereal wdot(size_t k, size_t j) const {
         return m_wdot(k,j);
@@ -414,6 +419,9 @@ protected:
 
     //! radiative heat loss vector
     vector_fp m_qdotRadiation;
+
+    //! chem heat
+    vector_fp q_chem;
 
     // fixed T and Y values
     vector_fp m_fixedtemp;
