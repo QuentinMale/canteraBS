@@ -114,6 +114,12 @@ protected:
 
     //! polynomial of the collision integral for O2/O2-
     vector_fp m_om11_O2;
+
+    //! Grid of electron energy
+    vector_fp m_electron_energy;
+
+    //! cross section of electron
+    DenseMatrix m_cross_section;
 };
 
 }

@@ -7,6 +7,7 @@
 #include "cantera/numerics/polyfit.h"
 #include "cantera/base/stringUtils.h"
 #include "MMCollisionInt.h"
+#include <boost/math/interpolators/barycentric_rational.hpp>
 
 namespace Cantera
 {
@@ -122,6 +123,26 @@ IonGasTransport::IonGasTransport() :
         1e-20, 2e-20, 4e-20, 7e-20, 1.18e-19, 1.4e-19, 1.17e-19, 1.12e-19,
         8e-20, 4e-20, 1.18e-20, 1.12e-20, 4e-21, 1e-22}
     };
+
+    // interpolate on to a grid from 0 to 10eV with 0.01 eV
+    size_t N = 1001;
+    double d_electron_energy = 0.01;
+    for (size_t j = 0; j < N; j++) {
+        double ee = j*d_electron_energy;
+        m_electron_energy.push_back(ee);
+    }
+    m_cross_section.resize(7,N,0.0);
+
+    for (size_t k = 0; k < 7; k++) {
+        vector_fp x = electron_energy[k];
+        vector_fp y = cross_section[k];
+        boost::math::barycentric_rational<double> interpolant(x.data(),
+                                                              y.data(),
+                                                              y.size());
+        for (size_t j = 0; j < N; j++) {
+            m_cross_section(k,j) = interpolant(m_electron_energy[j]);
+        }
+    }
 }
 
 void IonGasTransport::init(thermo_t* thermo, int mode, int log_level)
