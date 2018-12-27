@@ -54,6 +54,7 @@ public:
     //! The mixture transport for ionized gas
     //! The binary transport between two charged species is neglected.
     virtual void getMixDiffCoeffs(double* const d);
+    virtual void getMixDiffCoeffsMass(double* const d);
 
 protected:
     //! setup parameters for n64 model
