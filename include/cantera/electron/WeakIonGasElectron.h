@@ -132,9 +132,6 @@ protected:
 
     //! flag of setChemionScatRate
     bool m_setChemionScatRate;
-
-    //! flag of the initial calculation of f0
-    bool m_initial_f0;
 };
 
 }

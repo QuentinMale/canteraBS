@@ -145,7 +145,7 @@ cdef extern from "cantera/electron/Electron.h" namespace "Cantera":
         void setReducedElectricField(double)
         double electronTemperature()
         void setChemionScatRate(double)
-        void setBoltzmannSolver(size_t, double, double, double, cbool, double)
+        void setBoltzmannSolver(size_t, double, double, double, double)
 
         # initialization
         cbool addElectronCrossSection(shared_ptr[CxxElectronCrossSection]) except +translate_exception

@@ -98,12 +98,11 @@ public:
      *        initial EEDF to be Maxwell-Boltzmann distribution at init_kTe.
      */
     void setBoltzmannSolver(size_t maxn, double rtol, double delta0,
-                            double m, bool cont_mode, double init_kTe) {
+                            double m, double init_kTe) {
         m_maxn = maxn;
         m_rtol = rtol;
         m_delta0 = delta0;
         m_factorM = m;
-        m_continue_mode = cont_mode;
         m_init_kTe = init_kTe;
     }
 
@@ -206,9 +205,6 @@ protected:
 
     //! Reduction factor of error
     double m_factorM;
-
-    //! flag for continue mode
-    bool m_continue_mode;
 
     //! Initial electron mean energy
     double  m_init_kTe;

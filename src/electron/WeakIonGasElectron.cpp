@@ -12,7 +12,6 @@ namespace Cantera {
 WeakIonGasElectron::WeakIonGasElectron()
     : m_chemionScatRate(0.0)
     , m_setChemionScatRate(false)
-    , m_initial_f0(true)
 {
 }
 
@@ -149,18 +148,15 @@ void WeakIonGasElectron::calculateDistributionFunction()
         m_init_kTe = m_kT;
     }
 
-    if (m_continue_mode == false || m_initial_f0 == true) {
-        for (size_t j = 0; j < m_points; j++) {
-            m_f0(j) = 2.0 * pow(1.0/Pi, 0.5) * pow(m_init_kTe, -3./2.) *
-                      std::exp(-m_gridC[j]/m_init_kTe);
-        }
+    for (size_t j = 0; j < m_points; j++) {
+        m_f0(j) = 2.0 * pow(1.0/Pi, 0.5) * pow(m_init_kTe, -3./2.) *
+                  std::exp(-m_gridC[j]/m_init_kTe);
     }
 
     if (m_EN != Undef) {
         m_f0 = converge(m_f0);
     }
     m_f0_ok = true;
-    m_initial_f0 = false;
 }
 
 double WeakIonGasElectron::norm(Eigen::VectorXd f)
@@ -314,12 +310,11 @@ Eigen::VectorXd WeakIonGasElectron::iterate(Eigen::VectorXd f0, double delta)
     return f1;
 }
 
-Eigen::VectorXd WeakIonGasElectron::converge(Eigen::VectorXd f0_)
+Eigen::VectorXd WeakIonGasElectron::converge(Eigen::VectorXd f0)
 {
     double err0 = 0.0;
     double err1 = 0.0;
     double delta = m_delta0;
-    Eigen::VectorXd f0 = f0_;
     for (size_t n = 0; n < m_maxn; n++) {
         if (0.0 < err1 && err1 < err0) {
             // log extrapolation attempting to reduce the error a factor m

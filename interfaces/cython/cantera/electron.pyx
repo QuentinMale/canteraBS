@@ -35,9 +35,9 @@ cdef class Electron(_SolutionBase):
         self.electron.setChemionScatRate(rate)
 
     def set_boltzmann_solver(self, maxn=100, rtol=1e-5, delta0=1e14,
-                             m=4.0, cont=False, init_kTe=0.0):
-        """ Set calculation to continue mode"""
-        self.electron.setBoltzmannSolver(maxn, rtol, delta0, m, <cbool>cont, init_kTe)
+                             m=4.0, init_kTe=0.0):
+        """ Set boltzmann solver"""
+        self.electron.setBoltzmannSolver(maxn, rtol, delta0, m, init_kTe)
 
     property mean_electron_energy:
         """mean electron energy [eV]"""

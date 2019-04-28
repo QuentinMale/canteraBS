@@ -24,7 +24,6 @@ Electron::Electron()
     , m_rtol(1e-5)
     , m_delta0(1e14)
     , m_factorM(4.0)
-    , m_continue_mode(false)
     , m_init_kTe(0.0)
 {
     // default energy grid
