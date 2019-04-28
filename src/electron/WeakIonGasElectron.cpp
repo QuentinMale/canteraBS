@@ -314,12 +314,11 @@ Eigen::VectorXd WeakIonGasElectron::iterate(Eigen::VectorXd f0, double delta)
     return f1;
 }
 
-Eigen::VectorXd WeakIonGasElectron::converge(Eigen::VectorXd f0_)
+Eigen::VectorXd WeakIonGasElectron::converge(Eigen::VectorXd f0)
 {
     double err0 = 0.0;
     double err1 = 0.0;
     double delta = m_delta0;
-    Eigen::VectorXd f0 = f0_;
     for (size_t n = 0; n < m_maxn; n++) {
         if (0.0 < err1 && err1 < err0) {
             // log extrapolation attempting to reduce the error a factor m
