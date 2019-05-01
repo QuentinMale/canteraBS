@@ -54,6 +54,7 @@ IonFlow::IonFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
     m_refiner->setActive(c_offset_E, false);
     m_mobility.resize(m_nsp*m_points);
     m_do_electric_field.resize(m_points,false);
+    // m_trans->enableElectron(false);
 }
 
 void IonFlow::resize(size_t components, size_t points){

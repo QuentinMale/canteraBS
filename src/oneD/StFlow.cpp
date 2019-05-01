@@ -147,6 +147,7 @@ void StFlow::setTransport(Transport& trans)
 {
     m_trans = &trans;
     m_do_multicomponent = (m_trans->transportType() == "Multi");
+    m_trans->enableElectron(false);
 
     m_diff.resize(m_nsp*m_points);
     if (m_do_multicomponent) {
