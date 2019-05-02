@@ -131,6 +131,12 @@ protected:
         }
         return chargeDensity;
     }
+
+    //! fixed electron mobilities
+    vector_fp m_electronMobilities;
+
+    //! fixed electron diffusivities
+    vector_fp m_electronDiffusivities;
 };
 
 }

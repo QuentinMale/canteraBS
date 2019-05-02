@@ -72,8 +72,9 @@ void IonFlow::updateTransport(double* x, size_t j0, size_t j1)
         if (m_stage == 3) {
             size_t k = m_kElectron;
             double tlog = log(m_thermo->temperature());
-            m_mobility[k+m_nsp*j] = poly5(tlog, m_mobi_e_fix.data());
-            m_diff[k+m_nsp*j] = poly5(tlog, m_diff_e_fix.data());
+            double z = 0.5 * (m_z[j] + m_z[j+1]);
+            m_mobility[k+m_nsp*j] = linearInterp(z, m_z, m_electronMobilities);
+            m_diff[k+m_nsp*j] = linearInterp(z, m_z, m_electronDiffusivities);
         }
     }
 }
@@ -272,17 +273,14 @@ void IonFlow::setElectronTransport(vector_fp& tfix, vector_fp& diff_e,
 void IonFlow::_finalize(const double* x)
 {
     StFlow::_finalize(x);
-    vector_fp mobi_e(m_points);
-    vector_fp diff_e(m_points);
-    vector_fp tfix(m_points);
+    m_electronMobilities.resize(m_points);
+    m_electronDiffusivities.resize(m_points);
     if (m_stage == 3) {
         for (size_t j = 0; j < m_points; j++) {
             setGas(x, j);
-            mobi_e[j] = m_electron->electronMobility();
-            diff_e[j] = m_electron->electronDiffusivity();
-            tfix[j] = T(x,j);
+            m_electronMobilities[j] = m_electron->electronMobility();
+            m_electronDiffusivities[j] = m_electron->electronDiffusivity();
         }
-        setElectronTransport(tfix, diff_e, mobi_e);
     }
 
     bool p = m_do_electric_field[0];
