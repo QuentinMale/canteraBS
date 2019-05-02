@@ -360,8 +360,7 @@ void IonGasTransport::getMixDiffCoeffs(double* const d)
         for (size_t k = 0; k < m_nsp; k++) {
             if (k == m_kElectron) {
                 if (m_electron && m_do_electron) {
-                    double N = m_thermo->pressure() / (Boltzmann * m_thermo->temperature());
-                    d[m_kElectron] = m_electron->electronDiffusivity(N);
+                    d[m_kElectron] = m_electron->electronDiffusivity();
                 } else {
                     d[k] = 0.4 * m_kbt / ElectronCharge;
                 }
@@ -395,8 +394,7 @@ void IonGasTransport::getMobilities(double* const mobi)
     for (size_t k = 0; k < m_nsp; k++) {
         if (k == m_kElectron) {
             if (m_electron && m_do_electron) {
-                double N = m_thermo->pressure() / (Boltzmann * m_thermo->temperature());
-                mobi[k] = m_electron->electronMobility(N);
+                mobi[k] = m_electron->electronMobility();
             } else {
                 mobi[k] = 0.4;
             }
