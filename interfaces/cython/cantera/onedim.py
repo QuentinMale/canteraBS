@@ -605,7 +605,7 @@ class IonFlameBase(FlameBase):
         self.flame.set_solving_stage(stage)
         if stage == 1:
             super().solve(loglevel, refine_grid, auto)
-        if stage == 2:
+        elif stage == 2 or stage == 3:
             self.poisson_enabled = True
             super().solve(loglevel, refine_grid, auto)
 

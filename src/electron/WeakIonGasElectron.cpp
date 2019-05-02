@@ -152,7 +152,6 @@ void WeakIonGasElectron::calculateDistributionFunction()
         m_f0(j) = 2.0 * pow(1.0/Pi, 0.5) * pow(m_init_kTe, -3./2.) *
                   std::exp(-m_gridC[j]/m_init_kTe);
     }
-
     if (m_EN != Undef) {
         m_f0 = converge(m_f0);
     }

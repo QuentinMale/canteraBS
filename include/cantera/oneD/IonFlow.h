@@ -84,9 +84,6 @@ protected:
     //! flag for solving electric field or not
     std::vector<bool> m_do_electric_field;
 
-    //! flag for importing transport of electron
-    bool m_import_electron_transport;
-
     //! electrical properties
     vector_fp m_speciesCharge;
 

@@ -17,7 +17,6 @@ namespace Cantera
 
 IonFlow::IonFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
     StFlow(ph, nsp, points),
-    m_import_electron_transport(false),
     m_stage(1),
     m_kElectron(npos),
     m_electron(0)
@@ -70,7 +69,7 @@ void IonFlow::updateTransport(double* x, size_t j0, size_t j1)
     for (size_t j = j0; j < j1; j++) {
         setGasAtMidpoint(x,j);
         m_trans->getMobilities(&m_mobility[j*m_nsp]);
-        if (m_import_electron_transport) {
+        if (m_stage == 3) {
             size_t k = m_kElectron;
             double tlog = log(m_thermo->temperature());
             m_mobility[k+m_nsp*j] = poly5(tlog, m_mobi_e_fix.data());
@@ -84,7 +83,7 @@ void IonFlow::updateDiffFluxes(const double* x, size_t j0, size_t j1)
     if (m_stage == 1) {
         frozenIonMethod(x,j0,j1);
     }
-    if (m_stage == 2) {
+    if (m_stage == 2 || m_stage == 3) {
         electricFieldMethod(x,j0,j1);
     }
 }
@@ -158,13 +157,14 @@ void IonFlow::electricFieldMethod(const double* x, size_t j0, size_t j1)
 
 void IonFlow::setSolvingStage(const size_t stage)
 {
-    if (stage == 1 || stage == 2) {
+    if (stage == 1 || stage == 2 || stage == 3) {
         m_stage = stage;
     } else {
-        throw CanteraError("IonFlow::updateDiffFluxes",
+        throw CanteraError("IonFlow::setSolvingStage",
                     "solution stage must be set to: "
                     "1) frozenIonMethod, "
-                    "2) electricFieldEqnMethod");
+                    "2) electricFieldEqnMethod,"
+                    "3) enableBoltzmannEqu");
     }
 }
 
@@ -172,7 +172,7 @@ void IonFlow::evalResidual(double* x, double* rsd, int* diag,
                            double rdt, size_t jmin, size_t jmax)
 {
     StFlow::evalResidual(x, rsd, diag, rdt, jmin, jmax);
-    if (m_stage != 2) {
+    if (m_stage == 1) {
         return;
     }
 
@@ -256,7 +256,6 @@ void IonFlow::fixElectricField(size_t j)
 void IonFlow::setElectronTransport(vector_fp& tfix, vector_fp& diff_e,
                                    vector_fp& mobi_e)
 {
-    m_import_electron_transport = true;
     size_t degree = 5;
     size_t n = tfix.size();
     vector_fp tlog;
@@ -273,6 +272,18 @@ void IonFlow::setElectronTransport(vector_fp& tfix, vector_fp& diff_e,
 void IonFlow::_finalize(const double* x)
 {
     StFlow::_finalize(x);
+    vector_fp mobi_e(m_points);
+    vector_fp diff_e(m_points);
+    vector_fp tfix(m_points);
+    if (m_stage == 3) {
+        for (size_t j = 0; j < m_points; j++) {
+            setGas(x, j);
+            mobi_e[j] = m_electron->electronMobility();
+            diff_e[j] = m_electron->electronDiffusivity();
+            tfix[j] = T(x,j);
+        }
+        setElectronTransport(tfix, diff_e, mobi_e);
+    }
 
     bool p = m_do_electric_field[0];
     if (p) {
