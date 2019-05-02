@@ -81,6 +81,7 @@ protected:
     //! Solving phase two: the electric field equation is added coupled
     //! by the electrical drift
     virtual void electricFieldMethod(const double* x, size_t j0, size_t j1);
+    virtual void getWdot(double* x, size_t j);
     //! flag for solving electric field or not
     std::vector<bool> m_do_electric_field;
 
@@ -137,6 +138,9 @@ protected:
 
     //! fixed electron diffusivities
     vector_fp m_electronDiffusivities;
+
+    //! fixed electron temperature
+    vector_fp m_electronTemperature;
 };
 
 }

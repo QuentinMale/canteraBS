@@ -71,12 +71,17 @@ void IonFlow::updateTransport(double* x, size_t j0, size_t j1)
         m_trans->getMobilities(&m_mobility[j*m_nsp]);
         if (m_stage == 3) {
             size_t k = m_kElectron;
-            double tlog = log(m_thermo->temperature());
             double z = 0.5 * (m_z[j] + m_z[j+1]);
             m_mobility[k+m_nsp*j] = linearInterp(z, m_z, m_electronMobilities);
             m_diff[k+m_nsp*j] = linearInterp(z, m_z, m_electronDiffusivities);
         }
     }
+}
+
+void IonFlow::getWdot(double* x, size_t j) {
+    setGas(x,j);
+    m_kin->setElectronTemperature(m_electronTemperature[j]);
+    m_kin->getNetProductionRates(&m_wdot(0,j));
 }
 
 void IonFlow::updateDiffFluxes(const double* x, size_t j0, size_t j1)
@@ -275,11 +280,13 @@ void IonFlow::_finalize(const double* x)
     StFlow::_finalize(x);
     m_electronMobilities.resize(m_points);
     m_electronDiffusivities.resize(m_points);
+    m_electronTemperature.resize(m_points);
     if (m_stage == 3) {
         for (size_t j = 0; j < m_points; j++) {
             setGas(x, j);
             m_electronMobilities[j] = m_electron->electronMobility();
             m_electronDiffusivities[j] = m_electron->electronDiffusivity();
+            m_electronTemperature[j] = m_electron->electronTemperature();
         }
     }
 
