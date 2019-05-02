@@ -18,13 +18,14 @@ Electron::Electron()
     , m_ncs(0)
     , m_points(200)
     , m_kT(Undef)
-    , m_EN(Undef)
+    , m_E(Undef)
     , m_f0_ok(false)
     , m_maxn(100)
     , m_rtol(1e-5)
     , m_delta0(1e14)
     , m_factorM(4.0)
     , m_init_kTe(0.0)
+    , m_N(1.0)
 {
     // default energy grid
     m_gridC.resize(m_points);
@@ -56,6 +57,7 @@ void Electron::update_T()
     double kT = Boltzmann * m_thermo->temperature() / ElectronCharge;
     if (m_kT != kT) {
         m_kT = kT;
+        m_N = m_thermo->pressure() / Boltzmann / m_thermo->temperature();
         m_f0_ok = false;
     }
 }

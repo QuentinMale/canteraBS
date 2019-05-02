@@ -67,14 +67,14 @@ public:
     void init(thermo_t* thermo);
 
     //! Reduced electric field
-    double reducedElectricField() const {
-        return m_EN;
+    double electricField() const {
+        return m_E;
     }
 
     //! Set reduced electric field
-    void setReducedElectricField(double EN) {
-        if (m_EN != EN) {
-            m_EN = EN;
+    void setElectricField(double E) {
+        if (m_E != E) {
+            m_E = E;
             m_f0_ok = false;
         }
     }
@@ -159,7 +159,7 @@ protected:
     double m_kT;
 
     //! reduced electric field
-    double m_EN;
+    double m_E;
 
     //! normalized electron energy distribution function
     Eigen::VectorXd m_f0;
@@ -206,6 +206,9 @@ protected:
 
     //! Initial electron mean energy
     double  m_init_kTe;
+
+    //! Gas number density
+    double m_N;
 };
 
 //! typedef for the Electron class
