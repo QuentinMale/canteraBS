@@ -768,6 +768,7 @@ cdef extern from "cantera/oneD/IonFlow.h":
         void solveElectricField()
         void fixElectricField()
         cbool doElectricField(size_t)
+        void setElectron(CxxElectron&) except +translate_exception
 
 
 cdef extern from "cantera/oneD/Sim1D.h":

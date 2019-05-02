@@ -19,7 +19,8 @@ IonFlow::IonFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
     StFlow(ph, nsp, points),
     m_import_electron_transport(false),
     m_stage(1),
-    m_kElectron(npos)
+    m_kElectron(npos),
+    m_electron(0)
 {
     // make a local copy of species charge
     for (size_t k = 0; k < m_nsp; k++) {
@@ -54,7 +55,6 @@ IonFlow::IonFlow(IdealGasPhase* ph, size_t nsp, size_t points) :
     m_refiner->setActive(c_offset_E, false);
     m_mobility.resize(m_nsp*m_points);
     m_do_electric_field.resize(m_points,false);
-    // m_trans->enableElectron(false);
 }
 
 void IonFlow::resize(size_t components, size_t points){

@@ -568,6 +568,16 @@ cdef class IonFlow(_FlowBase):
         self.set_transient_tolerances(**chargetol)
         self.have_user_tolerances = False
 
+    def set_electron(self, _SolutionBase phase):
+        """
+        Set the `Solution` object used for calculating electron properties.
+        """
+        self._weakref_proxy = _WeakrefProxy()
+        self.gas._references[self._weakref_proxy] = True
+        self.gas = phase
+        if self.gas.electron is not NULL:
+            (<CxxIonFlow*>self.flow).setElectron(deref(self.gas.electron))
+
 
 cdef class Sim1D:
     """

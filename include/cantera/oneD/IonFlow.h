@@ -7,6 +7,7 @@
 #define CT_IONFLOW_H
 
 #include "cantera/oneD/StFlow.h"
+#include "cantera/electron/Electron.h"
 
 namespace Cantera
 {
@@ -44,6 +45,11 @@ public:
     void fixElectricField(size_t j=npos);
     bool doElectricField(size_t j) {
         return m_do_electric_field[j];
+    }
+
+    //! Set the electron.
+    void setElectron(Electron& elec) {
+        m_electron = &elec;
     }
 
     /**
@@ -102,6 +108,9 @@ protected:
 
     //! index of electron
     size_t m_kElectron;
+
+    //! Electron object
+    Electron* m_electron;
 
     //! electric field
     double E(const double* x, size_t j) const {

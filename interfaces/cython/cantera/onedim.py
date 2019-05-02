@@ -601,6 +601,7 @@ class IonFlameBase(FlameBase):
         return self.profile(self.flame, 'eField')
 
     def solve(self, loglevel=1, refine_grid=True, auto=False, stage=1, enable_energy=True):
+        self.flame.set_electron(self.gas)
         self.flame.set_solving_stage(stage)
         if stage == 1:
             super().solve(loglevel, refine_grid, auto)
