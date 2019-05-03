@@ -196,9 +196,14 @@ void IonFlow::evalResidual(double* x, double* rsd, int* diag,
             rsd[index(c_offset_E, j)] = dEdz(x,j) - rho_e(x,j) / epsilon_0;
             diag[index(c_offset_E, j)] = 0;
         } else {
-            if (m_z_Et.size() > 0) {
+            if (m_stage == 3 && j < m_points - 3) {
                 // Joule heating
-                double Et = linearInterp(m_z[j], m_z_Et, m_Et);
+                double Et = m_electron->electricField() * std::exp(m_zfixed);
+                double z_cut = 0.5 * m_z[m_points-1];
+                double lambda = z_cut * 0.5;
+                if (m_z[j] > z_cut) {
+                    Et *= std::exp((z_cut - m_z[j]) / lambda);
+                }
                 rsd[index(c_offset_T, j)] += ElectronCharge * Et * Et *
                                              m_electronMobilities[j] *
                                              ND(x,m_kElectron,j) /
