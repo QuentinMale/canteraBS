@@ -540,4 +540,34 @@ double WeakIonGasElectron::electronTemperature(Eigen::VectorXd f0)
     return 2./3. * 0.4 * sum / Boltzmann * ElectronCharge;
 }
 
+vector_fp WeakIonGasElectron::getNetProductionRate()
+{
+    calculateDistributionFunction();
+    vector_fp wdot(m_thermo->nSpecies(), 0.0);
+    double X_E = m_thermo->moleFraction("E");
+    for (size_t k = 0; k < m_ncs; k++) {
+        size_t kr = m_thermo->speciesIndex(m_targets[k]);
+        if (kr != npos) {
+            double rate = m_N * m_N * m_moleFractions[k] * X_E *
+                          rateCoefficient(k);
+            std::string prdct = m_products[k];
+            size_t dp = prdct.find(" + ");
+            if (dp != npos) {
+                size_t kp0 = m_thermo->speciesIndex(prdct.substr(0, dp));
+                if (kp0 != npos) {
+                    wdot[kp0] += rate;
+                }
+                prdct.erase(0, dp + 3);
+            }
+            size_t kp = m_thermo->speciesIndex(prdct);
+            size_t kr = m_thermo->speciesIndex(m_targets[k]);
+            if (kp != npos) {
+                wdot[kp] += rate;
+                wdot[kr] -= rate;
+            }
+        }
+    }
+    return wdot;
+}
+
 }
