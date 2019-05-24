@@ -82,9 +82,6 @@ protected:
     //! http://udfa.ajmarkwick.net/
     void calculateChemionScatRate();
 
-    //! Set grid cache
-    void setGridCache();
-
     //! The integral in [a, b] of x * u(x) exp[g * (x0 - x)]
     //! assuming that u is linear with u(a) = u0 and u(b) = u1
     double integralPQ(double a, double b, double u0, double u1,
@@ -137,18 +134,6 @@ protected:
 
     //! vector of total elastic cross section weighted with mass ratio
     vector_fp m_sigmaElastic;
-
-    //! Location of cell j for grid cache
-    std::vector<std::vector<size_t>> m_j;
-
-    //! Location of cell i for grid cache
-    std::vector<std::vector<size_t>> m_i;
-
-    //! Cross section at the boundaries of the overlap of cell i and j
-    std::vector<std::vector<vector_fp>> m_sigma;
-
-    //! The energy boundaries of the overlap of cell i and j
-    std::vector<std::vector<vector_fp>> m_eps;
 
     //! Set chemionization scattering-in rate
     double m_chemionScatRate;

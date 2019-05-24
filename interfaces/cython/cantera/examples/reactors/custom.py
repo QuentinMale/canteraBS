@@ -13,7 +13,7 @@ methods as the Sundials CVODES solver used by Cantera.
 import cantera as ct
 import numpy as np
 import scipy.integrate
-
+import csv
 class ReactorOde:
     def __init__(self, gas):
         # Parameters of the ODE system and auxiliary data are stored in the
@@ -58,6 +58,12 @@ while solver.successful() and solver.t < t_end:
     solver.integrate(solver.t + dt)
     gas.TPY = solver.y[0], P, solver.y[1:]
     states.append(gas.state, t=solver.t)
+
+# save csv
+with open('rate1.csv','w') as csvfile2:
+   writer = csv.writer(csvfile2)
+   for n in range(f.flame.n_points):
+       writer.writerow((f.grid[n],f.heat_release_rate[n]))
 
 # Plot the results
 try:
