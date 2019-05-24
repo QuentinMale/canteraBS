@@ -272,6 +272,7 @@ void Electron::setupGrid(size_t n, const double* eps)
         m_gridB[i] = eps[i];
         m_gridC[i] = 0.5 * (eps[i] + eps[i+1]);
     }
+    setGridCache();
     m_f0_ok = false;
 }
 
