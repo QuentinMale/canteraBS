@@ -80,6 +80,9 @@ const double OneAtm = 1.01325e5;
 //! One bar [Pa]
 const double OneBar = 1.0E5;
 
+//! Unified atomic mass unit (Dalton) [kg]
+const double Dalton = 1.66053906660e-27;
+
 //@}
 
 /*!
