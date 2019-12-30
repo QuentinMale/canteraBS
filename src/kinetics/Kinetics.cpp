@@ -459,7 +459,7 @@ void Kinetics::addPhase(thermo_t& thermo)
     resizeSpecies();
 }
 
-void Kinetics::addElectron(Electron* electron)
+void Kinetics::addPlasmaElectron(PlasmaElectron* electron)
 {
     m_electron = electron;
 }
