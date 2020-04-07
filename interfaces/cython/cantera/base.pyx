@@ -6,8 +6,7 @@ from collections import defaultdict as _defaultdict
 cdef class _SolutionBase:
     def __cinit__(self, infile='', name='', adjacent=(), origin=None,
                   source=None, yaml=None, thermo=None, species=(),
-                  kinetics=None, reactions=(), plasma_electron=None,
-                  electron_cross_sections=(), efile=None, **kwargs):
+                  kinetics=None, reactions=(), **kwargs):
 
         if 'phaseid' in kwargs:
             if name is not '':
@@ -37,11 +36,9 @@ cdef class _SolutionBase:
             self.transport = other.transport
             self._base = other._base
             self._source = other._source
-            self.plasmaElectron = other.plasmaElectron
             self._thermo = other._thermo
             self._kinetics = other._kinetics
             self._transport = other._transport
-            self._plasmaElectron = other._plasmaElectron
 
             self.thermo_basis = other.thermo_basis
             self._selected_species = other._selected_species.copy()
@@ -145,6 +142,10 @@ cdef class _SolutionBase:
                    "'Solution' instead").format(type(self).__name__)
             raise NotImplementedError(msg)
 
+        # Plasma
+        if pystr(self.thermo.type()) in ("WeakIonizedGas"):
+            self.thermo.initPlasma(phaseNode, root)
+
         # Kinetics
         cdef vector[CxxThermoPhase*] v
         cdef _SolutionBase phase
@@ -159,13 +160,6 @@ cdef class _SolutionBase:
         else:
             self.kinetics = NULL
 
-        # Plasma
-        if isinstance(self, PlasmaElectron):
-            self._plasmaElectron = newPlasmaElectron(phaseNode, root, self.thermo)
-            self.plasmaElectron = self._plasmaElectron.get()
-            self.kinetics.addPlasmaElectron(self.plasmaElectron)
-        else:
-            self.plasmaElectron = NULL
 
     def _init_cti_xml(self, infile, name, adjacent, source):
         """
@@ -241,21 +235,6 @@ cdef class _SolutionBase:
             self.kinetics.skipUndeclaredThirdBodies(True)
             for reaction in reactions:
                 self.kinetics.addReaction(reaction._reaction)
-
-    def _init_electron(self, plasma_electron, electron_cross_sections):
-        """
-        Instantiate a new PlasmaElectron object.
-        """
-        cdef ElectronCrossSection ecs
-        if isinstance(self, PlasmaElectron):
-            self.plasmaElectron = newPlasmaElectron(stringify(plasma_electron))
-            self._plasmaElectron.reset(self.plasmaElectron)
-            for ecs in electron_cross_sections:
-                self.plasmaElectron.addElectronCrossSection(ecs._electron_cross_section)
-            self.plasmaElectron.init(self.thermo)
-            self.kinetics.addPlasmaElectron(self.plasmaElectron)
-        else:
-            self.plasmaElectron = NULL
 
     def __getitem__(self, selection):
         copy = self.__class__(origin=self)

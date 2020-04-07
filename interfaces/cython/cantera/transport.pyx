@@ -145,8 +145,6 @@ cdef class Transport(_SolutionBase):
                 self.transport = newTransportMgr(stringify(model), self.thermo)
             self._transport.reset(self.transport)
 
-        if self.plasmaElectron != NULL:
-            self.transport.initElectron(self.plasmaElectron)
         super().__init__(*args, **kwargs)
         self.base.setTransport(self._transport)
 
@@ -233,13 +231,6 @@ cdef class Transport(_SolutionBase):
         """
         def __get__(self):
             return get_transport_1d(self, tran_getMobilities)
-
-    property electron_transport_enabled:
-        """
-        enable calculation of electron transport by solving Boltzmann equation
-        """
-        def __set__(self, enable):
-            self.transport.enableElectron(<cbool>enable)
 
 
 cdef class DustyGasTransport(Transport):
