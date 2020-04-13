@@ -287,9 +287,9 @@ cdef extern from "cantera/thermo/IdealGasPhase.h":
         CxxIdealGasPhase()
 
 
-cdef extern from "cantera/plasma/PlasmaElectron.h":
-    cdef cppclass CxxPlasmaElectron "Cantera::PlasmaElectron":
-        CxxPlasmaElectron()
+cdef extern from "cantera/plasma/PlasmaPhase.h":
+    cdef cppclass CxxPlasmaPhase "Cantera::PlasmaPhase":
+        CxxPlasmaPhase()
 
         #Properties
         double grid(size_t)
@@ -1047,7 +1047,7 @@ cdef class InterfacePhase(ThermoPhase):
     cdef CxxSurfPhase* surf
 
 cdef class PlasmaPhase(ThermoPhase):
-    cdef CxxPlasmaElectron* plasma
+    cdef CxxPlasmaPhase* plasma
 
 cdef class Reaction:
     cdef shared_ptr[CxxReaction] _reaction
