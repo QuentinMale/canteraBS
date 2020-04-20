@@ -382,7 +382,8 @@ cdef extern from "cantera/kinetics/Reaction.h" namespace "Cantera":
         CxxElectronTemperatureReaction()
 
     cdef cppclass CxxPlasmaReaction "Cantera::PlasmaReaction" (CxxElementaryReaction):
-        CxxPlasmaReaction()       
+        CxxPlasmaReaction()
+        stdmap[string,string] process
 
     cdef cppclass CxxThreeBodyReaction "Cantera::ThreeBodyReaction" (CxxElementaryReaction):
         CxxThreeBodyReaction()
@@ -481,7 +482,6 @@ cdef extern from "cantera/kinetics/Kinetics.h" namespace "Cantera":
 
         double multiplier(int)
         void setMultiplier(int, double)
-        void setElectronTemperature(double)
 
 
 cdef extern from "cantera/kinetics/InterfaceKinetics.h":
