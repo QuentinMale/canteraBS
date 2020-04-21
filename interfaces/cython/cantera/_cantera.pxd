@@ -281,6 +281,10 @@ cdef extern from "cantera/thermo/ThermoPhase.h" namespace "Cantera":
         void setState_Psat(double P, double x) except +translate_exception
         void setState_TPQ(double T, double P, double Q) except +translate_exception
 
+        # non-equilibrium properties
+        double electronTemperature() except +translate_exception
+        void setElectronTemperature(double) except +translate_exception
+
 
 cdef extern from "cantera/thermo/IdealGasPhase.h":
     cdef cppclass CxxIdealGasPhase "Cantera::IdealGasPhase":
