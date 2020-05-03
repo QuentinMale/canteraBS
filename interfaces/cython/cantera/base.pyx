@@ -143,7 +143,7 @@ cdef class _SolutionBase:
             raise NotImplementedError(msg)
 
         # Plasma
-        if pystr(self.thermo.type()) in ("WeakIonizedGas"):
+        if pystr(self.thermo.type()) in ("WeaklyIonizedGas"):
             self.thermo.initPlasma(phaseNode, root)
 
         # Kinetics
