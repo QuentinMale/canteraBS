@@ -122,7 +122,7 @@ cdef class _SolutionBase:
             self.thermo = NULL
 
         # Plasma
-        if pystr(self.thermo.type()) in ("WeakIonizedGas"):
+        if pystr(self.thermo.type()) in ("WeaklyIonizedGas"):
             self.thermo.initPlasma(phaseNode, root)
 
         # Kinetics
