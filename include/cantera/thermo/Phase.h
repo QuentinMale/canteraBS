@@ -987,14 +987,14 @@ private:
 
     doublereal m_temp; //!< Temperature (K). This is an independent variable
 
+    //! Electron temperature (K).
+    double m_electron_temp;
+
     //! Density (kg m-3). This is an independent variable except in the case
     //! of incompressible phases, where it has to be changed using the
     //! assignDensity() method. For compressible substances, the pressure is
     //! determined from this variable rather than other way round.
     doublereal m_dens;
-
-    //! Electron temperature (K).
-    double m_electron_temp;
 
     doublereal m_mmw; //!< mean molecular weight of the mixture (kg kmol-1)
 
