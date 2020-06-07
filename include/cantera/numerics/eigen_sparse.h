@@ -4,3 +4,8 @@
 #else
 #include "cantera/ext/Eigen/Sparse"
 #endif
+
+namespace Cantera {
+    typedef Eigen::SparseMatrix<double> SparseMat_fp;
+    typedef Eigen::Triplet<double> Triplet_fp;
+}
