@@ -10,12 +10,10 @@
 #define CT_WEAKLYIONIZEDGAS_H
 
 #include "cantera/plasma/PlasmaPhase.h"
-#include <Eigen/Sparse>
+#include "cantera/numerics/eigen_sparse.h"
 
 namespace Cantera
 {
-typedef Eigen::SparseMatrix<double> SparseMat;
-
 /**
  * This class calculates the electron energy distribution function (EEDF) in a weakly
  * ionized gas by modeling collisions between electrons and other species represented
@@ -73,14 +71,14 @@ typedef Eigen::SparseMatrix<double> SparseMat;
  *     \left[ \tilde{W} F_0 - \tilde{D} \frac{d F_0}{d \epsilon} \right]_{i-1/2} =
  *     \int_{\epsilon-1/2}^{\epsilon+1/2}\tilde{S}d\epsilon.
  * \f]
- * The left-hand side is discretized as shown in matrix_A(), and the right-hand side is discritized as,
+ * The left-hand side is discretized as shown in matrix_A(), and the right-hand side is discretized as,
  * \f[
  *     \int_{\epsilon - 1/2}^{\epsilon + 1/2} \tilde{S} d\epsilon =
  *     -\sum_{k=inelastic} X_k P_{i,k} F_{0,i} + \sum_{k=inelastic} X_k \sum_j Q_{i,j,k} F_{0,j},
  * \f]
  * where \f$ P_{i,k} \f$ and \f$ Q_{i,j,k} \f$ are defined in matrix_P() and matrix_Q(), respectively. \n
  * Note that references [1] and [2] are used as the blueprint of this class. Reference [1] provides the physics and
- * the methametical model (govening equations), and reference [2] provides the implementation of the numerical scheme.
+ * the mathametical model (governing equations), and reference [2] provides the implementation of the numerical scheme.
  *
  * Reference: \n
  * [1] G. J. M. Hagelaar and L. C. Pitchford
@@ -101,7 +99,7 @@ public:
         return "WeaklyIonizedGas";
     }
 
-    //! Electron diffusivity \f$ D_e \f$ in [m<SUP>2</SUP>/s].
+    //! Electron diffusivity \f$ D_e \f$ in [m^2/s].
     /**
      * \f[
      *     D_e = \frac{\gamma}{3 N} \int_0^{\infty} \frac{\epsilon}
@@ -113,7 +111,7 @@ public:
      */
     virtual double electronDiffusivity();
 
-    //! Electron mobility \f$ \mu_e \f$ in [m<SUP>2</SUP>/V/s].
+    //! Electron mobility \f$ \mu_e \f$ in [m^2/V/s].
     /**
      * \f[
      *     \mu_e = -\frac{\gamma}{3 N} \int_0^{\infty} \frac{\epsilon}
@@ -151,8 +149,8 @@ public:
     //! Elastic power loss of one electron to the gas in [eV/s].
     /**
      * \f[
-     *     P_{elastic loss} = N \sum_{k=elastic} \gamma X_k \frac{2m_e}{M_k} \int_0^\infty
-     *                        \sigma_k \left(\epsilon^2 f_0 + \frac{k_B T}{e} \frac{df_0}{\epsilon} \right) d\epsilon,
+     *     P_{elastic} = N \sum_{k=elastic} \gamma X_k \frac{2m_e}{M_k} \int_0^\infty
+     *                   \sigma_k \left(\epsilon^2 f_0 + \frac{k_B T}{e} \frac{df_0}{\epsilon} \right) d\epsilon,
      * \f]
      * where \f$ \frac{m_e}{M_k} \f$ is the mass ratio of electron to the molecule, \f$ \frac{k_B T}{e} \f$ is
      * the gas temperature in eV (#m_kT).
@@ -162,17 +160,17 @@ public:
     //! Inelastic power loss of one electron to the gas in [eV/s].
     /**
      * \f[
-     *     P_{inelastic loss} = N \sum_{k=inelastic} U_k X_k \left( y_k^{low} \text{k}_k - y_k^{up} \text{k}^{rev}_k \right) 
+     *     P_{inelastic} = N \sum_{k=inelastic} U_k X_k \left( y_k^{low} \text{k}_k - y_k^{up} \text{k}^{rev}_k \right)
      * \f]
-     * where \f$ U_k \f$ is the threshold energy, \f$ y_k^{up/low} \f$ is the fractional populations of the upper and lower states from bi-Maxwellian
-     * Boltzmann factors, and \f$ \text{k}^{rev} \f$ is the reverse rate coefficient.
+     * where \f$ U_k \f$ is the threshold energy, \f$ y_k^{up/low} \f$ is the fractional populations of the upper and
+     * lower states from bi-Maxwellian Boltzmann factors, and \f$ \text{k}^{rev} \f$ is the reverse rate coefficient.
      */
     virtual double inelasticPowerLoss();
 
     //! 
     virtual double totalCollisionFreq();
 
-    //! Reverse rate coefficient for the electron collision process k in [m<SUP>3</SUP>/s].
+    //! Reverse rate coefficient for the electron collision process k in [m^3/s].
     /**
      * \f[
      *     \text{k}_{rev} = \gamma \int_0^{\infty} (\epsilon + U_k) \sigma_k(\epsilon + U_k) f_0(\epsilon) d\epsilon,
@@ -182,7 +180,7 @@ public:
      */
     virtual double reverseRateCoefficient(size_t k);
 
-    //! Rate coefficient for the electron collision process k in [m<SUP>3</SUP>/s].
+    //! Rate coefficient for the electron collision process k in [m^3/s].
     /**
      * \f[
      *     \text{k} = \gamma \int_0^{\infty} \epsilon \sigma_k(\epsilon) f_0(\epsilon) d\epsilon,
@@ -216,7 +214,7 @@ protected:
     void calculateDistributionFunction();
 
     //! Calculate total cross section. The total cross section is defined as the summation
-    //! of weighted (by mole fractions) cross sections of all coliision processes.
+    //! of weighted (by mole fractions) cross sections of all collision processes.
     void calculateTotalCrossSection();
 
     //! Calculate total elastic cross section \f$ \sigma_{\epsilon} \f$.
@@ -240,7 +238,7 @@ protected:
      * g_i = \frac{1}{\epsilon_{i+1} - \epsilon_{i-1}} \ln(\frac{F_{0, i+1}}{F_{0, i-1}})
      * \f]
      */
-    vector_fp vector_g(Eigen::VectorXd& f0);
+    vector_fp vector_g(const Eigen::VectorXd& f0);
 
     //! The matrix of scattering-out.
     /**
@@ -249,7 +247,7 @@ protected:
      * \epsilon \sigma_k exp[(\epsilon_i - \epsilon)g_i] d \epsilon
      * \f]
      */
-    SparseMat matrix_P(vector_fp& g, size_t k);
+    SparseMat_fp matrix_P(const vector_fp& g, size_t k);
 
     //! The matrix of scattering-in
     /**
@@ -268,7 +266,7 @@ protected:
      * \epsilon_2 = \min(\max(\epsilon_{i+1/2}+u_k, \epsilon_{j-1/2}),\epsilon_{j+1/2})
      * \f]
      */
-    SparseMat matrix_Q(vector_fp& g, size_t k);
+    SparseMat_fp matrix_Q(const vector_fp& g, size_t k);
 
     //! Matrix A (Ax = b) of the equation of EEDF, which is discretized by the exponential scheme
     //! of Scharfetter and Gummel,
@@ -280,22 +278,22 @@ protected:
      * \f]
      * where \f$ z_{i+1/2} = \tilde{w}_{i+1/2} / \tilde{D}_{i+1/2} \f$ (Peclet number).
      */
-    SparseMat matrix_A(Eigen::VectorXd& f0);
+    SparseMat_fp matrix_A(const Eigen::VectorXd& f0);
 
     //! An iteration of solving electron energy distribution function
-    Eigen::VectorXd iterate(Eigen::VectorXd& f0, double delta = 1e14);
+    Eigen::VectorXd iterate(const Eigen::VectorXd& f0, double delta = 1e14);
 
-    //! Iterate until convergence and obtain EEDF
-    Eigen::VectorXd converge(Eigen::VectorXd& f0);
+    //! Iterate f0 (EEDF) until convergence
+    void converge(Eigen::VectorXd& f0);
 
     //! Reduced net production frequency. Equation (10) of ref. [1]
     //! divided by N.
     //! @param f0 EEDF
-    double netProductionFreq(Eigen::VectorXd& f0);
+    double netProductionFreq(const Eigen::VectorXd& f0);
 
     //! electron temperature. For internal use only. This function is used to evaluate EEDF by
-    //! comparing the resulting electron temeprature to gas temperature.
-    double electronTemperature(Eigen::VectorXd f0);
+    //! comparing the resulting electron temperature to gas temperature.
+    double electronTemperature(const Eigen::VectorXd f0);
 
     //! bi-Maxwellian Boltzmann factor. Assume that the excitation
     //! temperature equals to the gas temperature.

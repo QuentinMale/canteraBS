@@ -4,11 +4,8 @@
 #include "cantera/plasma/WeaklyIonizedGas.h"
 #include "cantera/base/utilities.h"
 #include "cantera/numerics/funcs.h"
-#include <Eigen/SparseLU>
 
 namespace Cantera {
-
-typedef Eigen::Triplet<double> Triplet;
 
 //! Calculate the norm of EEDF
 double norm(const Eigen::VectorXd& f, const vector_fp& grid)
@@ -91,7 +88,7 @@ void WeaklyIonizedGas::calculateDistributionFunction()
     }
 
     if (m_E != 0.0) {
-        m_f0 = converge(m_f0);
+        converge(m_f0);
         double Te = electronTemperature(m_f0);
         // Evaluate the EEDF by comparing electron temperature to gas temperature,
         // and replace the EEDF with a Maxwellian distribution at gas temperature.
@@ -133,11 +130,11 @@ double WeaklyIonizedGas::integralPQ(double a, double b, double u0, double u1,
     return c0 * A1 + c1 * A2;
 }
 
-vector_fp WeaklyIonizedGas::vector_g(Eigen::VectorXd& f0)
+vector_fp WeaklyIonizedGas::vector_g(const Eigen::VectorXd& f0)
 {
     vector_fp g(m_points, 0.0);
     g[0] = std::log(f0(1)/f0(0)) / (m_gridCenter[1] - m_gridCenter[0]);
-    double N = m_points - 1;
+    size_t N = m_points - 1;
     g[N] = std::log(f0(N)/f0(N-1)) / (m_gridCenter[N] - m_gridCenter[N-1]);
     for (size_t i = 1; i < m_points - 1; i++) {
         g[i] = std::log(f0(i+1)/f0(i-1)) / (m_gridCenter[i+1] - m_gridCenter[i-1]);
@@ -145,9 +142,9 @@ vector_fp WeaklyIonizedGas::vector_g(Eigen::VectorXd& f0)
     return g;
 }
 
-SparseMat WeaklyIonizedGas::matrix_P(vector_fp& g, size_t k)
+SparseMat_fp WeaklyIonizedGas::matrix_P(const vector_fp& g, size_t k)
 {
-    std::vector<Triplet> tripletList;
+    std::vector<Triplet_fp> tripletList;
     for (size_t n = 0; n < m_eps[k].size(); n++) {
         double eps_a = m_eps[k][n][0];
         double eps_b = m_eps[k][n][1];
@@ -156,16 +153,16 @@ SparseMat WeaklyIonizedGas::matrix_P(vector_fp& g, size_t k)
         double j = m_j[k][n];
         double r = integralPQ(eps_a, eps_b, sigma_a, sigma_b, g[j], m_gridCenter[j]);
         double p = m_gamma * r;
-        tripletList.push_back(Triplet(j, j, p));
+        tripletList.push_back(Triplet_fp(j, j, p));
     }
-    SparseMat P(m_points, m_points);
+    SparseMat_fp P(m_points, m_points);
     P.setFromTriplets(tripletList.begin(), tripletList.end());
     return P;
 }
 
-SparseMat WeaklyIonizedGas::matrix_Q(vector_fp& g, size_t k)
+SparseMat_fp WeaklyIonizedGas::matrix_Q(const vector_fp& g, size_t k)
 {
-    std::vector<Triplet> tripletList;
+    std::vector<Triplet_fp> tripletList;
     for (size_t n = 0; n < m_eps[k].size(); n++) {
         double eps_a = m_eps[k][n][0];
         double eps_b = m_eps[k][n][1];
@@ -175,14 +172,14 @@ SparseMat WeaklyIonizedGas::matrix_Q(vector_fp& g, size_t k)
         double j = m_j[k][n];
         double r = integralPQ(eps_a, eps_b, sigma_a, sigma_b, g[j], m_gridCenter[j]);
         double q = m_inFactor[k] * m_gamma * r;
-        tripletList.push_back(Triplet(i, j, q));
+        tripletList.push_back(Triplet_fp(i, j, q));
     }
-    SparseMat Q(m_points, m_points);
+    SparseMat_fp Q(m_points, m_points);
     Q.setFromTriplets(tripletList.begin(), tripletList.end());
     return Q;
 }
 
-SparseMat WeaklyIonizedGas::matrix_A(Eigen::VectorXd& f0)
+SparseMat_fp WeaklyIonizedGas::matrix_A(const Eigen::VectorXd& f0)
 {
     vector_fp a0(m_points + 1);
     vector_fp a1(m_points + 1);
@@ -207,48 +204,48 @@ SparseMat WeaklyIonizedGas::matrix_A(Eigen::VectorXd& f0)
         a1[j] = W / (1 - std::exp(z));
     }
 
-    std::vector<Triplet> tripletList;
+    std::vector<Triplet_fp> tripletList;
     // center diagonal
     // zero flux b.c. at energy = 0
-    tripletList.push_back(Triplet(0, 0, a0[1]));
+    tripletList.push_back(Triplet_fp(0, 0, a0[1]));
     for (size_t j = 1; j < m_points - 1; j++) {
-        tripletList.push_back(Triplet(j, j, a0[j+1] - a1[j]));
+        tripletList.push_back(Triplet_fp(j, j, a0[j+1] - a1[j]));
     }
 
     // upper diagonal
     for (size_t j = 0; j < m_points - 1; j++) {
-        tripletList.push_back(Triplet(j, j+1, a1[j+1]));
+        tripletList.push_back(Triplet_fp(j, j+1, a1[j+1]));
     }
 
     // lower diagonal
     for (size_t j = 1; j < m_points; j++) {
-        tripletList.push_back(Triplet(j, j-1, -a0[j]));
+        tripletList.push_back(Triplet_fp(j, j-1, -a0[j]));
     }
 
     // zero flux b.c.
-    tripletList.push_back(Triplet(N, N, -a1[N]));
+    tripletList.push_back(Triplet_fp(N, N, -a1[N]));
 
-    SparseMat A(m_points, m_points);
+    SparseMat_fp A(m_points, m_points);
     A.setFromTriplets(tripletList.begin(), tripletList.end());
 
     //plus G
-    SparseMat G(m_points, m_points);
+    SparseMat_fp G(m_points, m_points);
     for (size_t i = 0; i < m_points; i++) {
         G.insert(i,i) = 2.0 / 3.0 * (pow(m_gridEdge[i+1], 1.5) - pow(m_gridEdge[i], 1.5)) * nu;
     }
     return A + G;
 }
 
-Eigen::VectorXd WeaklyIonizedGas::iterate(Eigen::VectorXd& f0, double delta)
+Eigen::VectorXd WeaklyIonizedGas::iterate(const Eigen::VectorXd& f0, double delta)
 {
-    SparseMat PQ(m_points, m_points);
+    SparseMat_fp PQ(m_points, m_points);
     vector_fp g = vector_g(f0);
     for (size_t k : m_kInelastic) {
         PQ += (matrix_Q(g, k) - matrix_P(g, k)) * moleFraction(m_kTargets[k]);
     }
 
-    SparseMat A = matrix_A(f0);
-    SparseMat I(m_points, m_points);
+    SparseMat_fp A = matrix_A(f0);
+    SparseMat_fp I(m_points, m_points);
     for (size_t i = 0; i < m_points; i++) {
         I.insert(i,i) = 1.0;
     }
@@ -257,14 +254,14 @@ Eigen::VectorXd WeaklyIonizedGas::iterate(Eigen::VectorXd& f0, double delta)
     A += I;
 
     // solve f0
-    Eigen::SparseLU<SparseMat> solver(A);
+    Eigen::SparseLU<SparseMat_fp> solver(A);
     Eigen::VectorXd f1 = solver.solve(f0);
 
-    f1 *= 1.0 / norm(f1, m_gridCenter);
+    f1 /= norm(f1, m_gridCenter);
     return f1;
 }
 
-Eigen::VectorXd WeaklyIonizedGas::converge(Eigen::VectorXd& f0)
+void WeaklyIonizedGas::converge(Eigen::VectorXd& f0)
 {
     double err0 = 0.0;
     double err1 = 0.0;
@@ -274,22 +271,23 @@ Eigen::VectorXd WeaklyIonizedGas::converge(Eigen::VectorXd& f0)
             // log extrapolation attempting to reduce the error a factor m
             delta *= std::log(m_factorM) / (std::log(err0) - std::log(err1));
         }
-        Eigen::VectorXd f1 = iterate(f0, delta);
+        Eigen::VectorXd f0_old = f0;
+        f0 = iterate(f0_old, delta);
         err0 = err1;
         Eigen::VectorXd Df0(m_points);
         for (size_t i = 0; i < m_points; i++) {
-            Df0(i) = std::abs(f0(i) - f1(i));
+            Df0(i) = std::abs(f0_old(i) - f0(i));
         }
         err1 = norm(Df0, m_gridCenter);
         if (err1 < m_rtol) {
-            return f1;
+            break;
+        } else if (n == m_maxn - 1) {
+            throw CanteraError("WeaklyIonizedGas::converge", "Convergence failed");
         }
-        f0 = f1;
     }
-    throw CanteraError("WeaklyIonizedGas::converge", "Convergence failed");
 }
 
-double WeaklyIonizedGas::netProductionFreq(Eigen::VectorXd& f0)
+double WeaklyIonizedGas::netProductionFreq(const Eigen::VectorXd& f0)
 {
     double nu = 0.0;
     vector_fp g = vector_g(f0);
@@ -297,7 +295,7 @@ double WeaklyIonizedGas::netProductionFreq(Eigen::VectorXd& f0)
     for (size_t k = 0; k < m_ncs; k++) {
         if (kind(k) == "ionization" ||
             kind(k) == "attachment") {
-            SparseMat PQ = (matrix_Q(g, k) - matrix_P(g, k)) *
+            SparseMat_fp PQ = (matrix_Q(g, k) - matrix_P(g, k)) *
                            moleFraction(m_kTargets[k]);
             Eigen::VectorXd s = PQ * f0;
             for (size_t i = 0; i < m_points; i++) {
@@ -413,7 +411,7 @@ double WeaklyIonizedGas::rateCoefficient(size_t k)
 {
     calculateDistributionFunction();
     vector_fp g = vector_g(m_f0);
-    SparseMat P = matrix_P(g, k);
+    SparseMat_fp P = matrix_P(g, k);
     Eigen::VectorXd s = P * m_f0;
     double sum = 0.0;
     for (size_t i = 0; i < m_points; i++) {
@@ -452,7 +450,7 @@ double WeaklyIonizedGas::electronTemperature()
     }
 }
 
-double WeaklyIonizedGas::electronTemperature(Eigen::VectorXd f0)
+double WeaklyIonizedGas::electronTemperature(const Eigen::VectorXd f0)
 {
     double sum = 0;
     for (size_t i = 0; i < m_points - 1; i++) {
