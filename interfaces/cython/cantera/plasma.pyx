@@ -148,7 +148,7 @@ cdef class ElectronCrossSection:
     A class which stores data about a cross section of electron.
 
     :param kind:
-        A string giving the kind of the collision, e.g. ``'EFFECTIVE'``
+        A string giving the kind of the collision, e.g. ``'effective'``
     :param target:
         A string giving the target of the collision, e.g. ``'N2'``
     :param init:
@@ -180,7 +180,7 @@ cdef class ElectronCrossSection:
         self.electron_cross_section = self._electron_cross_section.get()
 
     @staticmethod
-    def listFromFile(filename, section='cross_section'):
+    def listFromFile(filename, section='cross-sections'):
         """
         Create a list of ElectronCrossSection objects from all of the
         cross section defined in a YAML.
@@ -217,7 +217,7 @@ cdef class ElectronCrossSection:
             return pystr(self.electron_cross_section.product)
 
     property threshold:
-        """ The threhols of the collision process. """
+        """ The threhold of the collision process. """
         def __get__(self):
             return self.electron_cross_section.threshold
 
