@@ -103,7 +103,7 @@ public:
     ElectronArrhenius rate;
 };
 
-//! A reaction which depends on electron energy distribustion function and electron
+//! A reaction which depends on electron energy distribution function and electron
 //! collision cross section.
 class PlasmaReaction : public Reaction
 {

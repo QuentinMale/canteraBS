@@ -98,7 +98,7 @@ protected:
     doublereal m_logA, m_b, m_E, m_A;
 };
 
-//! An Arrhenius rate depends on gas and electron temperature
+//! An Arrhenius-like rate that depends on gas and electron temperature
 /**
  * A reaction rate coefficient of the following form.
  *
