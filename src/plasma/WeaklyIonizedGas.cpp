@@ -87,16 +87,17 @@ void WeaklyIonizedGas::calculateDistributionFunction()
         }
     }
 
+    double Te = temperature();
     if (m_E != 0.0) {
         converge(m_f0);
-        double Te = electronTemperature(m_f0);
-        // Evaluate the EEDF by comparing electron temperature to gas temperature,
-        // and replace the EEDF with a Maxwellian distribution at gas temperature.
-        if (Te < temperature()) {
-            for (size_t j = 0; j < m_points; j++) {
-                m_f0(j) = 2.0 * pow(1.0/Pi, 0.5) * pow(m_kT, -3./2.) *
-                          std::exp(-m_gridCenter[j]/m_kT);
-            }
+        Te = electronTemperature(m_f0);
+    }
+    // Evaluate the EEDF by comparing electron temperature to gas temperature,
+    // and replace the EEDF with a Maxwellian distribution at gas temperature.
+    if (Te <= temperature()) {
+        for (size_t j = 0; j < m_points; j++) {
+            m_f0(j) = 2.0 * pow(1.0/Pi, 0.5) * pow(m_kT, -3./2.) *
+                      std::exp(-m_gridCenter[j]/m_kT);
         }
     }
     m_has_EEDF = true;
