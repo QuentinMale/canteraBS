@@ -1,6 +1,6 @@
 """
 This example uses custom.py as the template to simulate a constant pressure
-constant temperature plasma reactor.
+constant temperature plasma reactor with a nano-second pulse.
 """
 
 import cantera as ct
@@ -35,9 +35,8 @@ gas = ct.Plasma('oxygen_plasma.yaml')
 
 # Initial condition
 P = ct.one_atm
-gas.TPX = 1000, P, 'O2:1.0, E:1e-9, O2^+:1e-9'
-gas.electric_field = 2e5
-gas.electric_field_freq = 1e9
+gas.TPX = 1000, P, 'O2:1.0, E:1e-10, O2^+:1e-10'
+gas.electric_field = 1.2e6
 gas.set_electron_energy_grid(np.linspace(0, 50, 500))
 gas.set_initial_mean_electron_energy(2.0)
 gas.set_reuse_EEDF(True)
@@ -59,9 +58,9 @@ solver.set_integrator('vode', method='bdf', with_jacobian=True)
 solver.set_initial_value(y0, 0.0)
 
 # Integrate the equations, keeping T(t) and Y(k,t)
-t_end = 1e-2
+t_end = 1e-8
 states = ct.SolutionArray(gas, 1, extra={'t': [0.0]})
-dt = 1e-5
+dt = 1e-11
 while solver.successful() and solver.t < t_end:
     solver.integrate(solver.t + dt)
     gas.TPY = solver.y[0], P, solver.y[1:]
