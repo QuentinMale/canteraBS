@@ -17,8 +17,6 @@
 
 namespace Cantera
 {
-unique_ptr<ElectronCrossSection> newElectronCrossSection(const AnyMap& node);
-
 /**
  * Base class for a phase with plasma properties. This class manages the
  * computational grid, grid cache, cross-section data, and updating
@@ -38,7 +36,7 @@ public:
         return "Plasma";
     }
 
-    //! add electron cross-section data from yaml input file.
+    //! add electron cross-section data from a YAML input file.
     void addElectronCrossSections(const AnyValue& crossSections,
                                   const AnyValue& names);
 
@@ -262,7 +260,8 @@ protected:
     //! normalized electron energy distribution function
     Eigen::VectorXd m_f0;
 
-    //! constant gamma
+    //! Constant. \f$ \gamma = (\frac{2 e}{m})^{1/2} \f$, where \f$ e \f$ is the elementary charge
+    //! and \f$ m \f$ is the mass of an electron.
     double m_gamma;
 
     //! Mole fractions of target species of each collision process
@@ -301,7 +300,7 @@ protected:
     double m_factorM;
 
     //! Initial electron mean energy
-    double  m_init_kTe;
+    double m_init_kTe;
 
     //! flag of using old EEDF as initial EEDF
     bool m_reuse_EEDF;

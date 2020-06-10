@@ -267,7 +267,7 @@ void PlasmaPhase::addElectronCrossSections(const AnyValue& crossSections, const 
             addElectronCrossSection(newElectronCrossSection(item));
         }
     } else {
-        throw InputFileError("addElectronCrossSections", names,
+        throw InputFileError("PlasmaPhase::addElectronCrossSections", names,
             "Could not parse cross-sections declaration of type '{}'", names.type_str());
     }
 }
