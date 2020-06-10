@@ -22,6 +22,11 @@ class ReactorOde:
         self.gas.TP = y[0], self.P
         rho = self.gas.density
         h = self.gas.partial_molar_enthalpies / self.gas.molecular_weights
+
+        # turn off the plasma discharge
+        if t >= 1e-8:
+            self.gas.electric_field = 0.0
+
         Q_electron = ct.electron_charge * self.gas.electron_total_power_loss * self.gas.number_density("E")
         wdot = self.gas.net_production_rates
 
@@ -58,7 +63,7 @@ solver.set_integrator('vode', method='bdf', with_jacobian=True)
 solver.set_initial_value(y0, 0.0)
 
 # Integrate the equations, keeping T(t) and Y(k,t)
-t_end = 1e-8
+t_end = 2e-8
 states = ct.SolutionArray(gas, 1, extra={'t': [0.0]})
 dt = 1e-11
 while solver.successful() and solver.t < t_end:
