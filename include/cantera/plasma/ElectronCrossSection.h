@@ -13,9 +13,6 @@ namespace Cantera
 {
 
 //! Contains data about the cross sections of electron collision
-/*!
- *  This class stores the cross section data of electron collision
- */
 class ElectronCrossSection
 {
 public:
@@ -42,7 +39,7 @@ public:
     //! j=0 is the electron energy [eV], and j=1 is the cross section [m^2].
     std::vector<vector_fp> data;
 
-    //! The threshold of a process
+    //! The threshold of a process in [eV]
     double threshold;
 
     //! Extra data used for specific models
