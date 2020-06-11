@@ -29,7 +29,7 @@ public:
     /*!
      *  @param thermo  Pointer to the gas ThermoPhase (optional)
      */
-    PlasmaKinetics(thermo_t* thermo = 0);
+    PlasmaKinetics(thermo_t* thermo=0);
 
     virtual std::string kineticsType() const {
         return "Plasma";
@@ -48,10 +48,10 @@ protected:
     virtual void addPlasmaReaction(PlasmaReaction& r);
 
     //! Reaction index of each plasma reaction
-    std::vector<size_t> m_plasmaIndx;
+    std::vector<size_t> m_plasmaIndex;
 
     //! Process index of each plasma reaction;
-    std::vector<size_t> m_plasmaProcessIndx;
+    std::vector<size_t> m_plasmaProcessIndex;
 
     //! Pointer to the plasma phase
     PlasmaPhase* m_plasma;

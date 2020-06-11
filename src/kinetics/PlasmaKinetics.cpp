@@ -20,14 +20,14 @@ void PlasmaKinetics::update_rates_T()
 {
     GasKinetics::update_rates_T();
     auto i = 0;
-    for (auto k : m_plasmaProcessIndx) {
-        m_rfn[m_plasmaIndx[i]] = m_plasma->rateCoefficient(k);
-        if (m_rkcn[m_plasmaIndx[i]] != 0.0) {
-            m_rkcn[m_plasmaIndx[i]] = m_plasma->reverseRateCoefficient(k) /
-                                      m_rfn[m_plasmaIndx[i]];
+    for (auto k : m_plasmaProcessIndex) {
+        m_rfn[m_plasmaIndex[i]] = m_plasma->rateCoefficient(k);
+        if (m_rkcn[m_plasmaIndex[i]] != 0.0) {
+            m_rkcn[m_plasmaIndex[i]] = m_plasma->reverseRateCoefficient(k) /
+                                      m_rfn[m_plasmaIndex[i]];
         }
         // convert to kmol base
-        m_rfn[m_plasmaIndx[i]] *= Avogadro;
+        m_rfn[m_plasmaIndex[i]] *= Avogadro;
         i++;
     }
     if (i != 0) {
@@ -37,7 +37,7 @@ void PlasmaKinetics::update_rates_T()
 
 void PlasmaKinetics::addPlasmaReaction(PlasmaReaction& r)
 {
-    m_plasmaIndx.push_back(nReactions()-1);
+    m_plasmaIndex.push_back(nReactions()-1);
 
     // find plasma process index
     bool found = false;
@@ -45,7 +45,7 @@ void PlasmaKinetics::addPlasmaReaction(PlasmaReaction& r)
         if (r.process["kind"] == m_plasma->kind(k) &&
             r.process["target"] == m_plasma->target(k) &&
             r.process["product"] == m_plasma->product(k)) {
-            m_plasmaProcessIndx.push_back(k);
+            m_plasmaProcessIndex.push_back(k);
             found = true;
             break;
         }
