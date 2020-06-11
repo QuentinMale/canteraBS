@@ -35,9 +35,11 @@ public:
     //! The product of electron collision
     std::string product;
 
-    //! Data of cross section. data[i][j] where i is the index of a data point,
-    //! j=0 is the electron energy [eV], and j=1 is the cross section [m^2].
-    std::vector<vector_fp> data;
+    //! Data of cross section. [m^2]
+    vector_fp crossSection;
+
+    //! The energy level corresponding to the cross section. [eV]
+    vector_fp energyLevel;
 
     //! The threshold of a process in [eV]
     double threshold;

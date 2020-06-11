@@ -26,8 +26,8 @@ void WeaklyIonizedGas::calculateTotalCrossSection()
     m_totalCrossSectionCenter.assign(m_points, 0.0);
     m_totalCrossSectionEdge.assign(m_points + 1, 0.0);
     for (size_t k = 0; k < m_ncs; k++) {
-        vector_fp& x = m_crossSections[k][0];
-        vector_fp& y = m_crossSections[k][1];
+        vector_fp& x = m_energyLevels[k];
+        vector_fp& y = m_crossSections[k];
         for (size_t i = 0; i < m_points; i++) {
             m_totalCrossSectionCenter[i] += moleFraction(m_kTargets[k]) *
                                             linearInterp(m_gridCenter[i], x, y);
@@ -44,8 +44,8 @@ void WeaklyIonizedGas::calculateTotalElasticCrossSection()
     m_sigmaElastic.clear();
     m_sigmaElastic.resize(m_points, 0.0);
     for (size_t k : m_kElastic) {
-        vector_fp& x = m_crossSections[k][0];
-        vector_fp& y = m_crossSections[k][1];
+        vector_fp& x = m_energyLevels[k];
+        vector_fp& y = m_crossSections[k];
         for (size_t i = 0; i < m_points; i++) {
             double mass_ratio = ElectronMass / (molecularWeight(m_kTargets[k]) / Avogadro);
             m_sigmaElastic[i] += 2.0 * mass_ratio * moleFraction(m_kTargets[k]) *

@@ -330,10 +330,13 @@ protected:
     //! The cross section at the center of a cell
     std::vector<vector_fp> m_sigma_offset;
 
-    //! cross section data. m_crossSections[i][j][k] where i is the specific process,
-    //! j=0 is the vector of electron energy [eV], j=1 is the vector of cross section, and
-    // k is the index of vector.
-    std::vector<std::vector<std::vector<double>>> m_crossSections;
+    //! Cross section data. m_crossSections[i][j], where i is the specific process,
+    //! j is the index of vector. Unit: [m^2]
+    std::vector<vector_fp> m_crossSections;
+
+    //! Electron energy levels correpsonding to the cross section data. m_energyLevels[i][j],
+    //! where i is the specific process, j is the index of vector. Unit: [eV]
+    std::vector<vector_fp> m_energyLevels;
 
     //! list of target species indices
     std::vector<size_t> m_kTargets;

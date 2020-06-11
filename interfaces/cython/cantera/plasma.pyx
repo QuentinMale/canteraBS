@@ -161,7 +161,7 @@ cdef class ElectronCrossSection:
         self._electron_cross_section.reset(new CxxElectronCrossSection())
         self.electron_cross_section = self._electron_cross_section.get()
 
-    def __init__(self, kind=None, target=None, data=None,
+    def __init__(self, kind=None, target=None, energyLevel=None, crossSection=None,
                  *args, init=True, **kwargs):
         if not init:
             return
@@ -172,8 +172,9 @@ cdef class ElectronCrossSection:
         if target is not None:
             self.electron_cross_section.target = stringify(target)
 
-        if data is not None:
-            self.electron_cross_section.data = data
+        if energyLevel is not None and crossSection is not None:
+            self.electron_cross_section.energyLevel = energyLevel
+            self.electron_cross_section.crossSection = crossSection
 
     cdef _assign(self, shared_ptr[CxxElectronCrossSection] other):
         self._electron_cross_section = other
@@ -229,7 +230,12 @@ cdef class ElectronCrossSection:
         def __get__(self):
             return self.target + " => " + self.product
 
-    property data:
-        """ The data of electron collision cross section. """
+    property cross_section:
+        """ The data of electron collision cross section. [m^2]"""
         def __get__(self):
-            return self.electron_cross_section.data
+            return self.electron_cross_section.crossSection
+
+    property energy_level:
+        """ The energy level corresponding to the electron collision cross section. [eV]"""
+        def __get__(self):
+            return self.electron_cross_section.energyLevel

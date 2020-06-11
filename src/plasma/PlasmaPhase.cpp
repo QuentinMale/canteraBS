@@ -110,8 +110,8 @@ void PlasmaPhase::setGridCache()
     m_i.clear();
     m_i.resize(m_ncs);
     for (size_t k = 0; k < m_ncs; k++) {
-        vector_fp& x = m_crossSections[k][0];
-        vector_fp& y = m_crossSections[k][1];
+        vector_fp& x = m_energyLevels[k];
+        vector_fp& y = m_crossSections[k];
         vector_fp eps1(m_points + 1);
         for (size_t i = 0; i < m_points + 1; i++) {
             eps1[i] = clip(m_shiftFactor[k] * m_gridEdge[i] + threshold(k),
@@ -163,7 +163,7 @@ void PlasmaPhase::setGridCache()
         }
 
         // construct sigma_offset
-        vector_fp x_offset = m_crossSections[k][0];
+        vector_fp x_offset = m_energyLevels[k];
         for (auto& element : x_offset) {
             element -= threshold(k);
         }
@@ -203,14 +203,8 @@ bool PlasmaPhase::addElectronCrossSection(shared_ptr<ElectronCrossSection> ecs)
     ecs->validate();
     m_ecss.push_back(ecs);
 
-    // transpose data
-    std::vector<vector_fp> transdata(2, vector_fp(ecs->data.size()));
-    for (size_t i = 0; i < ecs->data.size(); i++) {
-        for (size_t j = 0; j < 2; j++) {
-            transdata[j][i] = ecs->data[i][j];
-        }
-    }
-    m_crossSections.push_back(transdata);
+    m_energyLevels.push_back(ecs->energyLevel);
+    m_crossSections.push_back(ecs->crossSection);
 
     // shift factor
     if (ecs->kind == "ionization") {
@@ -279,16 +273,16 @@ void PlasmaPhase::calculateElasticCrossSection()
             // substract inelastic from effective
             for (size_t k : m_kInelastic) {
                 if (target(k) == target(ke)) {
-                    vector_fp& x = m_crossSections[k][0];
-                    vector_fp& y = m_crossSections[k][1];
-                    for (size_t i = 0; i < m_crossSections[ke][0].size(); i++) {
-                        m_crossSections[ke][1][i] -= linearInterp(m_crossSections[ke][0][i], x, y);
+                    vector_fp& x = m_energyLevels[k];
+                    vector_fp& y = m_crossSections[k];
+                    for (size_t i = 0; i < m_energyLevels[ke].size(); i++) {
+                        m_crossSections[ke][i] -= linearInterp(m_energyLevels[ke][i], x, y);
                     }
                 }
             }
             // replace negative values with zero.
-            for (size_t i = 0; i < m_crossSections[ke][0].size(); i++) {
-                m_crossSections[ke][1][i] = std::max(0.0, m_crossSections[ke][1][i]);
+            for (size_t i = 0; i < m_energyLevels[ke].size(); i++) {
+                m_crossSections[ke][i] = std::max(0.0, m_crossSections[ke][i]);
             }
         }
     }
