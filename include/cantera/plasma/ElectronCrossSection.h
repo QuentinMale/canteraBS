@@ -52,7 +52,7 @@ public:
 unique_ptr<ElectronCrossSection> newElectronCrossSection(const AnyMap& node);
 
 //! Get a vector of ElectronCrossSection objects to access the data.
-std::vector<shared_ptr<ElectronCrossSection>> getElectronCrossSection(const AnyValue& items);
+std::vector<shared_ptr<ElectronCrossSection>> getElectronCrossSections(const AnyValue& items);
 
 }
 

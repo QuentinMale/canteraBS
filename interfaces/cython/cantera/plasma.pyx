@@ -191,7 +191,7 @@ cdef class ElectronCrossSection:
         """
         if filename.endswith('.yml') or filename.endswith('.yaml'):
             root = AnyMapFromYamlFile(stringify(filename))
-            cxx_electron_cross_section = CxxGetElectronCrossSection(root[stringify(section)])
+            cxx_electron_cross_section = CxxGetElectronCrossSections(root[stringify(section)])
         else:
             raise ValueError("The file type must be yml or yaml")
 

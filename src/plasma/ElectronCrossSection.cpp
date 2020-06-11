@@ -47,7 +47,7 @@ unique_ptr<ElectronCrossSection> newElectronCrossSection(const AnyMap& node)
     return ecs;
 }
 
-std::vector<shared_ptr<ElectronCrossSection>> getElectronCrossSection(const AnyValue& items)
+std::vector<shared_ptr<ElectronCrossSection>> getElectronCrossSections(const AnyValue& items)
 {
     std::vector<shared_ptr<ElectronCrossSection> > all_cross_sections;
     for (const auto& node : items.asVector<AnyMap>()) {

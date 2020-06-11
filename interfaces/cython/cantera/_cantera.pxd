@@ -151,7 +151,7 @@ cdef extern from "cantera/plasma/ElectronCrossSection.h" namespace "Cantera":
         vector[double] crossSection
 
     cdef shared_ptr[CxxElectronCrossSection] CxxNewElectronCrossSection "newElectronCrossSection" (CxxAnyMap&) except +translate_exception
-    cdef vector[shared_ptr[CxxElectronCrossSection]] CxxGetElectronCrossSection "getElectronCrossSection" (CxxAnyValue&) except +translate_exception
+    cdef vector[shared_ptr[CxxElectronCrossSection]] CxxGetElectronCrossSections "getElectronCrossSections" (CxxAnyValue&) except +translate_exception
 
 cdef extern from "cantera/thermo/ThermoPhase.h" namespace "Cantera":
     cdef cppclass CxxThermoPhase "Cantera::ThermoPhase":
