@@ -300,20 +300,20 @@ cdef extern from "cantera/plasma/PlasmaPhase.h":
         #Properties
         double grid(size_t)
         size_t nPoints()
-        double electronMobility()
-        double electronDiffusivity()
-        double meanElectronEnergy()
-        double totalCollisionFreq()
-        double rateCoefficient(size_t)
-        double reverseRateCoefficient(size_t)
-        double powerGain()
-        double elasticPowerLoss()
-        double inelasticPowerLoss()
+        double electronMobility() except +translate_exception
+        double electronDiffusivity() except +translate_exception
+        double meanElectronEnergy() except +translate_exception
+        double totalCollisionFreq() except +translate_exception
+        double rateCoefficient(size_t) except +translate_exception
+        double reverseRateCoefficient(size_t) except +translate_exception
+        double powerGain() except +translate_exception
+        double elasticPowerLoss() except +translate_exception
+        double inelasticPowerLoss() except +translate_exception
         double electricField()
         double electricFieldFreq()
         void setElectricField(double)
         void setElectricFieldFreq(double)
-        double electronTemperature()
+        double electronTemperature() except +translate_exception
         void setupBoltzmannSolver(size_t, double, double, double)
         void setMoleFractionThreshold(double)
         void setInitialMeanElectronEnergy(double)
