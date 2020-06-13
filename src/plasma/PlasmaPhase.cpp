@@ -1,3 +1,7 @@
+/**
+ *  @file PlasmaPhase.cpp Definition file for class PlasmaPhase, the base class for plasma.
+ */
+
 // This file is part of Cantera. See License.txt in the top-level directory or
 // at https://cantera.org/license.txt for license and copyright information.
 
