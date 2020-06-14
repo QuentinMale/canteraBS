@@ -110,9 +110,12 @@ class PlasmaReaction : public Reaction
 public:
     PlasmaReaction();
     PlasmaReaction(const Composition& reactants, const Composition& products,
-                   const std::map<std::string, std::string>& process);
+                   const std::string& process_kind, const std::string& process_target,
+                   const std::string& process_product);
     virtual void validate();
-    std::map<std::string, std::string> process;
+    std::string process_kind;
+    std::string process_target;
+    std::string process_product;
 };
 
 //! A class for managing third-body efficiencies, including default values

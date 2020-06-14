@@ -42,9 +42,9 @@ void PlasmaKinetics::addPlasmaReaction(PlasmaReaction& r)
     // find plasma process index
     bool found = false;
     for (size_t k = 0; k < m_plasma->nElectronCrossSections(); k++) {
-        if (r.process["kind"] == m_plasma->kind(k) &&
-            r.process["target"] == m_plasma->target(k) &&
-            r.process["product"] == m_plasma->product(k)) {
+        if (r.process_kind == m_plasma->kind(k) &&
+            r.process_target == m_plasma->target(k) &&
+            r.process_product == m_plasma->product(k)) {
             m_plasmaProcessIndex.push_back(k);
             found = true;
             break;

@@ -143,9 +143,13 @@ ElectronTemperatureReaction::ElectronTemperatureReaction()
 
 PlasmaReaction::PlasmaReaction(const Composition& reactants_,
                                const Composition& products_,
-                               const std::map<std::string, std::string>& process_)
+                               const std::string& process_kind_,
+                               const std::string& process_target_,
+                               const std::string& process_product_)
     : Reaction(PLASMA_RXN, reactants_, products_)
-    , process(process_)
+    , process_kind(process_kind_)
+    , process_target(process_target_)
+    , process_product(process_product_)
 {
 }
 
@@ -686,14 +690,14 @@ void setupPlasmaReaction(PlasmaReaction& R, const AnyMap& node,
     std::string kind, target, product;
     if (node["process"].is<AnyMap>()) {
         auto& process_map = node["process"].as<AnyMap>();
-        R.process["kind"] = process_map["kind"].asString();
-        R.process["target"] = process_map["target"].asString();
-        R.process["product"] = process_map["product"].asString();
+        R.process_kind = process_map["kind"].asString();
+        R.process_target = process_map["target"].asString();
+        R.process_product = process_map["product"].asString();
     } else {
         auto& process_vec = node["process"].asVector<AnyValue>(3);
-        R.process["kind"] = process_vec[0].asString();
-        R.process["target"] = process_vec[1].asString();
-        R.process["product"] = process_vec[2].asString();
+        R.process_kind = process_vec[0].asString();
+        R.process_target = process_vec[1].asString();
+        R.process_product = process_vec[2].asString();
     }
 }
 
