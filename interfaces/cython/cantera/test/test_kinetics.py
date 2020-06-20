@@ -1076,7 +1076,12 @@ class TestReaction(utilities.CanteraTest):
         gas = ct.Solution('electron-temperature-test.yaml')
         gas.TP = 300, ct.one_atm
         gas.electron_temperature = 300
-        self.assertNear(gas.forward_rate_constants[0], gas.forward_rate_constants[1])
+        r1 = gas.forward_rate_constants[1]
+        self.assertNear(gas.forward_rate_constants[0], r1)
+        gas.electron_temperature = 600
+        R = gas.reaction(0)
+        Ea_Te = R.rate.activation_electron_energy / ct.gas_constant
+        self.assertNear(gas.forward_rate_constants[0], r1 * 0.5 * np.exp(Ea_Te/600))
 
     def test_plasma(self):
         gas = ct.Plasma('oxygen_plasma.yaml')
