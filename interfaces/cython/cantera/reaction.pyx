@@ -377,6 +377,81 @@ cdef copyArrhenius(CxxArrhenius* rate):
     return r
 
 
+cdef class ElectronArrhenius:
+    r"""
+    A reaction rate coefficient which depends on gas and electron temperature and follows
+    the modified Arrhenius form:
+
+    .. math::
+
+        k_f = A T_e^b \exp{-\tfrac{E1}{RT}} \exp{-\tfrac{E2}{RT_e}}
+
+    where *A* is the `pre_exponential_factor`, *b* is the `temperature_exponent`,
+    and *E* is the `activation_energy`.
+    """
+    def __cinit__(self, A=0, b=0, E1=0, E2=0, init=True):
+        if init:
+            self.rate = new CxxElectronArrhenius(A, b, E1 / gas_constant, E2 / gas_constant)
+            self.reaction = None
+
+    def __dealloc__(self):
+        if self.reaction is None:
+            del self.rate
+
+    property pre_exponential_factor:
+        """
+        The pre-exponential factor *A* in units of m, kmol, and s raised to
+        powers depending on the reaction order.
+        """
+        def __get__(self):
+            return self.rate.preExponentialFactor()
+
+    property temperature_exponent:
+        """
+        The temperature exponent *b*.
+        """
+        def __get__(self):
+            return self.rate.temperatureExponent()
+
+    property activation_energy:
+        """
+        The activation energy *E* [J/kmol].
+        """
+        def __get__(self):
+            return self.rate.activationEnergy_R() * gas_constant
+
+    property activation_electron_energy:
+        """
+        The activation energy *E* [J/kmol].
+        """
+        def __get__(self):
+            return self.rate.activationElectronEnergy_R() * gas_constant
+
+    def __repr__(self):
+        return 'ElectronArrhenius(A={:g}, b={:g}, Ea-T={:g}, Ea-Te={:g})'.format(
+            self.pre_exponential_factor, self.temperature_exponent,
+            self.activation_energy_gas, self.activation_energy_electron)
+
+    def __call__(self, float T, float Te):
+        cdef double logT = np.log(T)
+        cdef double recipT = 1/T
+        cdef double recipTe = 1/Te
+        return self.rate.updateRC(logT, recipT, recipTe)
+
+
+cdef wrapElectronArrhenius(CxxElectronArrhenius* rate, Reaction reaction):
+    r = ElectronArrhenius(init=False)
+    r.rate = rate
+    r.reaction = reaction
+    return r
+
+cdef copyElectronArrhenius(CxxElectronArrhenius* rate):
+    r = ElectronArrhenius(rate.preExponentialFactor(), rate.temperatureExponent(),
+                          rate.activationEnergy_R() * gas_constant,
+                          rate.activationElectronEnergy_R() * gas_constant)
+    return r
+
+
 cdef class ElementaryReaction(Reaction):
     """
     A reaction which follows mass-action kinetics with a modified Arrhenius
@@ -412,6 +487,15 @@ cdef class ElectronTemperatureReaction(ElementaryReaction):
     This type of reaction is used in a plasma.
     """
     reaction_type = ELECTRON_TEMPERATURE_RXN
+
+    property rate:
+        """ Get/Set the `Arrhenius` rate coefficient for this reaction. """
+        def __get__(self):
+            cdef CxxElectronTemperatureReaction* r = <CxxElectronTemperatureReaction*>self.reaction
+            return wrapElectronArrhenius(&(r.rate), self)
+        def __set__(self, ElectronArrhenius rate):
+            cdef CxxElectronTemperatureReaction* r = <CxxElectronTemperatureReaction*>self.reaction
+            r.rate = deref(rate.rate)
 
     cdef CxxElectronTemperatureReaction* tbr(self):
         return <CxxElectronTemperatureReaction*>self.reaction

@@ -353,6 +353,15 @@ cdef extern from "cantera/kinetics/Reaction.h" namespace "Cantera":
         double temperatureExponent()
         double activationEnergy_R()
 
+    cdef cppclass CxxElectronArrhenius "Cantera::ElectronArrhenius":
+        CxxElectronArrhenius()
+        CxxElectronArrhenius(double, double, double, double)
+        double updateRC(double, double, double)
+        double preExponentialFactor()
+        double temperatureExponent()
+        double activationEnergy_R()
+        double activationElectronEnergy_R()
+
     cdef cppclass CxxReaction "Cantera::Reaction":
         # Note, this default constructor doesn't actually exist. The declaration
         # is required by a Cython bug which should be resolved in Cython 0.22.
@@ -387,6 +396,7 @@ cdef extern from "cantera/kinetics/Reaction.h" namespace "Cantera":
 
     cdef cppclass CxxElectronTemperatureReaction "Cantera::ElectronTemperatureReaction" (CxxElementaryReaction):
         CxxElectronTemperatureReaction()
+        CxxElectronArrhenius rate
 
     cdef cppclass CxxPlasmaReaction "Cantera::PlasmaReaction" (CxxElementaryReaction):
         CxxPlasmaReaction()
@@ -1068,6 +1078,10 @@ cdef class Reaction:
 
 cdef class Arrhenius:
     cdef CxxArrhenius* rate
+    cdef Reaction reaction # parent reaction, to prevent garbage collection
+
+cdef class ElectronArrhenius:
+    cdef CxxElectronArrhenius* rate
     cdef Reaction reaction # parent reaction, to prevent garbage collection
 
 cdef class Falloff:
