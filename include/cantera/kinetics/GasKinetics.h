@@ -106,20 +106,12 @@ protected:
     vector_fp concm_falloff_values;
     //!@}
 
-    //! Electron temperature for electron-temperature reactions
-    double m_temp_e;
-
     void processFalloffReactions();
 
-    void addElectronTemperatureReaction(ElectronTemperatureReaction& r);
-    virtual void addPlasmaReaction(PlasmaReaction& r) {
-        throw NotImplementedError("GasKinetics::addPlasmaReaction");
-    }
     void addThreeBodyReaction(ThreeBodyReaction& r);
     void addFalloffReaction(FalloffReaction& r);
     void addPlogReaction(PlogReaction& r);
     void addChebyshevReaction(ChebyshevReaction& r);
-    void modifyElectronTemperatureReaction(size_t i, ElectronTemperatureReaction& r);
     void modifyThreeBodyReaction(size_t i, ThreeBodyReaction& r);
     void modifyFalloffReaction(size_t i, FalloffReaction& r);
     void modifyPlogReaction(size_t i, PlogReaction& r);

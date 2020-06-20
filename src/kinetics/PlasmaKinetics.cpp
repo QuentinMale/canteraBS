@@ -19,6 +19,21 @@ PlasmaKinetics::PlasmaKinetics(thermo_t* thermo)
 void PlasmaKinetics::update_rates_T()
 {
     GasKinetics::update_rates_T();
+
+    // update electron-temperture reactions
+    double T = thermo().temperature();
+    double Te = thermo().electronTemperature();
+    double logTe = log(Te);
+    if (T != m_temp_gas || Te != m_temp_e) {
+        if (m_electron_temperature_rates.nReactions()) {
+            m_electron_temperature_rates.update(T, Te, logTe, m_rfn.data());
+            m_ROP_ok = false;
+        }
+    }
+    m_temp_e = Te;
+    m_temp_gas = T;
+
+    // update plasma reactions
     auto i = 0;
     for (auto k : m_plasmaProcessIndex) {
         m_rfn[m_plasmaIndex[i]] = m_plasma->rateCoefficient(k);
@@ -35,8 +50,40 @@ void PlasmaKinetics::update_rates_T()
     }
 }
 
+bool PlasmaKinetics::addReaction(shared_ptr<Reaction> r)
+{
+    // operations common to all reaction types
+    bool added = GasKinetics::addReaction(r);
+    if (added) {
+        return true;
+    }
+
+    switch (r->reaction_type) {
+    case ELECTRON_TEMPERATURE_RXN:
+        addElectronTemperatureReaction(dynamic_cast<ElectronTemperatureReaction&>(*r));
+        break;
+    case PLASMA_RXN:
+        addPlasmaReaction(dynamic_cast<PlasmaReaction&>(*r));
+        break;
+    default:
+        throw CanteraError("PlasmaKinetics::addReaction",
+            "Unknown reaction type specified: {}", r->reaction_type);
+    }
+    return true;
+}
+
+void PlasmaKinetics::addElectronTemperatureReaction(ElectronTemperatureReaction& r)
+{
+    m_electron_temperature_rates.install(nReactions()-1, r.rate);
+}
+
 void PlasmaKinetics::addPlasmaReaction(PlasmaReaction& r)
 {
+    if (m_plasma == 0) {
+        throw CanteraError("PlasmaKinetics::addPlasmaReaction",
+                           "Reaction {} requires a class derived from PlasmaPhase"
+                           "as thermo. Ex. thermo: weakly-ionized-gas", r.equation());
+    }
     m_plasmaIndex.push_back(nReactions()-1);
 
     // find plasma process index
@@ -57,10 +104,40 @@ void PlasmaKinetics::addPlasmaReaction(PlasmaReaction& r)
     }
 }
 
+void PlasmaKinetics::modifyReaction(size_t i, shared_ptr<Reaction> rNew)
+{
+    GasKinetics::modifyReaction(i, rNew);
+    switch (rNew->reaction_type) {
+    case ELECTRON_TEMPERATURE_RXN:
+        modifyElectronTemperatureReaction(i, dynamic_cast<ElectronTemperatureReaction&>(*rNew));
+        break;
+    case PLASMA_RXN:
+        throw CanteraError("GasKinetics::modifyReaction",
+            "{} reaction type cannot be modified", rNew->reaction_type);
+        break;
+    default:
+        throw CanteraError("GasKinetics::modifyReaction",
+            "Unknown reaction type specified: {}", rNew->reaction_type);
+    }
+    m_temp_e += 0.1234;
+}
+
+void PlasmaKinetics::modifyElectronTemperatureReaction(size_t i, ElectronTemperatureReaction& r)
+{
+    m_electron_temperature_rates.replace(i, r.rate);
+}
+
+
 void PlasmaKinetics::init()
 {
     GasKinetics::init();
     m_plasma = dynamic_cast<PlasmaPhase*>(&thermo());
+}
+
+void PlasmaKinetics::invalidateCache()
+{
+    GasKinetics::invalidateCache();
+    m_temp_e += 0.13579;
 }
 
 }

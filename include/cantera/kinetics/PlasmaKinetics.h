@@ -39,13 +39,24 @@ public:
     //! @name Reaction Mechanism Setup Routines
     //! @{
     virtual void init();
+    virtual bool addReaction(shared_ptr<Reaction> r);
+    virtual void modifyReaction(size_t i, shared_ptr<Reaction> rNew);
+    virtual void invalidateCache();
     //@}
 
     //! Update rates of the plasma reaction
     virtual void update_rates_T();
 
 protected:
-    virtual void addPlasmaReaction(PlasmaReaction& r);
+    void addElectronTemperatureReaction(ElectronTemperatureReaction& r);
+    void addPlasmaReaction(PlasmaReaction& r);
+    void modifyElectronTemperatureReaction(size_t i, ElectronTemperatureReaction& r);
+
+    //! Gas temperature.
+    double m_temp_gas;
+
+    //! Electron temperature for electron-temperature reactions
+    double m_temp_e;
 
     //! Reaction index of each plasma reaction
     std::vector<size_t> m_plasmaIndex;

@@ -55,17 +55,6 @@ void GasKinetics::update_rates_T()
         }
     }
 
-    double Te = thermo().electronTemperature();
-    double logTe = log(Te);
-
-    if (T != m_temp || Te != m_temp_e) {
-        if (m_electron_temperature_rates.nReactions()) {
-            m_electron_temperature_rates.update(T, Te, logTe, m_rfn.data());
-            m_ROP_ok = false;
-        }
-    }
-
-    m_temp_e = Te;
     m_pres = P;
     m_temp = T;
 }
@@ -247,11 +236,9 @@ bool GasKinetics::addReaction(shared_ptr<Reaction> r)
         addElementaryReaction(dynamic_cast<ElementaryReaction&>(*r));
         break;
     case ELECTRON_TEMPERATURE_RXN:
-        addElectronTemperatureReaction(dynamic_cast<ElectronTemperatureReaction&>(*r));
-        break;
+        return false;
     case PLASMA_RXN:
-        addPlasmaReaction(dynamic_cast<PlasmaReaction&>(*r));
-        break;
+        return false;
     case THREE_BODY_RXN:
         addThreeBodyReaction(dynamic_cast<ThreeBodyReaction&>(*r));
         break;
@@ -270,11 +257,6 @@ bool GasKinetics::addReaction(shared_ptr<Reaction> r)
             "Unknown reaction type specified: {}", r->reaction_type);
     }
     return true;
-}
-
-void GasKinetics::addElectronTemperatureReaction(ElectronTemperatureReaction& r)
-{
-    m_electron_temperature_rates.install(nReactions()-1, r.rate);
 }
 
 void GasKinetics::addFalloffReaction(FalloffReaction& r)
@@ -354,12 +336,9 @@ void GasKinetics::modifyReaction(size_t i, shared_ptr<Reaction> rNew)
         modifyThreeBodyReaction(i, dynamic_cast<ThreeBodyReaction&>(*rNew));
         break;
     case ELECTRON_TEMPERATURE_RXN:
-        modifyElectronTemperatureReaction(i, dynamic_cast<ElectronTemperatureReaction&>(*rNew));
-        break;
+        return;
     case PLASMA_RXN:
-        throw CanteraError("GasKinetics::modifyReaction",
-            "{} reaction type cannot be modified", rNew->reaction_type);
-        break;
+        return;
     case FALLOFF_RXN:
     case CHEMACT_RXN:
         modifyFalloffReaction(i, dynamic_cast<FalloffReaction&>(*rNew));
@@ -379,12 +358,6 @@ void GasKinetics::modifyReaction(size_t i, shared_ptr<Reaction> rNew)
     m_ROP_ok = false;
     m_temp += 0.1234;
     m_pres += 0.1234;
-    m_temp_e += 0.1234;
-}
-
-void GasKinetics::modifyElectronTemperatureReaction(size_t i, ElectronTemperatureReaction& r)
-{
-    m_electron_temperature_rates.replace(i, r.rate);
 }
 
 void GasKinetics::modifyThreeBodyReaction(size_t i, ThreeBodyReaction& r)
@@ -420,7 +393,6 @@ void GasKinetics::invalidateCache()
 {
     BulkKinetics::invalidateCache();
     m_pres += 0.13579;
-    m_temp_e += 0.13579;
 }
 
 }
