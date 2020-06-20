@@ -10,7 +10,6 @@
 #define CT_FUNCS_H
 
 #include "cantera/base/ct_defs.h"
-#include "cantera/numerics/polyfit.h"
 
 namespace Cantera
 {

@@ -5,6 +5,7 @@
 
 #include "cantera/numerics/funcs.h"
 #include "cantera/base/ctexceptions.h"
+#include "cantera/numerics/polyfit.h"
 
 using namespace std;
 
