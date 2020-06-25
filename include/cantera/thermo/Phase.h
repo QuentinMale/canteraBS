@@ -664,16 +664,6 @@ public:
         return m_electron_temp;
     }
 
-    //! Electron mobility [m^2/V/s]
-    virtual double electronMobility() {
-        return Undef;
-    }
-
-    //! Electron diffusivity [m^2/s]
-    virtual double electronDiffusivity() {
-        return Undef;
-    }
-
     //! @name Thermodynamic Properties
     //!@{
     //! Temperature (K).

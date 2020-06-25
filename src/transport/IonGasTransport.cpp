@@ -46,6 +46,10 @@ void IonGasTransport::init(thermo_t* thermo, int mode, int log_level)
             m_kNeutral.push_back(k);
         }
     }
+
+    // get plasma object
+    m_plasma = dynamic_cast<PlasmaPhase*>(thermo);
+
     // set up O2/O2- collision integral [A^2]
     // Data taken from Prager (2005)
     const vector_fp temp{300.0, 400.0, 500.0, 600.0, 800.0, 1000.0,
@@ -353,10 +357,10 @@ void IonGasTransport::getMixDiffCoeffs(double* const d)
     } else {
         for (size_t k = 0; k < m_nsp; k++) {
             if (k == m_kElectron) {
-                if (m_thermo->electronDiffusivity() == Undef) {
+                if (m_plasma == 0) {
                     d[k] = m_electronMobility * m_kbt / ElectronCharge;
                 } else {
-                    d[m_kElectron] = m_thermo->electronDiffusivity();
+                    d[m_kElectron] = m_plasma->electronDiffusivity();
                 }
             } else {
                 double sum2 = 0.0;
@@ -393,10 +397,10 @@ void IonGasTransport::getMixDiffCoeffsMass(double* const d)
     } else {
         for (size_t k=0; k<m_nsp; k++) {
             if (k == m_kElectron) {
-                if (m_thermo->electronDiffusivity() == Undef) {
+                if (m_plasma == 0) {
                     d[k] = m_electronMobility * m_kbt / ElectronCharge;
                 } else {
-                    d[m_kElectron] = m_thermo->electronDiffusivity();
+                    d[m_kElectron] = m_plasma->electronDiffusivity();
                 }
             } else {
                 double sum1 = 0.0;
@@ -432,10 +436,10 @@ void IonGasTransport::getMixDiffCoeffsMole(double* const d)
     } else {
         for (size_t k = 0; k < m_nsp; k++) {
             if (k == m_kElectron) {
-                if (m_thermo->electronDiffusivity() == Undef) {
+                if (m_plasma == 0) {
                     d[k] = m_electronMobility * m_kbt / ElectronCharge;
                 } else {
-                    d[m_kElectron] = m_thermo->electronDiffusivity();
+                    d[m_kElectron] = m_plasma->electronDiffusivity();
                 }
             } else {
                 double sum2 = 0.0;
@@ -466,10 +470,10 @@ void IonGasTransport::getMobilities(double* const mobi)
     double p = m_thermo->pressure();
     for (size_t k = 0; k < m_nsp; k++) {
         if (k == m_kElectron) {
-            if (m_thermo->electronMobility() == Undef) {
+            if (m_plasma == 0) {
                 mobi[k] = m_electronMobility;
             } else {
-                mobi[k] = m_thermo->electronMobility();
+                mobi[k] = m_plasma->electronMobility();
             }
         } else {
             mobi[k] = 0.0;

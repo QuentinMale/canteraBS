@@ -9,6 +9,7 @@
 #define CT_ION_GAS_TRANSPORT_H
 
 #include "MixTransport.h"
+#include "cantera/plasma/PlasmaPhase.h"
 
 namespace Cantera
 {
@@ -121,6 +122,9 @@ protected:
 
     //! electron mobility which can be manually set to a value.
     double m_electronMobility;
+
+    //! Pointer to the plasma phase
+    PlasmaPhase* m_plasma;
 };
 
 }
