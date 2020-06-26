@@ -18,18 +18,21 @@ namespace Cantera
 {
 
 IdealGasPhase::IdealGasPhase() :
-    m_p0(-1.0)
+    m_p0(-1.0),
+    m_electron_temp(0.001)
 {
 }
 
 IdealGasPhase::IdealGasPhase(const std::string& inputFile, const std::string& id_) :
-    m_p0(-1.0)
+    m_p0(-1.0),
+    m_electron_temp(0.001)
 {
     initThermoFile(inputFile, id_);
 }
 
 IdealGasPhase::IdealGasPhase(XML_Node& phaseRef, const std::string& id_) :
-    m_p0(-1.0)
+    m_p0(-1.0),
+    m_electron_temp(0.001)
 {
     importPhase(phaseRef, this);
 }

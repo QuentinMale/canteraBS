@@ -374,6 +374,22 @@ public:
      */
     virtual doublereal cv_mole() const;
 
+    //! Electron temperature [K]
+    virtual double electronTemperature() {
+        return m_electron_temp;
+    }
+
+    //! Set the internally stored electron temperature of the phase (K).
+    //!     @param temp Temperature in Kelvin
+    virtual void setElectronTemperature(const double e_temp) {
+        if (e_temp > 0) {
+            m_electron_temp = e_temp;
+        } else {
+            throw CanteraError("Phase::setElectronTemperature",
+                               "temperature must be positive. T = {}", e_temp);
+        }
+    }
+
     //! @}
     //! @name Mechanical Equation of State
     //! @{
@@ -617,6 +633,9 @@ protected:
      *  All species must have the same reference state pressure.
      */
     doublereal m_p0;
+
+    //! Electron temperature (K).
+    double m_electron_temp;
 
     //! Temporary storage for dimensionless reference state enthalpies
     mutable vector_fp m_h0_RT;
