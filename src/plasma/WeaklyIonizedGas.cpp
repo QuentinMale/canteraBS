@@ -8,17 +8,18 @@
 #include "cantera/base/utilities.h"
 #include "cantera/numerics/funcs.h"
 
-namespace Cantera {
-
-//! Calculate the norm of EEDF
-double norm(const Eigen::VectorXd& f, const vector_fp& grid)
+namespace {
+double norm(const Eigen::VectorXd& f, const std::vector<double>& grid)
 {
-    vector_fp p(f.size());
+    std::vector<double> p(f.size());
     for (int i = 0; i < f.size(); i++) {
         p[i] = f(i) * pow(grid[i], 0.5);
     }
-    return simpsonQuadrature(grid, p);
+    return Cantera::simpsonQuadrature(grid, p);
 }
+}
+
+namespace Cantera {
 
 WeaklyIonizedGas::WeaklyIonizedGas()
 {
