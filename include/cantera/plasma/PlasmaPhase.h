@@ -108,9 +108,6 @@ public:
         throw NotImplementedError("PlasmaPhase::reverseRateCoefficient");
     }
 
-    //! initialize Plasma.
-    virtual void initPlasma(const AnyMap& phaseNode, const AnyMap& rootNode);
-
     //! electric field [V/m]
     double electricField() const {
         return m_E;
@@ -218,6 +215,10 @@ public:
 
     //! Overload to signal updating electron energy density function.
     virtual void setTemperature(const double temp);
+
+    virtual void setParameters(const AnyMap& phaseNode,
+                               const AnyMap& rootNode=AnyMap());
+    virtual void initThermo();
 
 protected:
     // set grid cache
@@ -346,6 +347,10 @@ protected:
 
     //! list of product index
     std::vector<std::vector<size_t>> m_kProducts;
+
+    //! Root node of the AnyMap which contains this phase definition.
+    //! Used to look up the phase definitions for the constituent phases.
+    AnyMap m_rootNode;
 };
 
 }

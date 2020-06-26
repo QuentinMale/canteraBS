@@ -182,7 +182,6 @@ cdef extern from "cantera/thermo/ThermoPhase.h" namespace "Cantera":
         void modifySpecies(size_t, shared_ptr[CxxSpecies]) except +translate_exception
         void initThermo() except +translate_exception
         void invalidateCache() except +translate_exception
-        void initPlasma(CxxAnyMap&, CxxAnyMap&) except +translate_exception
 
         # basic thermodynamic properties
         double temperature() except +translate_exception

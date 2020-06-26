@@ -44,22 +44,22 @@ PlasmaPhase::PlasmaPhase()
     m_gamma = pow(2.0 * ElectronCharge / ElectronMass, 0.5);
 }
 
-void PlasmaPhase::initPlasma(const AnyMap& phaseNode, const AnyMap& rootNode)
+void PlasmaPhase::initThermo()
 {
-    if (phaseNode.hasKey("cross-sections")) {
-        if (phaseNode["cross-sections"].is<std::vector<std::string>>()) {
+    if (m_input.hasKey("cross-sections")) {
+        if (m_input["cross-sections"].is<std::vector<std::string>>()) {
             // 'cross-sections' is a list of target species names to be added from the current
             // file's 'cross-sections' section
-            addElectronCrossSections(phaseNode["cross-sections"], rootNode["cross-sections"]);
-        } else if (phaseNode["cross-sections"].is<std::string>()) {
+            addElectronCrossSections(m_input["cross-sections"], m_rootNode["cross-sections"]);
+        } else if (m_input["cross-sections"].is<std::string>()) {
             // 'cross-sections' is a keyword applicable to the current file's 'cross-sections'
             // section
-            addElectronCrossSections(phaseNode["cross-sections"], rootNode["cross-sections"]);
-        } else if (phaseNode["cross-sections"].is<std::vector<AnyMap>>()) {
+            addElectronCrossSections(m_input["cross-sections"], m_rootNode["cross-sections"]);
+        } else if (m_input["cross-sections"].is<std::vector<AnyMap>>()) {
             // Each item in 'cross-sections' is a map with one item, where the key is
             // a section in another YAML file, and the value is a
             // list of target species names to read from that section 
-            for (const auto& crossSectionsNode : phaseNode["cross-sections"].asVector<AnyMap>()) {
+            for (const auto& crossSectionsNode : m_input["cross-sections"].asVector<AnyMap>()) {
                 const std::string& source = crossSectionsNode.begin()->first;
                 const auto& names = crossSectionsNode.begin()->second;
                 const auto& slash = boost::ifind_last(source, "/");
@@ -75,13 +75,13 @@ void PlasmaPhase::initPlasma(const AnyMap& phaseNode, const AnyMap& rootNode)
                 }
             }
         } else {
-            throw InputFileError("newPlasma", phaseNode["cross-sections"],
+            throw InputFileError("newPlasma", m_input["cross-sections"],
                 "Could not parse cross-sections declaration of type '{}'",
-                phaseNode["cross-sections"].type_str());
+                m_input["cross-sections"].type_str());
         }
-    } else if (rootNode.hasKey("cross-sections")) {
+    } else if (m_rootNode.hasKey("cross-sections")) {
         // By default, add all cross sections from the 'cross-sections' section
-        addElectronCrossSections(AnyValue("all"), rootNode["cross-sections"]);
+        addElectronCrossSections(AnyValue("all"), m_rootNode["cross-sections"]);
     }
 
     m_f0_ok = false;
@@ -99,6 +99,13 @@ void PlasmaPhase::initPlasma(const AnyMap& phaseNode, const AnyMap& rootNode)
             m_kOthers.push_back(k);
         }
     }
+}
+
+void PlasmaPhase::setParameters(const AnyMap& phaseNode,
+                                const AnyMap& rootNode)
+{
+    IdealGasPhase::setParameters(phaseNode, rootNode);
+    m_rootNode = rootNode;
 }
 
 void PlasmaPhase::setGridCache()
