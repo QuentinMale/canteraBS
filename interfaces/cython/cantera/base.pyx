@@ -67,14 +67,6 @@ cdef class _SolutionBase:
         self.base.setKinetics(self._kinetics)
 
         self._selected_species = np.ndarray(0, dtype=np.uint64)
-        # Initiate plasma
-        if efile:
-            self._init_efile(efile)
-
-        if electron_cross_sections:
-            self._init_electron(plasma_electron, electron_cross_sections)
-
-        self._selected_species = np.ndarray(0, dtype=np.integer)
 
     def __init__(self, *args, **kwargs):
         if isinstance(self, Transport):
