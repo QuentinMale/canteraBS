@@ -138,18 +138,6 @@ cross-sections:
   - [20.0, 2.30e-22]
 - comment: Excitation of Electronic States - Table 7 of Itikawa (2009)
   kind: excitation
-  product: O2(a1)
-  target: O2
-  threshold: 0.977
-  data:
-  - [0.977, 0.0]
-  - [5.0, 7.60e-22]
-  - [7.0, 1.04e-21]
-  - [10.0, 7.70e-22]
-  - [15.0, 4.20e-22]
-  - [20.0, 2.30e-22]
-- comment: Excitation of Electronic States - Table 7 of Itikawa (2009)
-  kind: excitation
   product: O2(b1)
   target: O2
   threshold: 1.627
