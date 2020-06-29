@@ -10,7 +10,7 @@
 #define CT_PLASMAPHASE_H
 
 #include "cantera/thermo/IdealGasPhase.h"
-#include "cantera/plasma/ElectronCrossSection.h"
+#include "cantera/kinetics/ElectronCrossSection.h"
 #include "cantera/base/ctexceptions.h"
 #include "cantera/base/ValueCache.h"
 #include "cantera/numerics/eigen_dense.h"

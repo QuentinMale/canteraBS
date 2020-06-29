@@ -5,7 +5,7 @@
 // This file is part of Cantera. See License.txt in the top-level directory or
 // at https://cantera.org/license.txt for license and copyright information.
 
-#include "cantera/plasma/PlasmaPhase.h"
+#include "cantera/thermo/PlasmaPhase.h"
 #include "cantera/base/stringUtils.h"
 #include "cantera/base/ctexceptions.h"
 #include "cantera/base/ctml.h"

@@ -139,7 +139,7 @@ cdef extern from "cantera/base/Solution.h" namespace "Cantera":
     cdef shared_ptr[CxxSolution] CxxNewSolution "Cantera::Solution::create" ()
 
 
-cdef extern from "cantera/plasma/ElectronCrossSection.h" namespace "Cantera":
+cdef extern from "cantera/kinetics/ElectronCrossSection.h" namespace "Cantera":
     cdef cppclass CxxElectronCrossSection "Cantera::ElectronCrossSection":
         CxxElectronCrossSection()
 
@@ -292,7 +292,7 @@ cdef extern from "cantera/thermo/IdealGasPhase.h":
         CxxIdealGasPhase()
 
 
-cdef extern from "cantera/plasma/PlasmaPhase.h":
+cdef extern from "cantera/thermo/PlasmaPhase.h":
     cdef cppclass CxxPlasmaPhase "Cantera::PlasmaPhase":
         CxxPlasmaPhase()
 

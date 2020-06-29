@@ -4,7 +4,7 @@
 // This file is part of Cantera. See License.txt in the top-level directory or
 // at https://cantera.org/license.txt for license and copyright information.
 
-#include "cantera/plasma/WeaklyIonizedGas.h"
+#include "cantera/thermo/WeaklyIonizedGas.h"
 #include "cantera/base/utilities.h"
 #include "cantera/numerics/funcs.h"
 

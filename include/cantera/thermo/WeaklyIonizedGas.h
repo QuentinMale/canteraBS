@@ -9,7 +9,7 @@
 #ifndef CT_WEAKLYIONIZEDGAS_H
 #define CT_WEAKLYIONIZEDGAS_H
 
-#include "cantera/plasma/PlasmaPhase.h"
+#include "cantera/thermo/PlasmaPhase.h"
 #include "cantera/numerics/eigen_sparse.h"
 
 namespace Cantera
