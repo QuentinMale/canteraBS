@@ -1820,16 +1820,22 @@ class TestPlasma(utilities.CanteraTest):
         self.gas.set_initial_mean_electron_energy(0.5)
 
     def test_electron_properties(self):
-        self.assertNear(self.gas.electron_temperature, 13113, 1e-3)
-        self.assertNear(self.gas.electron_mobility, 0.3985, 1e-3)
-        self.assertNear(self.gas.electron_diffusivity, 0.5279, 1e-3)
-        self.assertNear(self.gas.plasma_process_rate_coefficient(5), 1.55e-16, rtol=1e-5, atol=1e-17)
-        self.assertNear(self.gas.plasma_process_reverse_rate_coefficient(5), 4.16e-16, rtol=1e-5, atol=1e-17)
-        self.assertNear(self.gas.electron_total_collision_frequency, 3.433e11, 1e-3)
-        self.assertNear(self.gas.electron_power_gain, 3.9811e9, 1e-3)
-        self.assertNear(self.gas.electron_elastic_power_loss, 2.4114e7, 1e-3)
-        self.assertNear(self.gas.electron_total_power_loss, 3.88e9, 1e-3)
-        self.assertNear(self.gas.mean_electron_energy, 1.6949, 1e-3)
+        # The values have been validated by comparing to BOLOS*
+        # * A. Luque, "BOLOS: An open source solver for the Boltzmann equation,"
+        # https://github.com/aluque/bolos.
+        # To validate:
+        # Install modified BOLOS at https://github.com/BangShiuh/bolos
+        # run /bolos/samples/validation.py
+        self.assertNear(self.gas.electron_temperature, 14509, 1e-3)
+        self.assertNear(self.gas.electron_mobility, 0.3723, 1e-3)
+        self.assertNear(self.gas.electron_diffusivity, 0.5459, 1e-3)
+        self.assertNear(self.gas.plasma_process_rate_coefficient(5), 3.754e-17, rtol=1e-5, atol=1e-17)
+        self.assertNear(self.gas.plasma_process_reverse_rate_coefficient(5), 1.774e-16, rtol=1e-5, atol=1e-17)
+        self.assertNear(self.gas.electron_total_collision_frequency, 3.6676e11, 1e-3)
+        self.assertNear(self.gas.electron_power_gain, 3.7226e9, 1e-3)
+        self.assertNear(self.gas.electron_elastic_power_loss, 2.8576e7, 1e-3)
+        self.assertNear(self.gas.electron_total_power_loss, 3.59e9, 1e-3)
+        self.assertNear(self.gas.mean_electron_energy, 1.8754, 1e-3)
         self.assertNear(self.gas.electric_field, 1e5, 1e-3)
 
     def test_change_electric_field_freq(self):
