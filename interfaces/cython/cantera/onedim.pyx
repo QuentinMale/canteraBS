@@ -497,7 +497,7 @@ cdef class IonFlow(_FlowBase):
         (<CxxIonFlow*>self.flow).setSolvingStage(stage)
 
     def set_electricBoundaryCondition(self, condition_type, value):
-        (<CxxIonFlow*>self.flow).setElectricBoundaryCondition(condition_type, value)
+        (<CxxIonFlow*>self.flow).setElectricBoundaryCondition(stringify(condition_type), value)
 
     def set_electronTransport(self, temp, diff, mobi):
         (<CxxIonFlow*>self.flow).setElectronTransport(temp, diff, mobi)
