@@ -289,7 +289,7 @@ void IonFlow::getWdot(double* x, size_t j)
         size_t k_C2H3Op = m_thermo->speciesIndex("C2H3O+");
         size_t k_CO = m_thermo->speciesIndex("CO");
         size_t k_CH3 = m_thermo->speciesIndex("CH3");
-        size_t k_CH2CO = m_thermo->speciesIndex("k_CH2CO");
+        size_t k_CH2CO = m_thermo->speciesIndex("CH2CO");
         size_t k_H = m_thermo->speciesIndex("H");
         // obtain rate
         double rate = poly5(tlog, m_plasmaRateCoeff[1].data());
