@@ -4,6 +4,7 @@
 #include "cantera/thermo/IdealGasPhase.h"
 #include "cantera/thermo/SurfPhase.h"
 #include "cantera/kinetics/GasKinetics.h"
+#include "cantera/kinetics/PlasmaKinetics.h"
 #include "cantera/base/Solution.h"
 
 namespace Cantera

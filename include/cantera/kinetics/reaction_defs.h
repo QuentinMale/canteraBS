@@ -73,6 +73,11 @@ const int CHEMACT_RXN = 8;
 const int BLOWERSMASEL_RXN = 9;
 
 /**
+ * A reaction to calculate the reaction rate with electron temperature
+ */
+const int ELECTRONTEMPERATURE_RXN = 10;
+
+/**
  * A reaction occurring on a surface.
  *  NOTE: This is a bit ambiguous, and will be taken out in the future
  *        The dimensionality of the interface is a separate concept from the type

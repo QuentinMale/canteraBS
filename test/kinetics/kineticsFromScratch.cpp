@@ -4,6 +4,7 @@
 #include "cantera/thermo/SurfPhase.h"
 #include "cantera/thermo/Species.h"
 #include "cantera/kinetics/GasKinetics.h"
+#include "cantera/kinetics/PlasmaKinetics.h"
 #include "cantera/kinetics/InterfaceKinetics.h"
 #include "cantera/kinetics/FalloffFactory.h"
 #include "cantera/base/Array.h"

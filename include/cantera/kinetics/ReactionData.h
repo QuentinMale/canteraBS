@@ -47,6 +47,44 @@ struct ArrheniusData
     double m_recipT;  //!< inverse of temperature
 };
 
+//! Data container holding shared data specific to ElectronTemperatureRate
+/**
+ * The data container `ETempData` holds precalculated data common to
+ * all `ElectronTemperatureRate` objects.
+ */
+struct ETempData
+{
+    ETempData() : m_temperature(1.), m_logT(0.), m_recipT(1.),
+                  m_elec_temp(1.), m_logTe(0.), m_recipTe(1.) {}
+
+    //! Update data container based on temperature *T*
+    void update(double T, double Te)
+    {
+        m_temperature = T;
+        m_logT = std::log(T);
+        m_recipT = 1./T;
+        m_elec_temp = Te;
+        m_logTe = std::log(Te);
+        m_recipTe = 1./Te;
+    }
+
+    //! Update data container based on temperature *T* and pressure *P*
+    void update(double T, double Te, double P) { update(T, Te); }
+
+    //! Update data container based on *bulk* phase state
+    void update(const ThermoPhase& bulk);
+
+    //! Update number of species; unused
+    void resizeSpecies(size_t n_species) {}
+
+    double m_temperature; //!< temperature
+    double m_logT; //!< logarithm of temperature
+    double m_recipT;  //!< inverse of temperature
+    double m_elec_temp; //!< electron temperature
+    double m_logTe; //! < logarithm of electron temperature
+    double m_recipTe; //!< inverse of electron temperature
+};
+
 
 //! Data container holding shared data specific to PlogRate
 /**

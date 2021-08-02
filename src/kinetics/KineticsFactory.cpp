@@ -7,6 +7,7 @@
 
 #include "cantera/kinetics/KineticsFactory.h"
 #include "cantera/kinetics/GasKinetics.h"
+#include "cantera/kinetics/PlasmaKinetics.h"
 #include "cantera/kinetics/InterfaceKinetics.h"
 #include "cantera/kinetics/EdgeKinetics.h"
 #include "cantera/kinetics/importKinetics.h"
@@ -45,6 +46,9 @@ KineticsFactory::KineticsFactory() {
     reg("gas", []() { return new GasKinetics(); });
     addAlias("gas", "gaskinetics");
     addAlias("gas", "Gas");
+    reg("plasma", []() { return new PlasmaKinetics(); });
+    addAlias("plasma", "plasmakinetics");
+    addAlias("plasma", "Plasma");
     reg("surface", []() { return new InterfaceKinetics(); });
     addAlias("surface", "interface");
     addAlias("surface", "Surf");

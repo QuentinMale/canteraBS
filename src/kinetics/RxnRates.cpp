@@ -83,6 +83,87 @@ void Arrhenius::getParameters(AnyMap& rateNode, const Units& rate_units) const
     rateNode.setFlowStyle();
 }
 
+ElectronTemperature::ElectronTemperature()
+    : m_logA(-1.0E300)
+    , m_b(0.0)
+    , m_E(0.0)
+    , m_EE(0.0)
+    , m_A(0.0)
+{
+}
+
+ElectronTemperature::ElectronTemperature(double A, double b, double E, double EE)
+    : m_b(b)
+    , m_E(E)
+    , m_EE(EE)
+    , m_A(A)
+{
+    if (m_A  <= 0.0) {
+        m_logA = -1.0E300;
+    } else {
+        m_logA = std::log(m_A);
+    }
+}
+
+ElectronTemperature::ElectronTemperature(const AnyValue& rate,
+                                     const UnitSystem& units,
+                                     const Units& rate_units)
+{
+    setParameters(rate, units, rate_units);
+}
+
+void ElectronTemperature::setParameters(const AnyValue& rate,
+                                      const UnitSystem& units,
+                                      const Units& rate_units)
+{
+    if (rate.empty()) {
+        m_A = NAN;
+        m_b = NAN;
+        m_E = NAN;
+        m_EE = NAN;
+    } else if (rate.is<AnyMap>()) {
+        auto& rate_map = rate.as<AnyMap>();
+        m_A = units.convert(rate_map["A"], rate_units);
+        m_b = rate_map["b"].asDouble();
+        m_E = units.convertActivationEnergy(rate_map["Ea"], "K");
+        m_EE = units.convertActivationEnergy(rate_map["Ea-e"], "K");
+    } else {
+        auto& rate_vec = rate.asVector<AnyValue>(4);
+        m_A = units.convert(rate_vec[0], rate_units);
+        m_b = rate_vec[1].asDouble();
+        m_E = units.convertActivationEnergy(rate_vec[2], "K");
+        m_EE = units.convertActivationEnergy(rate_vec[3], "K");
+    }
+
+    if (m_A <= 0.0) {
+        m_logA = -1.0E300;
+    } else {
+        m_logA = std::log(m_A);
+    }
+}
+
+void ElectronTemperature::getParameters(AnyMap& rateNode, const Units& rate_units) const
+{
+    double A = preExponentialFactor();
+    if (std::isnan(A)) {
+        // Return empty/unmodified AnyMap
+        return;
+    } else if (rate_units.factor() != 0.0) {
+        rateNode["A"].setQuantity(A, rate_units);
+    } else {
+        rateNode["A"] = A;
+        // This can't be converted to a different unit system because the dimensions of
+        // the rate constant were not set. Can occur if the reaction was created outside
+        // the context of a Kinetics object and never added to a Kinetics object.
+        rateNode["__unconvertible__"] = true;
+    }
+
+    rateNode["b"] = temperatureExponent();
+    rateNode["Ea"].setQuantity(activationEnergy_R(), "K", true);
+    rateNode["Ea-e"].setQuantity(activationElectronEnergy_R(), "K", true);
+    rateNode.setFlowStyle();
+}
+
 BlowersMasel::BlowersMasel()
     : m_logA(-1.0E300)
     , m_b(0.0)

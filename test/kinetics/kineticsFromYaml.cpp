@@ -2,6 +2,7 @@
 #include "cantera/base/Units.h"
 #include "cantera/base/Solution.h"
 #include "cantera/kinetics/GasKinetics.h"
+#include "cantera/kinetics/PlasmaKinetics.h"
 #include "cantera/thermo/SurfPhase.h"
 #include "cantera/kinetics/KineticsFactory.h"
 #include "cantera/kinetics/ReactionFactory.h"
@@ -260,6 +261,28 @@ TEST(Reaction, BlowersMaselFromYaml)
     EXPECT_NEAR(ER.rate.activationEnergy_R(H_mid), Ea / GasConstant, 1e-7);
     EXPECT_TRUE(ER.allow_negative_pre_exponential_factor);
     EXPECT_FALSE(ER.allow_negative_orders);
+}
+
+TEST(Reaction, ETempFromYaml1)
+{
+    auto sol = newSolution("ET_test.yaml");
+    AnyMap rxn = AnyMap::fromYamlString(
+        "{equation: E + O2 + O2 => O2^- + O2,"
+        " type: electron-temperature,"
+        " rate-constant: [1.523e+27 cm^6/mol^2/s, -1.0, -100 K, 700 K]}");
+
+    auto R = newReaction(rxn, *(sol->kinetics()));
+    EXPECT_EQ(R->reactants.at("O2"), 2);
+    EXPECT_EQ(R->reactants.at("E"), 1);
+    EXPECT_EQ(R->products.at("O2^-"), 1);
+    EXPECT_EQ(R->products.at("O2"), 1);
+    EXPECT_EQ(R->reaction_type, ELECTRONTEMPERATURE_RXN);
+
+    auto ER = dynamic_cast<ETempReaction&>(*R);
+    EXPECT_DOUBLE_EQ(ER.rate.preExponentialFactor(), 1.523e21);
+    EXPECT_DOUBLE_EQ(ER.rate.temperatureExponent(), -1.0);
+    EXPECT_DOUBLE_EQ(ER.rate.activationEnergy_R(), -100);
+    EXPECT_DOUBLE_EQ(ER.rate.activationElectronEnergy_R(), 700);
 }
 
 TEST(Kinetics, GasKineticsFromYaml1)
@@ -615,5 +638,15 @@ TEST_F(ReactionToYaml, BlowersMaselInterface)
     surf->setCoveragesByName("H(S):0.1, PT(S):0.8, H2O(S):0.1");
     duplicateReaction(0);
     EXPECT_TRUE(std::dynamic_pointer_cast<BlowersMaselInterfaceReaction>(duplicate));
+    compareReactions();
+}
+
+TEST_F(ReactionToYaml, ElectronTemperature)
+{
+    soln = newSolution("ET_test.yaml", "gas");
+    soln->thermo()->setState_TPX(300, OneAtm, "E:1, O2:1");
+    soln->thermo()->setElectronTemperature(3000);
+    duplicateReaction(0);
+    EXPECT_TRUE(std::dynamic_pointer_cast<ETempReaction>(duplicate));
     compareReactions();
 }

@@ -482,6 +482,25 @@ public:
     std::string sticking_species;
 };
 
+//! A reaction for non-equilibrium plasma with a modified Arrhenius reaction
+//! rate depending on both gas and electron temperature.
+class ETempReaction : public Reaction
+{
+public:
+    ETempReaction();
+    ETempReaction(const Composition& reactants,
+                  const Composition& products,
+                  const ElectronTemperature& rate);
+
+    virtual std::string type() const {
+        return "electron-temperature";
+    }
+    virtual void getParameters(AnyMap& reactionNode) const;
+    virtual void validate();
+    ElectronTemperature rate;
+    bool allow_negative_pre_exponential_factor;
+};
+
 
 //! A reaction which follows mass-action kinetics with a modified Arrhenius
 //! reaction rate.
@@ -679,6 +698,9 @@ void setupBlowersMaselReaction(BlowersMaselReaction&,
 //! @internal May be changed without notice in future versions
 void setupBlowersMaselInterfaceReaction(BlowersMaselInterfaceReaction&,
                                         const AnyMap&, const Kinetics&);
+//! @internal May be changed without notice in future versions
+void setupETempReaction(ETempReaction&,
+                        const AnyMap&, const Kinetics&);
 }
 
 #endif

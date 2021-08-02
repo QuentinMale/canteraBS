@@ -15,6 +15,11 @@ void ArrheniusData::update(const ThermoPhase& bulk)
     update(bulk.temperature());
 }
 
+void ETempData::update(const ThermoPhase& bulk)
+{
+    update(bulk.temperature(), bulk.electronTemperature());
+}
+
 void PlogData::update(double T)
 {
     throw CanteraError("PlogData::update",

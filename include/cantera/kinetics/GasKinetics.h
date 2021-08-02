@@ -106,6 +106,12 @@ protected:
 
     void processFalloffReactions();
 
+    // Add a specific reaction
+    virtual bool addSpecificReaction(shared_ptr<Reaction> r);
+
+    // Modify a specific reaction
+    virtual bool modifySpecificReaction(size_t i, shared_ptr<Reaction> rNew);
+
     // functions marked as deprecated below are only used for XML import and
     // transitional reaction types are marked as '-legacy'
 

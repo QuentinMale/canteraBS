@@ -266,6 +266,15 @@ bool GasKinetics::addReaction(shared_ptr<Reaction> r)
         return true;
     }
 
+    if (!addSpecificReaction(r)) {
+        throw CanteraError("GasKinetics::addReaction",
+            "Unknown reaction type specified: '{}'", r->type());
+    }
+    return true;
+}
+
+bool GasKinetics::addSpecificReaction(shared_ptr<Reaction> r)
+{
     if (r->type() == "elementary-legacy") {
         addElementaryReaction(dynamic_cast<ElementaryReaction2&>(*r));
     } else if (r->type() == "three-body-legacy") {
@@ -281,8 +290,7 @@ bool GasKinetics::addReaction(shared_ptr<Reaction> r)
     } else if (r->type() == "Blowers-Masel") {
         addBlowersMaselReaction(dynamic_cast<BlowersMaselReaction&>(*r));
     } else {
-        throw CanteraError("GasKinetics::addReaction",
-            "Unknown reaction type specified: '{}'", r->type());
+        return false;
     }
     return true;
 }
@@ -358,6 +366,17 @@ void GasKinetics::modifyReaction(size_t i, shared_ptr<Reaction> rNew)
         return;
     }
 
+    if (modifySpecificReaction(i, rNew)) {
+        // invalidate all cached data
+        invalidateCache();
+    } else {
+        throw CanteraError("GasKinetics::modifyReaction",
+            "Unknown reaction type specified: '{}'", rNew->type());
+    }
+}
+
+bool GasKinetics::modifySpecificReaction(size_t i, shared_ptr<Reaction> rNew)
+{
     if (rNew->type() == "elementary-legacy") {
         modifyElementaryReaction(i, dynamic_cast<ElementaryReaction2&>(*rNew));
     } else if (rNew->type() == "three-body-legacy") {
@@ -373,14 +392,9 @@ void GasKinetics::modifyReaction(size_t i, shared_ptr<Reaction> rNew)
     } else if (rNew->type() == "Blowers-Masel") {
         modifyBlowersMaselReaction(i, dynamic_cast<BlowersMaselReaction&>(*rNew));
     } else {
-        throw CanteraError("GasKinetics::modifyReaction",
-            "Unknown reaction type specified: '{}'", rNew->type());
+        return false;
     }
-
-    // invalidate all cached data
-    m_ROP_ok = false;
-    m_temp += 0.1234;
-    m_pres += 0.1234;
+    return true;
 }
 
 void GasKinetics::modifyThreeBodyReaction(size_t i, ThreeBodyReaction2& r)

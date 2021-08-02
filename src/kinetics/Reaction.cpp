@@ -771,6 +771,44 @@ void ElectrochemicalReaction::getParameters(AnyMap& reactionNode) const
     }
 }
 
+ETempReaction::ETempReaction()
+    : allow_negative_pre_exponential_factor(false)
+{
+    reaction_type = ELECTRONTEMPERATURE_RXN;
+}
+
+void ETempReaction::validate()
+{
+    Reaction::validate();
+    if (!allow_negative_pre_exponential_factor &&
+        rate.preExponentialFactor() < 0) {
+        throw InputFileError("BlowersMaselReaction::validate", input,
+            "Undeclared negative pre-exponential factor found in reaction '"
+            + equation() + "'");
+    }  
+}
+
+void ETempReaction::getParameters(AnyMap& reactionNode) const
+{
+    Reaction::getParameters(reactionNode);
+    reactionNode["type"] = "electron-temperature";
+    if (allow_negative_pre_exponential_factor) {
+        reactionNode["negative-A"] = true;
+    }
+    AnyMap rateNode;
+    rate.getParameters(rateNode, rate_units);
+    reactionNode["rate-constant"] = std::move(rateNode);
+}
+
+ETempReaction::ETempReaction(const Composition& reactants_,
+                             const Composition& products_,
+                             const ElectronTemperature& rate_)
+    : Reaction(reactants_, products_)
+    , rate(rate_)
+    , allow_negative_pre_exponential_factor(false)
+{
+}
+
 BlowersMaselReaction::BlowersMaselReaction()
     : allow_negative_pre_exponential_factor(false)
 {
@@ -1243,6 +1281,28 @@ BlowersMasel readBlowersMasel(const Reaction& R, const AnyValue& rate,
         w = units.convertActivationEnergy(rate_vec[3], "K");
     }
     return BlowersMasel(A, b, Ta0, w);
+}
+
+ElectronTemperature readElectronTemperature(const Reaction& R, const AnyValue& rate,
+                        const Kinetics& kin, const UnitSystem& units,
+                        int pressure_dependence=0)
+{
+    double A, b, Ta, Ta_e;
+    Units rc_units = R.rate_units;
+    if (rate.is<AnyMap>()) {
+        auto& rate_map = rate.as<AnyMap>();
+        A = units.convert(rate_map["A"], rc_units);
+        b = rate_map["b"].asDouble();
+        Ta = units.convertActivationEnergy(rate_map["Ea"], "K");
+        Ta_e = units.convertActivationEnergy(rate_map["Ea-e"], "K");
+    } else {
+        auto& rate_vec = rate.asVector<AnyValue>(4);
+        A = units.convert(rate_vec[0], rc_units);
+        b = rate_vec[1].asDouble();
+        Ta = units.convertActivationEnergy(rate_vec[2], "K");
+        Ta_e = units.convertActivationEnergy(rate_vec[3], "K");
+    }
+    return ElectronTemperature(A, b, Ta, Ta_e);
 }
 
 bool detectEfficiencies(ThreeBodyReaction2& R)
@@ -1787,6 +1847,14 @@ void setupBlowersMaselInterfaceReaction(BlowersMaselInterfaceReaction& R, const 
             R.coverage_deps[item.first] = CoverageDependency(a, E, m);
         }
     }
+}
+
+void setupETempReaction(ETempReaction& R, const AnyMap& node,
+                             const Kinetics& kin)
+{
+    setupReaction(R, node, kin);
+    R.allow_negative_pre_exponential_factor = node.getBool("negative-A", false);
+    R.rate = readElectronTemperature(R, node["rate-constant"], kin, node.units());
 }
 
 std::vector<shared_ptr<Reaction> > getReactions(const XML_Node& node)
