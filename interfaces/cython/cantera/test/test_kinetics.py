@@ -1573,3 +1573,27 @@ class TestReaction(utilities.CanteraTest):
 
         # M&W toggled on (locally) for reaction 5
         self.assertNear(2.0 * k1[4], k2[4]) # sticking coefficient = 1.0
+
+    def test_electron_temeprature_rate(self):
+        gas1 = ct.Solution('ET_test.yaml')
+        gas1.TPX = 300, ct.one_atm, "E:1, O2:1"
+        gas1.Te = 300
+        reactions = ct.Reaction.listFromFile('ET_test.yaml', gas1)
+        S = ct.Species.listFromFile('ET_test.yaml')
+        r1 = ct.ETempReaction({'O2':2, 'E':1}, {'O2^-':1, 'O2':1})
+        r1.rate = ct.ElectronTemperature(1.523e+21,-1.0,
+                                        -100*ct.gas_constant,
+                                         700*ct.gas_constant)
+        r2 = ct.ElementaryReaction({'O2':2, 'E':1}, {'O2^-':1, 'O2':1})
+        r2.rate = ct.ArrheniusRate(1.523e+21, -1.0, 600*ct.gas_constant)
+
+        gas2 = ct.Solution(thermo='IdealGas', kinetics='plasma',
+                           species=S, reactions=[r1, r2])
+        gas2.TPX = 300, ct.one_atm, "E:1, O2:1"
+        gas2.Te = 300
+        self.assertNear(gas1.forward_rate_constants[0],
+                        gas2.forward_rate_constants[0])
+        self.assertNear(gas1.forward_rate_constants[0],
+                        gas2.forward_rate_constants[1])
+        self.assertNear(gas2.forward_rate_constants[0],
+                        gas2.forward_rate_constants[1])

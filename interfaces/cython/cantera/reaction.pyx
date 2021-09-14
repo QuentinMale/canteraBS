@@ -1595,6 +1595,87 @@ cdef class ChebyshevReaction(Reaction):
         return self.rate(T, P)
 
 
+cdef class ElectronTemperature:
+    """
+    A reaction rate coefficient which depends on both gas and electron temperature
+    """
+    def __cinit__(self, A=0, b=0, E=0, EE=0, init=True):
+        if init:
+            self.rate = new CxxElectronTemperature(A, b, E / gas_constant, EE / gas_constant)
+            self.own_rate = True
+            self.reaction = None
+        else:
+            self.own_rate = False
+
+    def __dealloc__(self):
+        if self.own_rate:
+            del self.rate
+
+    property pre_exponential_factor:
+        """
+        The pre-exponential factor *A* in units of m, kmol, and s raised to
+        powers depending on the reaction order.
+        """
+        def __get__(self):
+            return self.rate.preExponentialFactor()
+
+    property temperature_exponent:
+        """
+        The temperature exponent *b*.
+        """
+        def __get__(self):
+            return self.rate.temperatureExponent()
+
+    property activation_energy:
+        """
+        The activation energy *E* [J/kmol].
+        """
+        def __get__(self):
+            return self.rate.activationEnergy_R() * gas_constant
+
+    property activation_electron_energy:
+        """
+        The activation electron energy *EE* [J/kmol].
+        """
+        def __get__(self):
+            return self.rate.activationElectronEnergy_R() * gas_constant
+
+
+cdef wrapElectronTemperature(CxxElectronTemperature* rate, Reaction reaction):
+    r = ElectronTemperature(init=False)
+    r.rate = rate
+    r.reaction = reaction
+    return r
+
+
+cdef class ETempReaction(Reaction):
+    """
+    A reaction which follows electron-temperature reaction rate
+    """
+    _reaction_type = "electron-temperature"
+
+    property rate:
+        """ Get/Set the `ElectronTemperature` rate coefficient for this reaction. """
+        def __get__(self):
+            cdef CxxETempReaction* r = <CxxETempReaction*>self.reaction
+            return wrapElectronTemperature(&(r.rate), self)
+        def __set__(self, ElectronTemperature rate):
+            cdef CxxETempReaction* r = <CxxETempReaction*>self.reaction
+            r.rate = deref(rate.rate)
+
+    property allow_negative_pre_exponential_factor:
+        """
+        Get/Set whether the rate coefficient is allowed to have a negative
+        pre-exponential factor.
+        """
+        def __get__(self):
+            cdef CxxETempReaction* r = <CxxETempReaction*>self.reaction
+            return r.allow_negative_pre_exponential_factor
+        def __set__(self, allow):
+            cdef CxxETempReaction* r = <CxxETempReaction*>self.reaction
+            r.allow_negative_pre_exponential_factor = allow
+
+
 cdef class BlowersMasel:
     """
     A reaction rate coefficient which depends on temperature and enthalpy change
