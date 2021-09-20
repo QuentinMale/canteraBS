@@ -92,6 +92,12 @@ TEST_F(TestThermoMethods, setState_AnyMap)
     EXPECT_NEAR(thermo->temperature(), 298.15, 1e-6);
 }
 
+TEST_F(TestThermoMethods, setElectronTemperature)
+{
+    thermo->setElectronTemperature(3210);
+    EXPECT_DOUBLE_EQ(thermo->electronTemperature(), 3210);
+}
+
 class EquilRatio_MixFrac_Test : public testing::Test
 {
 public:
