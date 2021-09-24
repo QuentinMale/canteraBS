@@ -276,13 +276,12 @@ TEST(Reaction, ETempFromYaml1)
     EXPECT_EQ(R->reactants.at("E"), 1);
     EXPECT_EQ(R->products.at("O2^-"), 1);
     EXPECT_EQ(R->products.at("O2"), 1);
-    EXPECT_EQ(R->reaction_type, ELECTRONTEMPERATURE_RXN);
 
-    auto ER = dynamic_cast<ETempReaction&>(*R);
-    EXPECT_DOUBLE_EQ(ER.rate.preExponentialFactor(), 1.523e21);
-    EXPECT_DOUBLE_EQ(ER.rate.temperatureExponent(), -1.0);
-    EXPECT_DOUBLE_EQ(ER.rate.activationEnergy_R(), -100);
-    EXPECT_DOUBLE_EQ(ER.rate.activationElectronEnergy_R(), 700);
+    const auto rate = std::dynamic_pointer_cast<ETempRate1>(R->rate());
+    EXPECT_DOUBLE_EQ(rate->preExponentialFactor(), 1.523e21);
+    EXPECT_DOUBLE_EQ(rate->temperatureExponent(), -1.0);
+    EXPECT_DOUBLE_EQ(rate->activationEnergy_R(), -100);
+    EXPECT_DOUBLE_EQ(rate->activationElectronEnergy_R(), 700);
 }
 
 TEST(Kinetics, GasKineticsFromYaml1)
@@ -647,6 +646,6 @@ TEST_F(ReactionToYaml, ElectronTemperature)
     soln->thermo()->setState_TPX(300, OneAtm, "E:1, O2:1");
     soln->thermo()->setElectronTemperature(3000);
     duplicateReaction(0);
-    EXPECT_TRUE(std::dynamic_pointer_cast<ETempReaction>(duplicate));
+    EXPECT_TRUE(std::dynamic_pointer_cast<ETempReaction1>(duplicate));
     compareReactions();
 }

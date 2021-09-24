@@ -1117,6 +1117,33 @@ void ChebyshevReaction3::getParameters(AnyMap& reactionNode) const
     reactionNode.update(m_rate->parameters(rate_units));
 }
 
+ETempReaction1::ETempReaction1()
+{
+    m_rate.reset(new ETempRate1);
+}
+
+ETempReaction1::ETempReaction1(const Composition& reactants,
+                               const Composition& products,
+                               const ETempRate1& rate)
+    : Reaction(reactants, products)
+{
+    m_rate.reset(new ETempRate1(rate));
+}
+
+ETempReaction1::ETempReaction1(const AnyMap& node, const Kinetics& kin)
+    : ETempReaction1()
+{
+    setParameters(node, kin);
+    setRate(std::make_shared<ETempRate1>(node, rate_units));
+}
+
+void ETempReaction1::getParameters(AnyMap& reactionNode) const
+{
+    Reaction::getParameters(reactionNode);
+    reactionNode["type"] = "electron-temperature";
+    reactionNode.update(m_rate->parameters(rate_units));
+}
+
 CustomFunc1Reaction::CustomFunc1Reaction()
 {
     m_rate.reset(new CustomFunc1Rate);

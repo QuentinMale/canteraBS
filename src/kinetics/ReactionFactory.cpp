@@ -146,12 +146,15 @@ ReactionFactory::ReactionFactory()
     });
 
     // register electron temperature reactions
-    reg("electron-temperature", [](const AnyMap& node, const Kinetics& kin) {
+    reg("electron-temperature-legacy", [](const AnyMap& node, const Kinetics& kin) {
         ETempReaction* R = new ETempReaction();
         if (!node.empty()) {
             setupETempReaction(*R, node, kin);
         }
         return R;
+    });
+    reg("electron-temperature", [](const AnyMap& node, const Kinetics& kin) {
+        return new ETempReaction1(node, kin);
     });
 }
 

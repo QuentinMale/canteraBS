@@ -493,7 +493,7 @@ public:
                   const ElectronTemperature& rate);
 
     virtual std::string type() const {
-        return "electron-temperature";
+        return "electron-temperature-legacy";
     }
     virtual void getParameters(AnyMap& reactionNode) const;
     virtual void validate();
@@ -578,6 +578,25 @@ public:
 
     virtual std::string type() const {
         return "Chebyshev";
+    }
+
+    virtual void getParameters(AnyMap& reactionNode) const;
+};
+
+
+//! A reaction for non-equilibrium plasma with a modified Arrhenius reaction
+//! rate depending on both gas and electron temperature.
+class ETempReaction1 : public Reaction
+{
+public:
+    ETempReaction1();
+    ETempReaction1(const Composition& reactants,
+                   const Composition& products,
+                   const ETempRate1& rate);
+    ETempReaction1(const AnyMap& node, const Kinetics& kin);
+
+    virtual std::string type() const {
+        return "electron-temperature";
     }
 
     virtual void getParameters(AnyMap& reactionNode) const;
