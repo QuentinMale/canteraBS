@@ -57,6 +57,9 @@ struct ETempData
     ETempData() : m_temperature(1.), m_logT(0.), m_recipT(1.),
                   m_elec_temp(1.), m_logTe(0.), m_recipTe(1.) {}
 
+    //! Update data container based on temperature *T* (raises exception)
+    void update(double T);
+
     //! Update data container based on temperature *T*
     void update(double T, double Te)
     {
@@ -67,9 +70,6 @@ struct ETempData
         m_logTe = std::log(Te);
         m_recipTe = 1./Te;
     }
-
-    //! Update data container based on temperature *T* and pressure *P*
-    void update(double T, double Te, double P) { update(T, Te); }
 
     //! Update data container based on *bulk* phase state
     void update(const ThermoPhase& bulk);

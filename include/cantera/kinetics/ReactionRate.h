@@ -414,6 +414,53 @@ public:
     virtual void validate(const std::string& equation) override;
 };
 
+//! Electron-temperature-dependent rate expression
+/*!
+ * The rate constant can be written as:
+ */
+class ETempRate1 final : public ReactionRate<ETempData>, public ElectronTemperature
+{
+public:
+    //! Default constructor.
+    ETempRate1() {}
+
+    //! Constructor.
+    //! @param A  pre-exponential. The unit system is
+    //!     (kmol, m, s). The actual units depend on the reaction
+    //!     order and the dimensionality (surface or bulk).
+    //! @param b  Temperature exponent. Non-dimensional.
+    //! @param E  Activation energy. J/kmol.
+    //! @param EE  Activation electron energy. J/kmol.
+    ETempRate1(double A, double b, double E, double EE);
+
+    //! Constructor using AnyMap content
+    //! @param node  AnyMap containing rate information
+    //! @param rate_units  unit definitions used for rate information
+    ETempRate1(const AnyMap& node, const Units& rate_units);
+
+    //! Constructor using AnyMap content
+    //! @param node  AnyMap containing rate information
+    ETempRate1(const AnyMap& node);
+
+    virtual std::string type() const override { return "ETempRate"; }
+
+    virtual void setParameters(const AnyMap& node, const Units& rate_units) override;
+    virtual void getParameters(AnyMap& rateNode,
+                               const Units& rate_units) const override;
+
+    //! Update information specific to reaction
+    static bool usesUpdate() { return true; }
+
+    virtual double eval(const ETempData& shared_data,
+                        double concm=0.) const override {
+        return updateRC(0., shared_data.m_recipT, shared_data.m_recipTe);
+    }
+
+    virtual void validate(const std::string& equation) override;
+
+    bool allow_negative_pre_exponential_factor;
+};
+
 
 //! Custom reaction rate depending only on temperature
 /**

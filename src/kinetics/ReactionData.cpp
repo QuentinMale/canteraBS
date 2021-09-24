@@ -20,6 +20,12 @@ void ETempData::update(const ThermoPhase& bulk)
     update(bulk.temperature(), bulk.electronTemperature());
 }
 
+void ETempData::update(double T)
+{
+    throw CanteraError("ETempData::update",
+        "Missing state information: reaction type requires electron temperature.");
+}
+
 void PlogData::update(double T)
 {
     throw CanteraError("PlogData::update",

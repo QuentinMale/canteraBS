@@ -168,6 +168,50 @@ void ChebyshevRate3::validate(const std::string& equation)
 {
 }
 
+ETempRate1::ETempRate1(double A, double b, double E, double EE)
+    : ElectronTemperature(A, b, E, EE)
+{
+}
+
+ETempRate1::ETempRate1(const AnyMap& node, const Units& rate_units)
+{
+    setParameters(node, rate_units);
+}
+
+ETempRate1::ETempRate1(const AnyMap& node)
+{
+    setParameters(node, Units(1.));
+}
+
+void ETempRate1::setParameters(const AnyMap& node, const Units& rate_units)
+{
+    ReactionRateBase::setParameters(node, rate_units);
+    allow_negative_pre_exponential_factor = node.getBool("negative-A", false);
+    if (!node.hasKey("rate-constant")) {
+        ElectronTemperature::setParameters(AnyValue(), node.units(), rate_units);
+        return;
+    }
+    ElectronTemperature::setParameters(node["rate-constant"], node.units(), rate_units);
+}
+
+void ETempRate1::getParameters(AnyMap& rateNode,
+                               const Units& rate_units) const
+{
+    if (allow_negative_pre_exponential_factor) {
+        rateNode["negative-A"] = true;
+    }
+    AnyMap node;
+    ElectronTemperature::getParameters(node, rate_units);
+    if (!node.empty()) {
+        // Arrhenius object is configured
+        rateNode["rate-constant"] = std::move(node);
+    }
+}
+
+void ETempRate1::validate(const std::string& equation)
+{
+}
+
 CustomFunc1Rate::CustomFunc1Rate() : m_ratefunc(0) {}
 
 void CustomFunc1Rate::setRateFunction(shared_ptr<Func1> f)
