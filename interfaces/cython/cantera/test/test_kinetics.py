@@ -1580,7 +1580,7 @@ class TestReaction(utilities.CanteraTest):
         gas1.Te = 300
         reactions = ct.Reaction.listFromFile('ET_test.yaml', gas1)
         S = ct.Species.listFromFile('ET_test.yaml')
-        r1 = ct.ETempReaction({'O2':2, 'E':1}, {'O2^-':1, 'O2':1})
+        r1 = ct.ETempReaction1({'O2':2, 'E':1}, {'O2^-':1, 'O2':1})
         r1.rate = ct.ElectronTemperature(1.523e+21,-1.0,
                                         -100*ct.gas_constant,
                                          700*ct.gas_constant)

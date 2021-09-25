@@ -489,10 +489,8 @@ cdef extern from "cantera/kinetics/Reaction.h" namespace "Cantera":
         double activationEnergy_R()
         double activationElectronEnergy_R()
 
-    cdef cppclass CxxETempReaction "Cantera::ETempReaction"(CxxReaction):
+    cdef cppclass CxxETempReaction1 "Cantera::ETempReaction1"(CxxReaction):
         CxxETempReaction()
-        CxxElectronTemperature rate
-        cbool allow_negative_pre_exponential_factor
 
     cdef cppclass CxxBlowersMasel "Cantera::BlowersMasel":
         CxxBlowersMasel()
