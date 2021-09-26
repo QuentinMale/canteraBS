@@ -393,6 +393,16 @@ cdef extern from "cantera/kinetics/Reaction.h" namespace "Cantera":
         size_t nTemperature()
         vector[double]& coeffs()
 
+    cdef cppclass CxxETempRate1 "Cantera::ETempRate1" (CxxReactionRateBase):
+        CxxETempRate1()
+        CxxETempRate1(CxxAnyMap) except +translate_exception
+        CxxETempRate1(double, double, double, double)
+        double preExponentialFactor()
+        double temperatureExponent()
+        double activationEnergy_R()
+        double activationElectronEnergy_R()
+        cbool allow_negative_pre_exponential_factor
+
     cdef cppclass CxxCustomFunc1Rate "Cantera::CustomFunc1Rate" (CxxReactionRateBase):
         CxxCustomFunc1Rate()
         void setRateFunction(shared_ptr[CxxFunc1]) except +translate_exception
@@ -489,9 +499,6 @@ cdef extern from "cantera/kinetics/Reaction.h" namespace "Cantera":
         double activationEnergy_R()
         double activationElectronEnergy_R()
 
-    cdef cppclass CxxETempReaction1 "Cantera::ETempReaction1"(CxxReaction):
-        CxxETempReaction()
-
     cdef cppclass CxxBlowersMasel "Cantera::BlowersMasel":
         CxxBlowersMasel()
         CxxBlowersMasel(double, double, double, double)
@@ -542,6 +549,9 @@ cdef extern from "cantera/kinetics/Reaction.h" namespace "Cantera":
 
     cdef cppclass CxxChebyshevReaction3 "Cantera::ChebyshevReaction3" (CxxReaction3):
         CxxChebyshevReaction3()
+
+    cdef cppclass CxxETempReaction1 "Cantera::ETempReaction1"(CxxReaction):
+        CxxETempReaction1()
 
     cdef cppclass CxxCustomFunc1Reaction "Cantera::CustomFunc1Reaction" (CxxReaction3):
         CxxCustomFunc1Reaction()
@@ -1176,6 +1186,11 @@ cdef class PlogRate(_ReactionRate):
 
 cdef class ChebyshevRate(_ReactionRate):
     cdef CxxChebyshevRate3* rate
+    @staticmethod
+    cdef wrap(shared_ptr[CxxReactionRateBase])
+
+cdef class ETempRate(_ReactionRate):
+    cdef CxxETempRate1* rate
     @staticmethod
     cdef wrap(shared_ptr[CxxReactionRateBase])
 
