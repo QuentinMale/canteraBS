@@ -283,7 +283,7 @@ cdef class ETempRate(_ReactionRate):
     r"""
     A electron-temperature-dependent reaction rate.
     """
-    def __cinit__(self, A=None, b=None, E=None, EE=None input_data=None, init=True):
+    def __cinit__(self, A=None, b=None, E=None, EE=None, input_data=None, init=True):
 
         if init:
             if isinstance(input_data, dict):
@@ -305,8 +305,8 @@ cdef class ETempRate(_ReactionRate):
         Wrap a C++ ReactionRateBase object with a Python object.
         """
         # wrap C++ reaction
-        cdef ETempRate1 arr
-        arr = ETempRate1(init=False)
+        cdef ETempRate arr
+        arr = ETempRate(init=False)
         arr._base = rate
         arr.base = arr._base.get()
         arr.rate = <CxxETempRate1*>(arr.base)
@@ -332,14 +332,14 @@ cdef class ETempRate(_ReactionRate):
         The activation energy *E* [J/kmol].
         """
         def __get__(self):
-            return self.rate.activationEnergy()
+            return self.rate.activationEnergy_R() * gas_constant
 
     property activation_electron_energy:
         """
         The activation electron energy *EE* [J/kmol].
         """
         def __get__(self):
-            return self.rate.activationElectronEnergy()
+            return self.rate.activationElectronEnergy_R() * gas_constant
 
     property allow_negative_pre_exponential_factor:
         """
@@ -1674,49 +1674,37 @@ cdef class ETempReaction(Reaction):
     _reaction_type = "electron-temperature"
     _hybrid = False
 
-    cdef CxxETempReaction1* cr(self):
-        return <CxxETempReaction1*>self.reaction
-
     def __init__(self, equation=None, rate=None, Kinetics kinetics=None,
-                 init=True, legacy=False, **kwargs):
+                 init=True, **kwargs):
 
         if init and equation and kinetics:
 
-            rxn_type = self._reaction_type
-            if isinstance(rate, dict):
-                spec["temperature-range"] = [rate["Tmin"], rate["Tmax"]]
-                spec["pressure-range"] = [rate["Pmin"], rate["Pmax"]]
-                spec["data"] = rate["data"]
-            elif not legacy and (isinstance(rate, ChebyshevRate) or rate is None):
-                pass
-            else:
-                raise TypeError("Invalid rate definition")
+            spec = {"equation": equation, "type": self._reaction_type}
 
             self._reaction = CxxNewReaction(dict_to_anymap(spec),
                                             deref(kinetics.kinetics))
             self.reaction = self._reaction.get()
-
-            if not legacy and isinstance(rate, ChebyshevRate):
-                self.rate = rate
+            self.rate = ETempRate(rate)
 
     property rate:
-        """ Get/Set the `ChebyshevRate` rate coefficients for this reaction. """
+        """ Get/Set the `ETempRate` object for this reaction. """
         def __get__(self):
-            return ETempRate1.wrap(self.cr().rate())
-        def __set__(self, ETempRate1 rate):
-            self.cr().setRate(rate._base)
+            return self.rate
+        def __set__(self, ETempRate rate):
+            cdef CxxETempReaction1* r = <CxxETempReaction1*>self.reaction
+            r.setRate(rate._base)
 
-    property allow_negative_pre_exponential_factor:
-        """
-        Get/Set whether the rate coefficient is allowed to have a negative
-        pre-exponential factor.
-        """
-        def __get__(self):
-            cdef CxxETempReaction1* r = <CxxETempReaction1*>self.reaction
-            return r.allow_negative_pre_exponential_factor
-        def __set__(self, allow):
-            cdef CxxETempReaction1* r = <CxxETempReaction1*>self.reaction
-            r.allow_negative_pre_exponential_factor = allow
+    # property allow_negative_pre_exponential_factor:
+    #     """
+    #     Get/Set whether the rate coefficient is allowed to have a negative
+    #     pre-exponential factor.
+    #     """
+    #     def __get__(self):
+    #         cdef CxxETempReaction1* r = <CxxETempReaction1*>self.reaction
+    #         return self.rate.allow_negative_pre_exponential_factor
+    #     def __set__(self, allow):
+    #         cdef CxxETempReaction1* r = <CxxETempReaction1*>self.reaction
+    #         self.rate.allow_negative_pre_exponential_factor = allow
 
 
 cdef class BlowersMasel:

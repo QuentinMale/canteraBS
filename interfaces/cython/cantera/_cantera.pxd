@@ -550,7 +550,7 @@ cdef extern from "cantera/kinetics/Reaction.h" namespace "Cantera":
     cdef cppclass CxxChebyshevReaction3 "Cantera::ChebyshevReaction3" (CxxReaction3):
         CxxChebyshevReaction3()
 
-    cdef cppclass CxxETempReaction1 "Cantera::ETempReaction1"(CxxReaction):
+    cdef cppclass CxxETempReaction1 "Cantera::ETempReaction1"(CxxReaction3):
         CxxETempReaction1()
 
     cdef cppclass CxxCustomFunc1Reaction "Cantera::CustomFunc1Reaction" (CxxReaction3):
