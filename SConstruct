@@ -473,6 +473,14 @@ config_options = [
            directories to 'extra_inc_dirs' and 'extra_lib_dirs'.""",
         'default', ('default', 'y', 'n')),
     EnumVariable(
+        'system_pugixml',
+        """Select whether to use the pugixml library from a system installation
+           ('y'), from a Git submodule ('n'), or to decide automatically
+           ('default'). If pugixml is not installed directly into system
+           include and library directories, then you will need to add those
+           directories to 'extra_inc_dirs' and 'extra_lib_dirs'.""",
+        'default', ('default', 'y', 'n')),
+    EnumVariable(
         'system_sundials',
         """Select whether to use SUNDIALS from a system installation ('y'), from
            a Git submodule ('n'), or to decide automatically ('default').
@@ -965,6 +973,34 @@ if env['system_yamlcpp'] in ('n', 'default'):
             config_error('yaml-cpp submodule checkout failed.\n'
                          'Try manually checking out the submodule with:\n\n'
                          '    git submodule update --init --recursive ext/yaml-cpp\n')
+
+# Check for pugixml library and checkout submodule if needed
+# Test for 'ostream.h' to ensure that version >= 3.0.0 is available
+if env['system_pugixml'] in ('y', 'default'):
+    if conf.CheckCXXHeader('pugixml/src/pugixml.hpp', '""'):
+        env['system_pugixml'] = True
+        print("""INFO: Using system installation of pugixml library.""")
+
+    elif env['system_pugixml'] == 'y':
+        config_error('Expected system installation of pugixml library, but it '
+            'could not be found.')
+
+if env['system_pugixml'] in ('n', 'default'):
+    env['system_pugixml'] = False
+    print("""INFO: Using private installation of pugixml library.""")
+    if not os.path.exists('ext/pugixml/src/pugixml.hpp'):
+        if not os.path.exists('.git'):
+            config_error('pugixml is missing. Install source in ext/pugixml.')
+
+        try:
+            code = subprocess.call(['git','submodule','update','--init',
+                                    '--recursive','ext/pugixml'])
+        except Exception:
+            code = -1
+        if code:
+            config_error('pugixml submodule checkout failed.\n'
+                         'Try manually checking out the submodule with:\n\n'
+                         '    git submodule update --init --recursive ext/pugixml\n')
 
 # Check for googletest and checkout submodule if needed
 if env['googletest'] in ('system', 'default'):

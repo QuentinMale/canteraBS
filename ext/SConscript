@@ -114,6 +114,17 @@ if not env['system_eigen']:
                               Copy('$TARGET', '$SOURCE')))
     copyenv.Depends(copyenv['config_h_target'], h)
 
+if not env['system_pugixml']:
+    license_files.append(('Pugixml', 'pugixml/LICENSE.md'))
+    localenv = prep_default(env)
+    localenv.Prepend(CPPPATH=Dir('#ext/pugixml/src'))
+    libraryTargets.extend(
+        localenv.SharedObject(multi_glob(localenv, 'pugixml/src', 'cpp')))
+    for name in ('pugiconfig.hpp', 'pugixml.hpp'):
+        build(copyenv.Command("#include/cantera/ext/pugixml/" + name,
+                              "#ext/pugixml/src/" + name,
+                              Copy('$TARGET', '$SOURCE')))
+
 # Google Test: Used internally for Cantera unit tests.
 if env['googletest'] == 'submodule':
     localenv = prep_gtest(env)
