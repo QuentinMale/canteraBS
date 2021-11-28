@@ -20,6 +20,7 @@ include "thermo.pyx"
 include "reaction.pyx"
 include "kinetics.pyx"
 include "transport.pyx"
+include "plasma.pyx"
 
 include "yamlwriter.pyx"
 include "mixture.pyx"

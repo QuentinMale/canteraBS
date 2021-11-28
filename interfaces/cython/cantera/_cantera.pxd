@@ -191,6 +191,21 @@ cdef extern from "cantera/thermo/Species.h" namespace "Cantera":
     cdef vector[shared_ptr[CxxSpecies]] CxxGetSpecies "getSpecies" (CxxAnyValue&) except +translate_exception
 
 
+cdef extern from "cantera/plasma/Collision.h" namespace "Cantera":
+    cdef cppclass CxxCollision "Cantera::Collision":
+        CxxCollision()
+        string equation()
+        string kind
+        double threshold
+        vector[double] energy_data
+        vector[double] cross_section_data
+        CxxAnyMap parameters(CxxThermoPhase*) except +translate_exception
+        CxxAnyMap input
+
+    cdef shared_ptr[CxxCollision] CxxNewCollision "newCollision" (CxxAnyMap&) except +translate_exception
+    cdef vector[shared_ptr[CxxCollision]] CxxGetCollisions "getCollisions" (CxxAnyValue&) except +translate_exception
+
+
 cdef extern from "cantera/base/Solution.h" namespace "Cantera":
     cdef cppclass CxxSolution "Cantera::Solution":
         CxxSolution()
@@ -247,6 +262,7 @@ cdef extern from "cantera/thermo/ThermoPhase.h" namespace "Cantera":
 
         # initialization
         void addUndefinedElements() except +translate_exception
+        cbool addCollision(shared_ptr[CxxCollision]) except +translate_exception
         cbool addSpecies(shared_ptr[CxxSpecies]) except +translate_exception
         void modifySpecies(size_t, shared_ptr[CxxSpecies]) except +translate_exception
         void initThermo() except +translate_exception
@@ -1253,6 +1269,12 @@ cdef class Species:
     cdef _SolutionBase _phase
 
     cdef _assign(self, shared_ptr[CxxSpecies] other)
+
+cdef class Collision:
+    cdef shared_ptr[CxxCollision] _collision
+    cdef CxxCollision* collision
+    cdef _SolutionBase _phase
+    cdef _assign(self, shared_ptr[CxxCollision] other)
 
 cdef class ThermoPhase(_SolutionBase):
     cdef double _mass_factor(self)
