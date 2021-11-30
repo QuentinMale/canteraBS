@@ -194,7 +194,7 @@ cdef extern from "cantera/thermo/Species.h" namespace "Cantera":
 cdef extern from "cantera/plasma/Collision.h" namespace "Cantera":
     cdef cppclass CxxCollision "Cantera::Collision":
         CxxCollision()
-        string equation()
+        string equation
         string kind
         double threshold
         vector[double] energy_data

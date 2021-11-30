@@ -82,7 +82,7 @@ cdef class Collision:
         automatically based on `reactants` and `products`.
         """
         def __get__(self):
-            return pystr(self.collision.equation())
+            return pystr(self.collision.equation)
 
     property kind:
         """

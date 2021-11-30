@@ -6,12 +6,12 @@
 #ifndef CT_Collision_H
 #define CT_Collision_H
 
-#include "cantera/base/ct_defs.h"
-#include "cantera/base/AnyMap.h"
+#include "cantera/kinetics/Reaction.h"
 
 namespace Cantera
 {
 class ThermoPhase;
+class Kinetics;
 
 //! Contains data about the cross sections of collision
 /*!
@@ -22,10 +22,7 @@ class Collision
 public:
     Collision();
 
-    //! Collision objects are not copyable or assignable
-    Collision(const Collision&) = delete;
-    Collision& operator=(const Collision& other) = delete;
-    ~Collision();
+    Collision(const AnyMap& node, const Kinetics& kin);
 
     //! Return the parameters such that an identical Collision could be reconstructed
     //! using the newReaction() function. Behavior specific to derived classes is
@@ -41,18 +38,6 @@ public:
     //! The name of the kind of collision
     std::string kind;
 
-    //! True if the current reaction is marked as duplicate
-    bool duplicate;
-
-    //! True if the current reaction is reversible. False otherwise
-    bool reversible;
-
-    //! Reactant species and stoichiometric coefficients
-    Composition reactants;
-
-    //! Product species and stoichiometric coefficients
-    Composition products;
-
     //! Energy data
     vector_fp energy_data;
 
@@ -63,13 +48,10 @@ public:
     double threshold;
 
     //! The chemical equation for this reaction
-    std::string equation() const;
+    std::string equation;
 
-    //! The reactant side of the chemical equation for this reaction
-    virtual std::string reactantString() const;
-
-    //! The product side of the chemical equation for this reaction
-    virtual std::string productString() const;
+    //! An identification string for the collision, used to link to a reaction
+    std::string id;
 
     //! Input parameters used to define a collision, e.g. from a YAML input file.
     AnyMap input;
@@ -80,9 +62,6 @@ protected:
     //! include user-defined fields available in the #input map.
     virtual void getParameters(AnyMap& collisionNode) const;
 };
-
-//! Parse collision equation
-void parseCollisionEquation(Collision& C, const AnyValue& equation);
 
 //! create an Collision object to store data.
 unique_ptr<Collision> newCollision(const AnyMap& node);
