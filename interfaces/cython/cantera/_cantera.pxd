@@ -202,8 +202,8 @@ cdef extern from "cantera/plasma/Collision.h" namespace "Cantera":
         CxxAnyMap parameters(CxxThermoPhase*) except +translate_exception
         CxxAnyMap input
 
-    cdef shared_ptr[CxxCollision] CxxNewCollision "newCollision" (CxxAnyMap&) except +translate_exception
-    cdef vector[shared_ptr[CxxCollision]] CxxGetCollisions "getCollisions" (CxxAnyValue&) except +translate_exception
+    cdef shared_ptr[CxxCollision] CxxNewCollision "newCollision" (CxxAnyMap&, CxxKinetics&) except +translate_exception
+    cdef vector[shared_ptr[CxxCollision]] CxxGetCollisions "getCollisions" (CxxAnyValue&, CxxKinetics&) except +translate_exception
 
 
 cdef extern from "cantera/base/Solution.h" namespace "Cantera":

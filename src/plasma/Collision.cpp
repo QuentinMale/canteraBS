@@ -53,18 +53,18 @@ AnyMap Collision::parameters(bool withInput) const
     return out;
 }
 
-unique_ptr<Collision> newCollision(const AnyMap& node)
+unique_ptr<Collision> newCollision(const AnyMap& node, const Kinetics& kin)
 {
     unique_ptr<Collision> ec(new Collision());
     ec->setParameters(node);
     return ec;
 }
 
-std::vector<shared_ptr<Collision>> getCollisions(const AnyValue& items)
+std::vector<shared_ptr<Collision>> getCollisions(const AnyValue& items, const Kinetics& kin)
 {
     std::vector<shared_ptr<Collision> > all_collisions;
     for (const auto& node : items.asVector<AnyMap>()) {
-        all_collisions.emplace_back(newCollision(node));
+        all_collisions.emplace_back(newCollision(node, kin));
     }
     return all_collisions;
 }

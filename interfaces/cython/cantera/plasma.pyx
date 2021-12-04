@@ -28,17 +28,18 @@ cdef class Collision:
         self.collision = self._collision.get()
 
     @staticmethod
-    def fromYaml(text):
+    def fromYaml(text, Kinetics kinetics):
         """
         Create a Collision object from its YAML string representation.
         """
-        cxx_collision = CxxNewCollision(AnyMapFromYamlString(stringify(text)))
+        cxx_collision = CxxNewCollision(AnyMapFromYamlString(stringify(text)),
+                                        deref(kinetics.kinetics))
         collision = Collision(init=False)
         collision._assign(cxx_collision)
         return collision
 
     @staticmethod
-    def listFromYaml(text, section=None):
+    def listFromYaml(text, Kinetics kinetics, section=None):
         """
         Create a list of Collision objects from all the collisions defined in a YAML
         string. If ``text`` is a YAML mapping, the ``section`` name of the list
@@ -49,7 +50,8 @@ cdef class Collision:
 
         # ``items`` is the pseudo-key used to access a list when it is at the
         # top level of a YAML document
-        cxx_collisions = CxxGetCollisions(root[stringify(section or "items")])
+        cxx_collisions = CxxGetCollisions(root[stringify(section or "items")],
+                                          deref(kinetics.kinetics))
         collisions = []
         for a in cxx_collisions:
             b = Collision(init=False)
@@ -58,7 +60,7 @@ cdef class Collision:
         return collisions
 
     @staticmethod
-    def listFromFile(filename, section='collisions'):
+    def listFromFile(filename, Kinetics kinetics, section='collisions'):
         """
         Create a list of Species objects from all of the species defined in a
         YAML file. Return species from the section *section*.
@@ -67,7 +69,7 @@ cdef class Collision:
         specified file.
         """
         root = AnyMapFromYamlFile(stringify(filename))
-        cxx_collisions = CxxGetCollisions(root[stringify(section)])
+        cxx_collisions = CxxGetCollisions(root[stringify(section)], deref(kinetics.kinetics))
 
         collisions = []
         for a in cxx_collisions:

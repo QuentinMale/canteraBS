@@ -64,10 +64,10 @@ protected:
 };
 
 //! create an Collision object to store data.
-unique_ptr<Collision> newCollision(const AnyMap& node);
+unique_ptr<Collision> newCollision(const AnyMap&, const Kinetics&);
 
 //! Get a vector of Collision objects to access the data.
-std::vector<shared_ptr<Collision>> getCollisions(const AnyValue& items);
+std::vector<shared_ptr<Collision>> getCollisions(const AnyValue&, const Kinetics&);
 
 }
 
