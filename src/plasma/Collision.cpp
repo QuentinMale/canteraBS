@@ -28,6 +28,7 @@ void Collision::setParameters(const AnyMap& node)
 void Collision::getParameters(AnyMap& collisionNode) const
 {
     collisionNode["equation"] = equation;
+    collisionNode["target"] = target;
     collisionNode["kind"] = kind;
     collisionNode["threshold"] = threshold;
     collisionNode["energy-data"] = energy_data;
@@ -57,6 +58,15 @@ unique_ptr<Collision> newCollision(const AnyMap& node, const Kinetics& kin)
 {
     unique_ptr<Collision> ec(new Collision());
     ec->setParameters(node);
+    //! Create a void reaction for parsing the collision reaction equation.
+    ElementaryReaction3 voidReaction;
+    parseReactionEquation(voidReaction, node["equation"], kin);
+    for (auto& reactant : voidReaction.reactants) {
+        if (reactant.first != "e" && reactant.first != "E") {
+            ec->target = reactant.first;
+        }
+    }
+    ec->equation = voidReaction.equation();
     return ec;
 }
 

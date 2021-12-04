@@ -35,6 +35,9 @@ public:
     //! Set up reaction based on AnyMap *node*
     virtual void setParameters(const AnyMap& node);
 
+    //! The target in a collision
+    std::string target;
+
     //! The name of the kind of collision
     std::string kind;
 
