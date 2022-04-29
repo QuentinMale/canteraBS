@@ -1884,6 +1884,13 @@ cdef class ThermoPhase(_SolutionBase):
                 raise ThermoModelMethodError(self.thermo_model)
             self.plasma.enableNormalizeElectronEnergyDist(enable)
 
+    property electron_species_name:
+        """ Electron species name """
+        def __get__(self):
+            if not self._enable_plasma:
+                raise ThermoModelMethodError(self.thermo_model)
+            return pystr(self.plasma.electronSpeciesName())
+
 
 cdef class InterfacePhase(ThermoPhase):
     """ A class representing a surface, edge phase """
