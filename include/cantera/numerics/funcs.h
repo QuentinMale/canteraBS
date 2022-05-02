@@ -37,6 +37,19 @@ namespace Cantera
  */
 double linearInterp(double x, const vector<double>& xpts, const vector<double>& fpts);
 
+//! Linearly interpolate a function defined on a discrete grid.
+/*!
+ * Vector xpts contains a monotonic sequence of grid points, and vector fpts
+ * contains function values defined at these points.
+ *
+ * @param  x value of the x coordinate points
+ * @param  xpts value of the grid points
+ * @param  fpts value of the interpolant at the grid points
+ * @param  f the value of of the interpolated function at x.
+ */
+void linearInterp(const Eigen::ArrayXd& x, const Eigen::ArrayXd& xpts,
+                  const Eigen::ArrayXd& fpts, Eigen::ArrayXd& f);
+
 //! Numerical integration of a function using the trapezoidal rule.
 /*!
  * Vector x contains a monotonic sequence of grid points, and

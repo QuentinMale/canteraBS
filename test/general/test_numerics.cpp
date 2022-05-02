@@ -94,6 +94,26 @@ TEST(Polyfit, weighted)
     }
 }
 
+TEST(LinearInterp, match)
+{
+    Eigen::ArrayXd x(3);
+    x << 0, 0.5, 1.5;
+    Eigen::ArrayXd xpts(3);
+    xpts << 0, 1.0, 2.0;
+    Eigen::ArrayXd fpts(3);
+    fpts << 0, 1.0, 2.0;
+
+    vector<double> xpts_vec(3);
+    vector<double> fpts_vec(3);
+    Eigen::Map<Eigen::ArrayXd>(xpts_vec.data(), xpts.size()) = xpts;
+    Eigen::Map<Eigen::ArrayXd>(fpts_vec.data(), fpts.size()) = fpts;
+    Eigen::ArrayXd f(3);
+    linearInterp(x, xpts, fpts, f);
+    for (auto i = 0; i < 3; i++) {
+        EXPECT_NEAR(f[i], linearInterp(x[i], xpts_vec, fpts_vec), 1e-10);
+    }
+}
+
 TEST(Trapezoidal, four_points)
 {
     Eigen::VectorXd x(4);

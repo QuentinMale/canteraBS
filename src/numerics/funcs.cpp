@@ -26,6 +26,21 @@ double linearInterp(double x, const vector<double>& xpts, const vector<double>& 
     return ff;
 }
 
+void linearInterp(const Eigen::ArrayXd& x,
+                  const Eigen::ArrayXd& xpts,
+                  const Eigen::ArrayXd& fpts,
+                  Eigen::ArrayXd& f)
+{
+    vector<double> xpts_vec(xpts.size());
+    Eigen::Map<Eigen::ArrayXd>(xpts_vec.data(), xpts.size()) = xpts;
+    vector<double> fpts_vec(fpts.size());
+    Eigen::Map<Eigen::ArrayXd>(fpts_vec.data(), fpts.size()) = fpts;
+    f.resize(x.size());
+    for (auto i = 0; i < x.size(); i++) {
+        f[i] = linearInterp(x[i], xpts_vec, fpts_vec);
+    }
+}
+
 double trapezoidal(const Eigen::ArrayXd& f, const Eigen::ArrayXd& x)
 {
     // check length
