@@ -9,6 +9,7 @@
 #include "cantera/zeroD/FlowReactor.h"
 #include "cantera/zeroD/ConstPressureReactor.h"
 #include "cantera/zeroD/IdealGasReactor.h"
+#include "cantera/zeroD/PartiallyStirredIdealGasReactor.h"
 #include "cantera/zeroD/IdealGasConstPressureReactor.h"
 #include "cantera/zeroD/ReactorDelegator.h"
 
@@ -28,6 +29,7 @@ ReactorFactory::ReactorFactory()
     reg("ConstPressureReactor", []() { return new ConstPressureReactor(); });
     reg("FlowReactor", []() { return new FlowReactor(); });
     reg("IdealGasReactor", []() { return new IdealGasReactor(); });
+    reg("PartiallyStirredIdealGasReactor", []() { return new PartiallyStirredIdealGasReactor(); });
     reg("IdealGasConstPressureReactor", []() { return new IdealGasConstPressureReactor(); });
     reg("ExtensibleReactor", []() { return new ReactorDelegator<Reactor>(); });
     reg("ExtensibleIdealGasReactor",

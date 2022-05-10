@@ -902,6 +902,9 @@ cdef extern from "cantera/zerodim.h" namespace "Cantera":
         double speed()
         double distance()
 
+    cdef cppclass CxxPartiallyStirredIdealGasReactor "Cantera::PartiallyStirredIdealGasReactor" (CxxReactor):
+        CxxPartiallyStirredIdealGasReactor()
+        void setMixingFactor(double) except +translate_exception
 
     # walls
 
@@ -1509,6 +1512,9 @@ cdef class ConstPressureReactor(Reactor):
     pass
 
 cdef class IdealGasReactor(Reactor):
+    pass
+
+cdef class PartiallyStirredIdealGasReactor(Reactor):
     pass
 
 cdef class IdealGasConstPressureReactor(Reactor):

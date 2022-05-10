@@ -361,6 +361,16 @@ cdef class IdealGasReactor(Reactor):
     reactor_type = "IdealGasReactor"
 
 
+cdef class PartiallyStirredIdealGasReactor(Reactor):
+    """ A constant volume, zero-dimensional reactor for ideal gas mixtures. """
+    reactor_type = "PartiallyStirredIdealGasReactor"
+
+    property mixing_factor:
+        """ Mixing factor """
+        def __set__(self, double value):
+            (<CxxPartiallyStirredIdealGasReactor*>self.reactor).setMixingFactor(value)
+
+
 cdef class IdealGasConstPressureReactor(Reactor):
     """
     A homogeneous, constant pressure, zero-dimensional reactor for ideal gas
