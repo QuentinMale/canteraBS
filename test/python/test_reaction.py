@@ -2185,3 +2185,11 @@ class TestElectronCollisionPlasmaReaction(ReactionTests, utilities.CanteraTest):
     @pytest.mark.skip("Evaluate rate by itself is not supported")
     def check_rate(self, rate_obj):
         pass
+
+    @pytest.mark.skip("Evaluate units is not supported")
+    def test_rate_coeff_units(self, rate_obj):
+        pass
+
+    @pytest.mark.skip("Evaluate units is not supported")
+    def test_rate_conversion_units(self, rate_obj):
+        pass
