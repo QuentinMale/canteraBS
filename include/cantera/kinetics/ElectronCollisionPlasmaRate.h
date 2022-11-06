@@ -98,6 +98,16 @@ public:
         throw NotImplementedError("ElectronCollisionPlasmaRate<>::ddTScaledFromStruct");
     }
 
+    //! The value of #m_energyLevels
+    Eigen::ArrayXd energyLevels() const {
+        return m_energyLevels;
+    }
+
+    //! The value of #m_crossSection
+    Eigen::ArrayXd crossSection() const {
+        return m_crossSection;
+    }
+
     //! electron energy levels
     Eigen::ArrayXd m_energyLevels;
 
