@@ -57,12 +57,14 @@ void ElectronCollisionPlasmaRate::setParameters(const AnyMap& node, const UnitSt
         m_energyLevels = Eigen::Map<const Eigen::ArrayXd>(levels.data(), levels.size());
     } else {
         m_energyLevels = NAN;
+        return;
     }
     if (node.hasKey("cross-section")) {
         vector<double> crossSection = node["cross-section"].asVector<double>();
         m_crossSection = Eigen::Map<const Eigen::ArrayXd>(crossSection.data(), crossSection.size());
     } else {
         m_crossSection = NAN;
+        return;
     }
     if (m_energyLevels.size() != m_crossSection.size()) {
         throw CanteraError("ElectronCollisionPlasmaRate::setParameters",
