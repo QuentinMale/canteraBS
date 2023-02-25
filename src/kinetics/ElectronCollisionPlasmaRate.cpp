@@ -87,7 +87,8 @@ double ElectronCollisionPlasmaRate::evalFromStruct(const ElectronCollisionPlasma
     Eigen::ArrayXd eps2 = shared_data.EnergyLevels.pow(2.0);
     Eigen::ArrayXd cross_section(shared_data.EnergyLevels.size());
     linearInterp(shared_data.EnergyLevels, m_energyLevels, m_crossSection, cross_section);
-    return 0.5 * pow(2.0 * ElectronCharge / ElectronMass, 0.5) *
+    // unit in kmol/m3/s
+    return 0.5 * pow(2.0 * ElectronCharge / ElectronMass, 0.5) * Avogadro *
            simpson(shared_data.Distribution.cwiseProduct(cross_section), eps2);
 }
 
