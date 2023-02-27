@@ -101,10 +101,7 @@ void ElectronCollisionPlasmaRate::setContext(const Reaction& rxn, const Kinetics
         throw InputFileError("ElectronCollisionPlasmaRate::setContext", rxn.input,
             "ElectronCollisionPlasmaRate does not support reversible reactions");
     }
-    if (rxn.reactants.size() != 2) {
-        throw InputFileError("ElectronCollisionPlasmaRate::setContext", rxn.input,
-            "ElectronCollisionPlasmaRate requires exactly two reactants");
-    }
+
     // get electron species name
     string electronName;
     if (kin.thermo().type() == "plasma") {
@@ -113,11 +110,40 @@ void ElectronCollisionPlasmaRate::setContext(const Reaction& rxn, const Kinetics
         throw CanteraError("ElectronCollisionPlasmaRate::setContext",
                            "ElectronCollisionPlasmaRate requires plasma phase");
     }
-    // find electron in reactants
-    if (rxn.reactants.find(electronName) == rxn.reactants.end()) {
+
+    // Check rxn.reactantString (rxn.reactants gives reduced reactants)
+    std::istringstream iss(rxn.reactantString());
+    string token;
+    int nElectron = 0;
+    int nReactants = 0;
+
+    // Count number of electron and reactants
+    // Since the reactants are one electron and one molecule,
+    // no token can be a number.
+    while (iss >> token) {
+        if (isdigit(token[0])) {
+            throw InputFileError("ElectronCollisionPlasmaRate::setContext", rxn.input,
+                "ElectronCollisionPlasmaRate requires one electron and one molecule as reactants");
+        }
+        if (token == electronName) {
+            nElectron++;
+        }
+        if (token != "+") {
+            nReactants++;
+        }
+    }
+
+    // Number of reactants needs to be two
+    if (nReactants != 2) {
         throw InputFileError("ElectronCollisionPlasmaRate::setContext", rxn.input,
-            "ElectronCollisionPlasmaRate requires at least an electron species as "
-            "one reactant");
+            "ElectronCollisionPlasmaRate requires exactly two reactants");
+    }
+
+    // Must have only one electron
+    // @todo add electron-electron collision rate
+    if (nElectron != 1) {
+        throw InputFileError("ElectronCollisionPlasmaRate::setContext", rxn.input,
+            "ElectronCollisionPlasmaRate requires one and only one electron");
     }
 }
 
