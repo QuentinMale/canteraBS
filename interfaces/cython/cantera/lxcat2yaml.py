@@ -165,7 +165,13 @@ def convert(
         with Path(outfile).open("w") as output_file:
             emitter.dump(collision_node, output_file)
     else:
-        gas.write_yaml(outfile)
+        # Get mechanism file unit system
+        units = None
+        with open(mechfile, "r") as mech:
+            data = yaml.YAML(typ="rt").load(mech)
+            if "units" in data:
+                units = data["units"]
+        gas.write_yaml(outfile, units=units)
 
 def registerProcess(process, process_list, gas):
     # Parse the threshold
