@@ -173,7 +173,13 @@ def convert(
                 units = data["units"]
         gas.write_yaml(outfile, units=units)
 
-def registerProcess(process, process_list, gas):
+def registerProcess(process, process_list, gas=None):
+
+    # Get electron specie name
+    electron_name = "e"
+    if gas is not None:
+        electron_name = gas.electron_species_name
+
     # Parse the threshold
     threshold = 0.0
     parameters_node = get_children(process, "parameters")[0]
@@ -187,7 +193,8 @@ def registerProcess(process, process_list, gas):
 
     for product_node in get_children(process, "products")[0]:
         if product_node.tag.find("electron") != -1:
-            product_array.append(gas.electron_species_name)
+            product_array.append(electron_name)
+
         if product_node.tag.find("molecule") != -1:
             product_name = product_node.text
             if "state" in product_node.attrib:
@@ -212,7 +219,7 @@ def registerProcess(process, process_list, gas):
             reactant = reactant_node.text
 
     products = " + ".join(product_array)
-    equation = f"{reactant} + {gas.electron_species_name} => {products}"
+    equation = f"{reactant} + {electron_name} => {products}"
 
     # Parse the cross-section data
     data_x_node = process.find("data_x")
