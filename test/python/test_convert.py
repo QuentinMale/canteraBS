@@ -1428,7 +1428,7 @@ class lxcat2yamlTest(utilities.CanteraTest):
                            phase=phase, transport_model=None)
 
         # check number of reactions
-        self.assertEqual(gas1.n_reactions, 2)
+        self.assertEqual(gas1.n_reactions, 3)
         self.assertEqual(gas1.n_reactions, gas2.n_reactions)
         for i in range(1, gas1.n_reactions):
             self.assertArrayNear(gas1.reaction(i).rate.energy_levels,
