@@ -1435,3 +1435,27 @@ class lxcat2yamlTest(utilities.CanteraTest):
                                  gas2.reaction(i).rate.energy_levels)
             self.assertArrayNear(gas1.reaction(i).rate.cross_sections,
                                  gas2.reaction(i).rate.cross_sections)
+
+    def test_stand_alone_lxcat(self):
+
+        outfile = "stand-alone-lxcat-without-mech.yaml"
+        self.convert(inputFile='lxcat-test-convert.xml',
+                     database="test", insert=False,
+                     output=outfile)
+
+        # get Solution from the mechanism file
+        phase = "isotropic-electron-energy-plasma"
+        mechFile = "lxcat_mech.yaml"
+        gas = ct.Solution(self.test_data_path / mechFile,
+                           phase=phase, transport_model=None)
+
+        # add collisions to the reaction list
+        rxn_list = ct.Reaction.list_from_file(self.test_work_path / outfile,
+                                              gas, section="collisions")
+
+        # verify the data
+        self.assertEqual(len(rxn_list), 1)
+        self.assertEqual(rxn_list[0].equation, "O2 + e => O2(Total-Ionization)+ + e + e")
+        self.assertEqual(rxn_list[0].reaction_type, "three-body-electron-collision-plasma")
+        self.assertArrayNear(rxn_list[0].rate.energy_levels, [15., 20.])
+        self.assertArrayNear(rxn_list[0].rate.cross_sections, [0.0, 5.5e-22])
