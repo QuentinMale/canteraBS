@@ -1428,7 +1428,7 @@ class lxcat2yamlTest(utilities.CanteraTest):
                            phase=phase, transport_model=None)
 
         # check number of reactions
-        self.assertEqual(gas1.n_reactions, 3)
+        self.assertEqual(gas1.n_reactions, 4)
         self.assertEqual(gas1.n_reactions, gas2.n_reactions)
         for i in range(1, gas1.n_reactions):
             self.assertArrayNear(gas1.reaction(i).rate.energy_levels,
@@ -1454,8 +1454,13 @@ class lxcat2yamlTest(utilities.CanteraTest):
                                               gas, section="collisions")
 
         # verify the data
-        self.assertEqual(len(rxn_list), 1)
+        self.assertEqual(len(rxn_list), 2)
         self.assertEqual(rxn_list[0].equation, "O2 + e => O2(Total-Ionization)+ + e + e")
         self.assertEqual(rxn_list[0].reaction_type, "three-body-electron-collision-plasma")
         self.assertArrayNear(rxn_list[0].rate.energy_levels, [15., 20.])
         self.assertArrayNear(rxn_list[0].rate.cross_sections, [0.0, 5.5e-22])
+
+        self.assertEqual(rxn_list[1].equation, "O2 + e => O2-")
+        self.assertEqual(rxn_list[1].reaction_type, "electron-collision-plasma")
+        self.assertArrayNear(rxn_list[1].rate.energy_levels, [0.0, 1.0])
+        self.assertArrayNear(rxn_list[1].rate.cross_sections, [0.0, 1.0e-22])
