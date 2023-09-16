@@ -29,12 +29,12 @@ struct ElectronCollisionPlasmaData : public ReactionData
 
     virtual void invalidateCache() override {
         ReactionData::invalidateCache();
-        EnergyLevels.resize(0);
-        Distribution.resize(0);
+        energyLevels.resize(0);
+        distribution.resize(0);
     }
 
-    Eigen::ArrayXd EnergyLevels; //!< electron energy levels
-    Eigen::ArrayXd Distribution; //!< electron energy distribution
+    vector<double> energyLevels; //!< electron energy levels
+    vector<double> distribution; //!< electron energy distribution
 };
 
 
@@ -99,40 +99,21 @@ public:
     }
 
     //! The value of #m_energyLevels
-    Eigen::ArrayXd energyLevels() const {
+    vector<double> energyLevels() const {
         return m_energyLevels;
     }
 
     //! The value of #m_crossSection
-    Eigen::ArrayXd crossSection() const {
-        return m_crossSection;
+    vector<double> crossSections() const {
+        return m_crossSections;
     }
 
-    /**
-     * Retrieve energyLevels.
-     *
-     * @param el Vector of energy levels.
-     */
-    void getEnergyLevels(vector<double>& el) const {
-        el.resize(m_energyLevels.size());
-        Eigen::Map<Eigen::ArrayXd>(el.data(), el.size()) = m_energyLevels;
-    }
-
-    /**
-     * Retrieve crossSection.
-     *
-     * @param cs Vector of cross section.
-     */
-    void getCrossSection(vector<double>& cs) const {
-        cs.resize(m_crossSection.size());
-        Eigen::Map<Eigen::ArrayXd>(cs.data(), cs.size()) = m_crossSection;
-    }
-
+private:
     //! electron energy levels
-    Eigen::ArrayXd m_energyLevels;
+    vector<double> m_energyLevels;
 
     //! collision crosss section
-    Eigen::ArrayXd m_crossSection;
+    vector<double> m_crossSections;
 };
 
 }

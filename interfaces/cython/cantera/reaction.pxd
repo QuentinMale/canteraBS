@@ -76,8 +76,8 @@ cdef extern from "cantera/kinetics/TwoTempPlasmaRate.h" namespace "Cantera":
 cdef extern from "cantera/kinetics/ElectronCollisionPlasmaRate.h" namespace "Cantera":
     cdef cppclass CxxElectronCollisionPlasmaRate "Cantera::ElectronCollisionPlasmaRate" (CxxReactionRate):
         CxxElectronCollisionPlasmaRate(CxxAnyMap) except +translate_exception
-        void getEnergyLevels(vector[double]&)
-        void getCrossSection(vector[double]&)
+        vector[double]& energyLevels()
+        vector[double]& crossSections()
 
 cdef extern from "cantera/base/Array.h" namespace "Cantera":
     cdef cppclass CxxArray2D "Cantera::Array2D":

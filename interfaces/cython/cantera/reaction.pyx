@@ -417,18 +417,14 @@ cdef class ElectronCollisionPlasmaRate(ReactionRate):
         The energy levels [eV].
         """
         def __get__(self):
-            cdef vector[double] cxxdata
-            self.base.getEnergyLevels(cxxdata)
-            return np.fromiter(cxxdata, np.double)
+            return np.fromiter(self.base.energyLevels(), np.double)
 
-    property cross_section:
+    property cross_sections:
         """
         The cross section [m2].
         """
         def __get__(self):
-            cdef vector[double] cxxdata
-            self.base.getCrossSection(cxxdata)
-            return np.fromiter(cxxdata, np.double)
+            return np.fromiter(self.base.crossSections(), np.double)
 
 
 cdef class FalloffRate(ReactionRate):
