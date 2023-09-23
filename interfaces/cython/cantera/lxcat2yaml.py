@@ -5,7 +5,9 @@
 # at https://cantera.org/license.txt for license and copyright information.
 
 """
-lxcat2yaml.py: Convert the LXCat integral cross-section data in XML format to YAML format
+lxcat2yaml.py: Convert the LXCat integral cross-section data in XML format to YAML format.
+The cross-section data is used to calculate the reaction rate of a electron-collision
+process in a plasma. The data can be downloaded at https://nl.lxcat.net/data/xml/lxcat_xml.zip.
 
 Usage:
     lxcat2yaml [--input=<filename>]
@@ -20,8 +22,13 @@ Example:
                --phase=isotropic-electron-energy-plasma --insert
                --output=oxygen-itikawa-plasma.yaml
 
-If the output file name is not given, an output file with the same name as the
-input file, with the extension changed to '.yaml'.
+Option --database is required and the name can be found in the XML file. When
+lxcat2yaml.py is used with a Cantera mechanism file, only the processes of
+listed species are parsed. Use --insert option to automatically insert the
+parsed process into the mechanism file. Use --phase=[] to indicate which phase
+in the mechanism file.reaction (process) described in the xml file. If the output
+file name is not given, an output file with the same name as the input file, with
+the extension changed to '.yaml'.
 """
 
 from pathlib import Path
