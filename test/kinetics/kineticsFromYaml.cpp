@@ -553,7 +553,7 @@ TEST(Reaction, ElectronCollisionPlasmaFromYaml)
 
     for (size_t k = 0; k < rate->energyLevels().size(); k++) {
         EXPECT_DOUBLE_EQ(rate->energyLevels()[k], rxn["energy-levels"].asVector<double>()[k]);
-        EXPECT_DOUBLE_EQ(rate->crossSections()[k], rxn["cross-section"].asVector<double>()[k]);
+        EXPECT_DOUBLE_EQ(rate->crossSections()[k], rxn["cross-sections"].asVector<double>()[k]);
     }
 }
 
