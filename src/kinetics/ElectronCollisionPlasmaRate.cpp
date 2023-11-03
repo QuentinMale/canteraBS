@@ -22,25 +22,20 @@ bool ElectronCollisionPlasmaData::update(const ThermoPhase& phase,
 {
     const PlasmaPhase& pp = dynamic_cast<const PlasmaPhase&>(phase);
 
+    if (pp.distributionNumber() == m_dist_number) {
+        return false;
+    }
+
     vector<double> levels(pp.nElectronEnergyLevels());
     pp.getElectronEnergyLevels(levels.data());
 
     vector<double> dist(pp.nElectronEnergyLevels());
     pp.getElectronEnergyDistribution(dist.data());
 
-    bool changed = false;
+    energyLevels = std::move(levels);
+    distribution = std::move(dist);
 
-    if (levels != energyLevels) {
-        energyLevels = std::move(levels);
-        changed = true;
-    }
-
-    if (dist != distribution) {
-        distribution = std::move(dist);
-        changed = true;
-    }
-
-    return changed;
+    return true;
 }
 
 void ElectronCollisionPlasmaRate::setParameters(const AnyMap& node, const UnitStack& rate_units)

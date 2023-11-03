@@ -254,8 +254,17 @@ public:
         return speciesName(m_electronSpeciesIndex);
     }
 
+    //! Return the distribution Number #m_distNum
+    int distributionNumber() const {
+        return m_distNum;
+    }
+
 protected:
     void updateThermo() const override;
+
+    //! When electron energy distribution changed, plasma properties such as
+    //! electron-collision reaction rates need to be re-evaluate.
+    void electronEnergyDistributionChanged();
 
     //! Check the electron energy levels
     /*!
@@ -317,6 +326,11 @@ protected:
 
     //! Flag of normalizing electron energy distribution
     bool m_do_normalizeElectronEnergyDist = true;
+
+private:
+    //! Electron energy distribution change variable. Whenever #m_electronEnergyLevels
+    //! or m_electronEnergyDist changes, this int is incremented.
+    int m_distNum = -1;
 };
 
 }
