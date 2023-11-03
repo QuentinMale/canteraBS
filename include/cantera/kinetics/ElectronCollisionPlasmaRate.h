@@ -35,6 +35,10 @@ struct ElectronCollisionPlasmaData : public ReactionData
 
     vector<double> energyLevels; //!< electron energy levels
     vector<double> distribution; //!< electron energy distribution
+
+protected:
+    //! integer that is incremented when electron energy distribution changes
+    int m_dist_number = -1;
 };
 
 
