@@ -2126,6 +2126,8 @@ class TestElectronCollisionPlasmaReaction(ReactionTests, utilities.CanteraTest):
         cross-sections: [0.0, 5.97e-20, 6.45e-20, 6.74e-20, 6.93e-20, 7.2e-20,
                         7.52e-20, 7.86e-20, 8.21e-20, 8.49e-20, 8.8e-20]
         """
+    _rc_units = ct.Units("m^3 / kmol / s")
+
     @classmethod
     def setUpClass(cls):
         utilities.CanteraTest.setUpClass()
@@ -2160,12 +2162,4 @@ class TestElectronCollisionPlasmaReaction(ReactionTests, utilities.CanteraTest):
 
     @pytest.mark.skip("Evaluate rate by itself is not supported")
     def check_rate(self, rate_obj):
-        pass
-
-    @pytest.mark.skip("Evaluate units is not supported")
-    def test_rate_coeff_units(self, rate_obj):
-        pass
-
-    @pytest.mark.skip("Evaluate units is not supported")
-    def test_rate_conversion_units(self, rate_obj):
         pass
