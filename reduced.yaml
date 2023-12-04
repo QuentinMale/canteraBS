@@ -1,12 +1,12 @@
 generator: YamlWriter
 cantera-version: 3.1.0a1
-git-commit: f9a72f237
-date: Sun Nov  5 14:50:28 2023
+git-commit: d39019aaf
+date: Fri Dec  8 00:47:51 2023
 phases:
   - kinetics: bulk
     name: ""
-    skip-undeclared-third-bodies: true
     thermo: ideal-gas
+    skip-undeclared-third-bodies: true
     elements: [H, O, Ar, N]
     species: [H2, H, O, O2, OH, H2O, HO2, H2O2, AR, N2]
     state:
