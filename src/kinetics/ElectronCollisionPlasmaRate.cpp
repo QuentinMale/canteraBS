@@ -107,56 +107,57 @@ double ElectronCollisionPlasmaRate::evalFromStruct(const ElectronCollisionPlasma
 
 void ElectronCollisionPlasmaRate::setContext(const Reaction& rxn, const Kinetics& kin)
 {
-    // ElectronCollisionPlasmaReaction is for a non-equilibrium plasma, and the reverse rate
-    // cannot be calculated from the conventional thermochemistry.
-    // @todo implement the reversible rate for non-equilibrium plasma
+    std::string electronName = getElectronSpeciesName(kin);
     if (rxn.reversible) {
-        throw InputFileError("ElectronCollisionPlasmaRate::setContext", rxn.input,
-            "ElectronCollisionPlasmaRate does not support reversible reactions");
-    }
-
-    // get electron species name
-    string electronName;
-    if (kin.thermo().type() == "plasma") {
-        electronName = dynamic_cast<const PlasmaPhase&>(kin.thermo()).electronSpeciesName();
+        checkSpeciesCount(rxn.reactantString(), kin, electronName, rxn.input);
+        checkSpeciesCount(rxn.productString(), kin, electronName, rxn.input);
+        // turn on super-elastic rate
+        m_enableSuperElastic = true;
     } else {
-        throw CanteraError("ElectronCollisionPlasmaRate::setContext",
-                           "ElectronCollisionPlasmaRate requires plasma phase");
+        checkSpeciesCount(rxn.reactantString(), kin, electronName, rxn.input);
     }
+}
 
-    // Check rxn.reactantString (rxn.reactants gives reduced reactants)
-    std::istringstream iss(rxn.reactantString());
-    string token;
+void ElectronCollisionPlasmaRate::checkSpeciesCount(const std::string& speciesString,
+                                                    const Kinetics& kin,
+                                                    const std::string& electronName,
+                                                    AnyMap input)
+{
+    std::istringstream iss(speciesString);
+    std::string token;
     int nElectron = 0;
-    int nReactants = 0;
+    int nSpecies = 0;
 
-    // Count number of electron and reactants
-    // Since the reactants are one electron and one molecule,
-    // no token can be a number.
     while (iss >> token) {
         if (isdigit(token[0])) {
-            throw InputFileError("ElectronCollisionPlasmaRate::setContext", rxn.input,
-                "ElectronCollisionPlasmaRate requires one electron and one molecule as reactants");
+            throw InputFileError("ElectronCollisionPlasmaRate::checkSpeciesCount", input,
+                "ElectronCollisionPlasmaRate requires one electron and one molecule as species");
         }
         if (token == electronName) {
             nElectron++;
         }
         if (token != "+") {
-            nReactants++;
+            nSpecies++;
         }
     }
 
-    // Number of reactants needs to be two
-    if (nReactants != 2) {
-        throw InputFileError("ElectronCollisionPlasmaRate::setContext", rxn.input,
-            "ElectronCollisionPlasmaRate requires exactly two reactants");
+    if (nSpecies != 2) {
+        throw InputFileError("ElectronCollisionPlasmaRate::checkSpeciesCount", input,
+            "ElectronCollisionPlasmaRate requires exactly two species");
     }
 
-    // Must have only one electron
-    // @todo add electron-electron collision rate
     if (nElectron != 1) {
-        throw InputFileError("ElectronCollisionPlasmaRate::setContext", rxn.input,
+        throw InputFileError("ElectronCollisionPlasmaRate::checkSpeciesCount", input,
             "ElectronCollisionPlasmaRate requires one and only one electron");
+    }
+}
+
+std::string ElectronCollisionPlasmaRate::getElectronSpeciesName(const Kinetics& kin) {
+    if (kin.thermo().type() == "plasma") {
+        return dynamic_cast<const PlasmaPhase&>(kin.thermo()).electronSpeciesName();
+    } else {
+        throw CanteraError("ElectronCollisionPlasmaRate::getElectronSpeciesName",
+                           "ElectronCollisionPlasmaRate requires plasma phase");
     }
 }
 

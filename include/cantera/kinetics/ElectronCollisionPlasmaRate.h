@@ -144,6 +144,19 @@ private:
 
     //! collision cross sections [m2] after intepolation
     vector<double> m_crossSectionsInterpolated;
+
+    //! enable super-elastic collision correction
+    bool m_enableSuperElastic = false;
+
+    //! check species count
+    //! Only one electron and one molecule are allowed
+    void checkSpeciesCount(const std::string& speciesString,
+                           const Kinetics& kin,
+                           const std::string& electronName,
+                           AnyMap input);
+
+    //! get electron species name
+    std::string getElectronSpeciesName(const Kinetics& kin);
 };
 
 }

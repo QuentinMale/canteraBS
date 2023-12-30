@@ -155,6 +155,9 @@ protected:
     vector<size_t> m_revindex; //!< Indices of reversible reactions
     vector<size_t> m_irrev; //!< Indices of irreversible reactions
 
+    //! Indices of super-elastic electron-collision-plasma reactions
+    vector<size_t> m_superElasticPlasma;
+
     //! Difference between the global reactants order and the global products
     //! order. Of type "double" to account for the fact that we can have real-
     //! valued stoichiometries.

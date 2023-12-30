@@ -13,7 +13,10 @@ BulkKinetics::BulkKinetics() {
 }
 
 bool BulkKinetics::isReversible(size_t i) {
-    return std::find(m_revindex.begin(), m_revindex.end(), i) < m_revindex.end();
+    // Check if 'i' is in m_revindex or m_superElasticPlasma
+    return (std::find(m_revindex.begin(), m_revindex.end(), i) != m_revindex.end()) ||
+           (std::find(m_superElasticPlasma.begin(), m_superElasticPlasma.end(), i)
+           != m_superElasticPlasma.end());
 }
 
 bool BulkKinetics::addReaction(shared_ptr<Reaction> r, bool resize)
@@ -34,7 +37,11 @@ bool BulkKinetics::addReaction(shared_ptr<Reaction> r, bool resize)
     m_dn.push_back(dn);
 
     if (r->reversible) {
-        m_revindex.push_back(nReactions()-1);
+        if (r->type() == "electron-collision-plasma") {
+            m_superElasticPlasma.push_back(nReactions()-1);
+        } else {
+            m_revindex.push_back(nReactions()-1);
+        }
     } else {
         m_irrev.push_back(nReactions()-1);
     }
@@ -195,6 +202,7 @@ void BulkKinetics::getRevRateConstants(double* krev, bool doIrreversible)
         }
     } else {
         // m_rkcn[] is zero for irreversible reactions
+        // It is zero for super-elastic electron-collision plasma reactions
         for (size_t i = 0; i < nReactions(); i++) {
             krev[i] *= m_rkcn[i];
         }
@@ -481,6 +489,10 @@ void BulkKinetics::updateROP()
         for (size_t i = 0; i != m_irrev.size(); ++i) {
             m_rkcn[ m_irrev[i] ] = 0.0;
         }
+
+        for (size_t i = 0; i < m_superElasticPlasma.size(); i++) {
+            m_rkcn[ m_superElasticPlasma[i] ] = 0.0;
+        }
     }
 
     if (!last.validate(T, rho, statenum)) {
@@ -592,6 +604,10 @@ void BulkKinetics::applyEquilibriumConstants_ddT(double* drkcn)
 
     for (size_t i = 0; i < m_irrev.size(); ++i) {
         drkcn[m_irrev[i]] = 0.0;
+    }
+
+    for (size_t i = 0; i < m_superElasticPlasma.size(); i++) {
+        drkcn[m_superElasticPlasma[i]] = 0.0;
     }
 
     thermo().restoreState(m_state);
