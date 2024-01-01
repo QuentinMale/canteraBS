@@ -118,6 +118,12 @@ public:
      */
     double evalFromStruct(const ElectronCollisionPlasmaData& shared_data);
 
+    //! Evaluate reverse reaction rate coefficient
+    /*!
+     *  @param shared_data  data shared by all reactions of a given type
+     */
+    double evalKrFromStruct(const ElectronCollisionPlasmaData& shared_data);
+
     //! Evaluate derivative of reaction rate with respect to temperature
     //! divided by reaction rate
     //! @param shared_data  data shared by all reactions of a given type
@@ -135,6 +141,13 @@ public:
         return m_crossSections;
     }
 
+    //! The value of riciprocal equilibrium constant
+    //! or the ratio of super-elastic collision rate coefficient
+    //! to the regular collision rate coefficient
+    const double reciprocalEquilibriumConstant() const {
+        return m_rkcn;
+    }
+
 private:
     //! electron energy levels [eV]
     vector<double> m_energyLevels;
@@ -145,8 +158,14 @@ private:
     //! collision cross sections [m2] after intepolation
     vector<double> m_crossSectionsInterpolated;
 
+    //! collision cross section [m2] for super-elastic collision
+    Eigen::ArrayXd m_superElasticCrossSections;
+
     //! enable super-elastic collision correction
     bool m_enableSuperElastic = false;
+
+    //! reciprocale equilibrium constant (kr/kf)
+    double m_rkcn = 0.0;
 
     //! check species count
     //! Only one electron and one molecule are allowed

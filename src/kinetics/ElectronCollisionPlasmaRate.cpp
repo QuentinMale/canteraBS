@@ -102,7 +102,44 @@ double ElectronCollisionPlasmaRate::evalFromStruct(const ElectronCollisionPlasma
 
     // unit in kmol/m3/s
     return 0.5 * pow(2.0 * ElectronCharge / ElectronMass, 0.5) * Avogadro *
-           simpson(distribution.cwiseProduct(cs_array), eps.pow(2.0));
+                simpson(distribution.cwiseProduct(cs_array), eps.pow(2.0));
+}
+
+double ElectronCollisionPlasmaRate::evalKrFromStruct(const ElectronCollisionPlasmaData& shared_data)
+{
+    if (!m_enableSuperElastic) {
+        return 0.0;
+    }
+    // Interpolate cross-sections data to the energy levels of
+    // the electron energy distribution function
+    if (shared_data.levelChanged) {
+        // super elastic collision energy levels and cross-sections
+        vector<double> superElasticEnergyLevels{0.0};
+        m_superElasticCrossSections.resize(m_energyLevels.size());
+        for (auto i = 1; i < m_energyLevels.size(); i ++ ) {
+            superElasticEnergyLevels.push_back(m_energyLevels[i] - m_energyLevels[0]);
+        }
+        for (auto i = 0; i < superElasticEnergyLevels.size(); i ++ ) {
+            m_superElasticCrossSections[i] = linearInterp(shared_data.energyLevels[i],
+                                                            superElasticEnergyLevels,
+                                                            m_crossSections);
+        }
+    }
+
+    // Map energyLevels in Eigen::ArrayXd
+    auto eps = Eigen::Map<const Eigen::ArrayXd>(
+        shared_data.energyLevels.data(), shared_data.energyLevels.size()
+    );
+
+    // Map energyLevels in Eigen::ArrayXd
+    auto distribution = Eigen::Map<const Eigen::ArrayXd>(
+        shared_data.distribution.data(), shared_data.distribution.size()
+    );
+
+    // unit in kmol/m3/s
+    return pow(2.0 * ElectronCharge / ElectronMass, 0.5) * Avogadro *
+        simpson((eps + m_energyLevels[0]).cwiseProduct(
+        distribution.cwiseProduct(m_superElasticCrossSections)), eps);
 }
 
 void ElectronCollisionPlasmaRate::setContext(const Reaction& rxn, const Kinetics& kin)
