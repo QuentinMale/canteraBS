@@ -52,6 +52,10 @@ public:
     //! @param kf  array of rate constants
     virtual void getRateConstants(double* kf) = 0;
 
+    //! Evaluate all rate constants handled by the evaluator
+    //! @param kr  array of reverse rate constants
+    virtual void getReverseRateConstants(double* kr) = 0;
+
     //! Evaluate all rate constant temperature derivatives handled by the evaluator;
     //! which are multiplied with the array of rate-of-progress variables.
     //! Depending on the implementation of a rate object, either an exact derivative or

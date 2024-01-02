@@ -163,6 +163,10 @@ public:
         return std::exp(log_k1 + (log_k2 - log_k1) * (logP_ - logP1_) * rDeltaP_);
     }
 
+    double evalKrFromStruct(const PlogData& shared_data) const {
+        return 0.0;
+    }
+
     //! Set up Plog object
     void setRates(const std::multimap<double, ArrheniusRate>& rates);
 

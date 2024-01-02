@@ -90,6 +90,10 @@ public:
         return m_evalFromStruct(shared_data.getWrapper()->get());
     }
 
+    double evalKrFromStruct(const ReactionDataDelegator& shared_data) {
+        return 0.0;
+    }
+
     void setParameters(const AnyMap& node, const UnitStack& units) override {
         m_setParameters(node, units);
     }

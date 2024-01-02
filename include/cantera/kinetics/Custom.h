@@ -57,6 +57,10 @@ public:
      */
     double evalFromStruct(const ArrheniusData& shared_data) const;
 
+    double evalKrFromStruct(const ArrheniusData& shared_data) const {
+        return 0.0;
+    }
+
     //! Set custom rate
     /**
      * The call to the Func1 object takes a single argument (temperature) and

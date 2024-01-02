@@ -170,6 +170,10 @@ public:
         return std::pow(10, logk);
     }
 
+    double evalKrFromStruct(const ChebyshevData& shared_data) const {
+        return 0.0;
+    }
+
     //! Set limits for ChebyshevRate object
     /*!
      *  @param Tmin    Minimum temperature [K]

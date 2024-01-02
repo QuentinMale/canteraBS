@@ -118,6 +118,10 @@ public:
      */
     double evalFromStruct(const ElectronCollisionPlasmaData& shared_data);
 
+    double evalKrFromStruct(const ElectronCollisionPlasmaData& shared_data) const {
+        return 0.0;
+    }
+
     //! Evaluate reverse reaction rate coefficient
     /*!
      *  @param shared_data  data shared by all reactions of a given type

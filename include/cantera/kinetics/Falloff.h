@@ -178,6 +178,10 @@ public:
         return pr * m_rc_high;
     }
 
+    double evalKrFromStruct(const FalloffData& shared_data) const {
+        return 0.0;
+    }
+
     void check(const string& equation) override;
     void validate(const string& equation, const Kinetics& kin) override;
 

@@ -187,6 +187,9 @@ void BulkKinetics::getEquilibriumConstants(double* kc)
     for (size_t i = 0; i < nReactions(); i++) {
         kc[i] = exp(-delta_gibbs0[i] * rrt + m_dn[i] * logStandConc);
     }
+    for (size_t i = 0; i < m_superElasticPlasma.size(); i++) {
+        kc[i] = m_rfn[i] / m_kr0[i];
+    }
 }
 
 void BulkKinetics::getRevRateConstants(double* krev, bool doIrreversible)
@@ -511,6 +514,7 @@ void BulkKinetics::updateROP()
         bool changed = rates->update(thermo(), *this);
         if (changed) {
             rates->getRateConstants(m_kf0.data());
+            rates->getReverseRateConstants(m_kr0.data());
             m_ROP_ok = false;
         }
     }

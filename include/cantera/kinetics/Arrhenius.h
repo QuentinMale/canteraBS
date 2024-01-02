@@ -197,6 +197,10 @@ public:
         return m_A * std::exp(m_b * shared_data.logT - m_Ea_R * shared_data.recipT);
     }
 
+    double evalKrFromStruct(const ArrheniusData& shared_data) const {
+        return 0.0;
+    }
+
     //! Evaluate derivative of reaction rate with respect to temperature
     //! divided by reaction rate
     /*!

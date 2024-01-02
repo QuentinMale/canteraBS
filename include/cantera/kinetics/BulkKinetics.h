@@ -186,6 +186,7 @@ protected:
     vector<double> m_rbuf1;
     vector<double> m_rbuf2;
     vector<double> m_kf0; //!< Forward rate constants without perturbation
+    vector<double> m_kr0; //!< Reverse rate constants without perturbation
     vector<double> m_sbuf0;
     vector<double> m_state;
     vector<double> m_grt; //!< Standard chemical potentials for each species

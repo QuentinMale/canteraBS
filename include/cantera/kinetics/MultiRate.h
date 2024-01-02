@@ -71,6 +71,17 @@ public:
         }
     }
 
+    void getReverseRateConstants(double* kr) override {
+        for (auto& [iRxn, rate] : m_rxn_rates) {
+            // todo use a list to loop it
+            if (rate.type() == "electron-collision-plasma") {
+                kr[iRxn] = rate.evalKrFromStruct(m_shared);
+            } else {
+                kr[iRxn] = 0.0;
+            }
+        }
+    }
+
     void processRateConstants_ddT(double* rop, const double* kf, double deltaT) override
     {
         if constexpr (has_ddT<RateType>::value) {

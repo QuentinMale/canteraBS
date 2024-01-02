@@ -422,6 +422,10 @@ public:
         return out;
     }
 
+    double evalKrFromStruct(const DataType& shared_data) const {
+        return 0.0;
+    }
+
     //! Evaluate derivative of reaction rate with respect to temperature
     //! divided by reaction rate
     //! @param shared_data  data shared by all reactions of a given type
@@ -563,6 +567,10 @@ public:
             out /= 1 - 0.5 * out;
         }
         return out * m_factor * shared_data.sqrtT * m_multiplier;
+    }
+
+    double evalKrFromStruct(const DataType& shared_data) const {
+        return 0.0;
     }
 
     //! Evaluate derivative of reaction rate with respect to temperature

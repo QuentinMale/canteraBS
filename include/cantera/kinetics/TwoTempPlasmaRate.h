@@ -96,6 +96,10 @@ public:
                               * shared_data.recipTe * shared_data.recipT);
     }
 
+    double evalKrFromStruct(const TwoTempPlasmaData& shared_data) const {
+        return 0.0;
+    }
+
     //! Evaluate derivative of reaction rate with respect to temperature
     //! divided by reaction rate
     /*!
