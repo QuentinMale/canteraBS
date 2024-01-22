@@ -1,0 +1,151 @@
+/**
+ *  @file EEDFTwoTermApproximation.h EEDF Two-Term approximation solver.
+ */
+
+// This file is part of Cantera. See License.txt in the top-level directory or
+// at https://cantera.org/license.txt for license and copyright information.
+
+#ifndef CT_EEDF_TWO_TERM_APPROXIMATION_H
+#define CT_EEDF_TWO_TERM_APPROXIMATION_H
+
+#include "cantera/thermo/PlasmaPhase.h"
+#include "cantera/base/ct_defs.h"
+#include "cantera/numerics/eigen_sparse.h"
+
+namespace Cantera
+{
+
+class PlasmaPhase;
+
+typedef Eigen::SparseMatrix<double> SparseMat_fp;
+typedef vector<double> vector_fp;
+
+/**
+ *  EEDF solver options. Used internally by class EEDFTwoTermApproximation.
+ */
+class TwoTermOpt
+{
+public:
+    TwoTermOpt() = default;
+
+    double m_delta0 = 1e14; //!< Initial value of the iteration parameter
+    size_t m_maxn = 200; //!< Maximum number of iterations
+    double m_factorM = 4.0; //!< Reduction factor of error
+    size_t m_points = 150; //!< Number of points for energy grid
+    double m_rtol = 1e-4; //!< Relative tolerance of EEDF for solving Boltzmann equation
+
+}; // end of class TwoTermOpt
+
+class EEDFTwoTermApproximation
+{
+public:
+    EEDFTwoTermApproximation() = default;
+
+    //! Constructor combined with the initialization function
+    /*!
+     * This constructor initializes the EEDFTwoTermApproximation object with everything
+     * it needs to start solving EEDF.
+     *
+     * @param s PlasmaPhase object that will be used in the solver calls.
+     */
+    EEDFTwoTermApproximation(PlasmaPhase& s);
+
+    virtual ~EEDFTwoTermApproximation() = default;
+
+    // compute the EEDF given an electric field
+    // CQM The solver will take the species to consider and the set of cross-sections
+    // from the PlasmaPhase object.
+    // It will write the EEDF and its grid into the PlasmaPhase object.
+    // Successful returns are indicated by a return value of 0.
+    int compute(PlasmaPhase& s, double EN, int loglevel = 0);
+
+    /**
+     * Options controlling how the calculation is carried out.
+     * @see TwoTermOpt
+     */
+    TwoTermOpt options;
+
+protected:
+    /**
+     * Prepare for EEDF calculations.
+     * @param s object representing the solution phase.
+     */
+    void initialize(PlasmaPhase& s);
+
+    //! Pointer to the PlasmaPhase object used to initialize this object.
+    /*!
+     * This PlasmaPhase object must be compatible with the PlasmaPhase objects
+     * input from the compute function. Currently, this means that the 2
+     * PlasmaPhases have to have consist of the same species and elements.
+     */
+    PlasmaPhase* m_phase;
+
+    //! Iterate f0 (EEDF) until convergence
+    void converge(Eigen::VectorXd& f0);
+
+    //! An iteration of solving electron energy distribution function
+    Eigen::VectorXd iterate(const Eigen::VectorXd& f0, double delta);
+
+    //! Vector g is used by matrix_P() and matrix_Q().
+    /**
+     * \f[
+     * g_i = \frac{1}{\epsilon_{i+1} - \epsilon_{i-1}} \ln(\frac{F_{0, i+1}}{F_{0, i-1}})
+     * \f]
+     */
+    vector_fp vector_g(const Eigen::VectorXd& f0);
+
+    //! The matrix of scattering-out.
+    /**
+     * \f[
+     * P_{i,k} = \gamma \int_{\epsilon_i - 1/2}^{\epsilon_i + 1/2}
+     * \epsilon \sigma_k exp[(\epsilon_i - \epsilon)g_i] d \epsilon
+     * \f]
+     */
+    SparseMat_fp matrix_P(const vector_fp& g, size_t k);
+
+    //! The matrix of scattering-in
+    /**
+     * \f[
+     * Q_{i,j,k} = \gamma \int_{\epsilon_1}^{\epsilon_2}
+     * \epsilon \sigma_k exp[(\epsilon_j - \epsilon)g_j] d \epsilon
+     * \f]
+     */
+    //! where the interval \f$[\epsilon_1, \epsilon_2]\f$ is the overlap of cell j,
+    //! and cell i shifted by the threshold energy:
+    /**
+     * \f[
+     * \epsilon_1 = \min(\max(\epsilon_{i-1/2}+u_k, \epsilon_{j-1/2}),\epsilon_{j+1/2}),
+     * \f]
+     * \f[
+     * \epsilon_2 = \min(\max(\epsilon_{i+1/2}+u_k, \epsilon_{j-1/2}),\epsilon_{j+1/2})
+     * \f]
+     */
+    SparseMat_fp matrix_Q(const vector_fp& g, size_t k);
+
+    //! Matrix A (Ax = b) of the equation of EEDF, which is discretized by the exponential scheme
+    //! of Scharfetter and Gummel,
+    /**
+     * \f[
+     *     \left[ \tilde{W} F_0 - \tilde{D} \frac{d F_0}{\epsilon} \right]_{i+1/2} =
+     *     \frac{\tilde{W}_{i+1/2} F_{0,i}}{1 - \exp[-z_{i+1/2}]} +
+     *     \frac{\tilde{W}_{i+1/2} F_{0,i+1}}{1 - \exp[z_{i+1/2}]}
+     * \f]
+     * where \f$ z_{i+1/2} = \tilde{w}_{i+1/2} / \tilde{D}_{i+1/2} \f$ (Peclet number).
+     */
+    SparseMat_fp matrix_A(const Eigen::VectorXd& f0);
+
+    double norm(const Eigen::VectorXd& f, const vector_fp& grid);
+
+    //! Grid of electron energy (cell center) [eV]
+    vector_fp m_gridCenter;
+
+
+private:
+
+
+
+}; // end of class EEDFTwoTermApproximation
+
+} // end of namespace Cantera
+
+#endif
