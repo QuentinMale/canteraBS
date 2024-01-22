@@ -29,6 +29,8 @@ void PlasmaPhase::updateElectronEnergyDistribution()
             "Invalid for discretized electron energy distribution.");
     } else if (m_distributionType == "isotropic") {
         setIsotropicElectronEnergyDistribution();
+    } else if (m_distributionType == "TwoTermApproximation") {
+        // TODO call to EEDF solver
     }
     electronEnergyDistributionChanged();
 }
@@ -48,7 +50,8 @@ void PlasmaPhase::normalizeElectronEnergyDistribution() {
 void PlasmaPhase::setElectronEnergyDistributionType(const string& type)
 {
     if (type == "discretized" ||
-        type == "isotropic") {
+        type == "isotropic" ||
+        type == "TwoTermApproximation") {
         m_distributionType = type;
     } else {
         throw CanteraError("PlasmaPhase::setElectronEnergyDistributionType",

@@ -271,6 +271,18 @@ public:
         return m_levelNum;
     }
 
+    vector<size_t> kInelastic() const {
+        return m_kInelastic;
+    }
+
+    vector<double> X_targets() const {
+        return m_X_targets;
+    }
+
+    vector<size_t> klocTargets() const {
+        return m_klocTargets;
+    }
+
 protected:
     void updateThermo() const override;
 
@@ -344,6 +356,21 @@ protected:
 
     //! Flag of normalizing electron energy distribution
     bool m_do_normalizeElectronEnergyDist = true;
+
+    //! Indices of inelastic collisions in m_crossSections
+    vector<size_t> m_kInelastic;
+
+    //! reduced electric field [Td]
+    double m_EN_Td = 0.0;
+
+    //! normalized electron energy distribution function
+    Eigen::VectorXd m_f0;
+
+    //! Mole fraction of targets
+    vector<double> m_X_targets;
+
+    //! list of target species indices in local X EEDF numbering (1 index per cs)
+    std::vector<size_t> m_klocTargets;
 
 private:
     //! Electron energy distribution change variable. Whenever
