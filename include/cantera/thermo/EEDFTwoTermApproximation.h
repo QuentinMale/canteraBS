@@ -11,6 +11,7 @@
 #include "cantera/thermo/PlasmaPhase.h"
 #include "cantera/base/ct_defs.h"
 #include "cantera/numerics/eigen_sparse.h"
+#include "cantera/numerics/funcs.h"
 
 namespace Cantera
 {
@@ -18,7 +19,9 @@ namespace Cantera
 class PlasmaPhase;
 
 typedef Eigen::SparseMatrix<double> SparseMat_fp;
+typedef Eigen::Triplet<double> Triplet_fp;
 typedef vector<double> vector_fp;
+
 
 /**
  *  EEDF solver options. Used internally by class EEDFTwoTermApproximation.
@@ -33,6 +36,7 @@ public:
     double m_factorM = 4.0; //!< Reduction factor of error
     size_t m_points = 150; //!< Number of points for energy grid
     double m_rtol = 1e-4; //!< Relative tolerance of EEDF for solving Boltzmann equation
+    string m_growth = "temporal"; //!< String for the growth model (none, temporal or spatial)
 
 }; // end of class TwoTermOpt
 
@@ -86,6 +90,11 @@ protected:
     //! An iteration of solving electron energy distribution function
     Eigen::VectorXd iterate(const Eigen::VectorXd& f0, double delta);
 
+    //! The integral in [a, b] of \f$x u(x) \exp[g (x_0 - x)]\f$
+    //! assuming that u is linear with u(a) = u0 and u(b) = u1
+    double integralPQ(double a, double b, double u0, double u1,
+                       double g, double x0);
+
     //! Vector g is used by matrix_P() and matrix_Q().
     /**
      * \f[
@@ -134,10 +143,61 @@ protected:
      */
     SparseMat_fp matrix_A(const Eigen::VectorXd& f0);
 
+    //! Reduced net production frequency. Equation (10) of ref. [1]
+    //! divided by N.
+    //! @param f0 EEDF
+    double netProductionFreq(const Eigen::VectorXd& f0);
+
+    //! Diffusivity
+    double electronDiffusivity(const Eigen::VectorXd f0);
+
+    //! Mobility
+    double electronMobility(const Eigen::VectorXd f0);
+
     double norm(const Eigen::VectorXd& f, const vector_fp& grid);
 
     //! Grid of electron energy (cell center) [eV]
     vector_fp m_gridCenter;
+
+    //! Grid of electron energy (cell boundary i-1/2) [eV]
+    vector_fp m_gridEdge;
+
+    //! Location of cell j for grid cache
+    vector<vector<size_t>> m_j;
+
+    //! Location of cell i for grid cache
+    vector<vector<size_t>> m_i;
+
+    //! Cross section at the boundaries of the overlap of cell i and j
+    vector<vector<vector_fp>> m_sigma;
+
+    //! The energy boundaries of the overlap of cell i and j
+    vector<vector<vector_fp>> m_eps;
+
+    //! normalized electron energy distribution function
+    Eigen::VectorXd m_f0;
+
+    //! Total electron cross section on the cell center of energy grid
+    vector_fp m_totalCrossSectionCenter;
+
+    //! Total electron cross section on the cell boundary (i-1/2) of
+    //! energy grid
+    vector_fp m_totalCrossSectionEdge;
+
+    //! vector of total elastic cross section weighted with mass ratio
+    vector_fp m_sigmaElastic;
+
+    //! in factor. This is used for calculating the Q matrix of
+    //! scattering-in processes.
+    vector<int> m_inFactor;
+
+    //! Constant. \f$ \gamma = (\frac{2 e}{m})^{1/2} \f$, where \f$ e \f$ is the elementary charge
+    //! and \f$ m \f$ is the mass of an electron.
+    double m_gamma;
+
+    //! boolean for the electron-electron collisions
+    bool m_eeCol = false;
+
 
 
 private:
