@@ -12,6 +12,7 @@
 #include "cantera/numerics/eigen_sparse.h"
 #include "cantera/numerics/funcs.h"
 #include "cantera/base/global.h"
+#include "cantera/base/Timer.h"
 
 namespace Cantera
 {
@@ -38,6 +39,8 @@ public:
     double m_rtol = 1e-4; //!< Relative tolerance of EEDF for solving Boltzmann equation
     string m_growth = "temporal"; //!< String for the growth model (none, temporal or spatial)
     double m_moleFractionThreshold = 0.01; //!< Threshold for species not considered in the Boltzmann solver but present in the mixture
+    string m_firstguess = "maxwell"; //!< String for EEDF first guess
+    double m_init_kTe = 2.0; //!< Initial electron mean energy
 
 }; // end of class TwoTermOpt
 
@@ -153,10 +156,10 @@ protected:
     double netProductionFreq(const Eigen::VectorXd& f0);
 
     //! Diffusivity
-    double electronDiffusivity(const Eigen::VectorXd f0);
+    double electronDiffusivity(const Eigen::VectorXd& f0);
 
     //! Mobility
-    double electronMobility(const Eigen::VectorXd f0);
+    double electronMobility(const Eigen::VectorXd& f0);
 
     void initSpeciesIndexCS();
 
@@ -164,9 +167,13 @@ protected:
 
     void updateCS();
 
+    void update_mole_fractions();
+
     void calculateTotalElasticCrossSection();
 
     void calculateTotalCrossSection();
+
+    void setGridCache();
 
     double norm(const Eigen::VectorXd& f, const Eigen::VectorXd& grid);
 
@@ -188,6 +195,9 @@ protected:
     //! The energy boundaries of the overlap of cell i and j
     vector<vector<vector_fp>> m_eps;
 
+    //! The cross section at the center of a cell
+    std::vector<vector_fp> m_sigma_offset;
+
     //! normalized electron energy distribution function
     Eigen::VectorXd m_f0;
 
@@ -200,10 +210,6 @@ protected:
 
     //! vector of total elastic cross section weighted with mass ratio
     vector_fp m_sigmaElastic;
-
-    //! in factor. This is used for calculating the Q matrix of
-    //! scattering-in processes.
-    vector<int> m_inFactor;
 
     //! list of target species indices in global Cantera numbering (1 index per cs)
     vector<size_t> m_kTargets;
@@ -230,8 +236,14 @@ protected:
     //! boolean for the electron-electron collisions
     bool m_eeCol = false;
 
+    //! flag of having an EEDF
+    bool m_has_EEDF;
+
     //! First call to calculateDistributionFunction
     bool m_first_call;
+
+    //! Timer to monitor EEDF solving
+    Timer* m_timer_eedf = new Timer("timer_eedf");
 
 private:
 
