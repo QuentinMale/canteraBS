@@ -79,6 +79,9 @@ public:
 
     void initThermo() override;
 
+    //! Overload to signal updating electron energy density function.
+    virtual void setTemperature(const double temp) override;
+
     bool addElectronCrossSection(shared_ptr<ElectronCrossSection> ecs);
 
     //! Set electron energy levels.
@@ -282,13 +285,13 @@ public:
         return m_kInelastic;
     }
 
-    vector<double> X_targets() const {
-        return m_X_targets;
-    }
+//    vector<double> X_targets() const {
+//        return m_X_targets;
+//    }
 
-    vector<size_t> klocTargets() const {
-        return m_klocTargets;
-    }
+//    vector<size_t> klocTargets() const {
+//        return m_klocTargets;
+//    }
 
     //! number of cross section dataset
     size_t nElectronCrossSections() const {
@@ -310,8 +313,22 @@ public:
         return m_ecss[k]->kind;
     }
 
+    //! threshold of a specific process
+    double threshold(size_t k) {
+        return m_ecss[k]->threshold;
+    }
+
+    vector<int> shiftFactor() const {
+        return m_shiftFactor;
+    }
+
+    vector<int> inFactor() const {
+        return m_inFactor;
+    }
+
+    //! Gas number density [m^-3]
     double N() const {
-        return m_N;
+        return molarDensity() * Avogadro;
     }
 
     double F() const {
@@ -349,7 +366,7 @@ public:
     //! Set reduced electric field given in [V.m2]
     void setReducedElectricField(double EN) {
         m_EN = EN; // [V.m2]
-        m_E = m_EN/molarDensity()/Avogadro; // [V/m]
+        m_E = m_EN * molarDensity() * Avogadro; // [V/m]
     }
 
 protected:
@@ -418,7 +435,7 @@ protected:
     double m_electronTemp;
 
     //! Gas number density
-    double m_N;
+    //double m_N;
 
     //! Electron energy distribution type
     string m_distributionType = "isotropic";
@@ -448,10 +465,10 @@ protected:
     Eigen::VectorXd m_f0;
 
     //! Mole fraction of targets
-    vector<double> m_X_targets;
+    //vector<double> m_X_targets;
 
     //! list of target species indices in local X EEDF numbering (1 index per cs)
-    std::vector<size_t> m_klocTargets;
+    //std::vector<size_t> m_klocTargets;
 
     //! number of cross section sets
     size_t m_ncs;

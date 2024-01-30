@@ -30,6 +30,14 @@ void PlasmaPhase::initialize()
     m_f0_ok = false;
     m_EN = 0.0;
     m_E = 0.0;
+    m_F = 0.0;
+    m_ionDegree = 0.0;
+}
+
+void PlasmaPhase::setTemperature(const double temp)
+{
+    Phase::setTemperature(temp);
+    m_kT = Boltzmann * temp / ElectronCharge;
 }
 
 void PlasmaPhase::updateElectronEnergyDistribution()
@@ -255,6 +263,18 @@ void PlasmaPhase::setParameters(const AnyMap& phaseNode, const AnyMap& rootNode)
                                              eedf["distribution"].asVector<double>().data(),
                                              eedf["energy-levels"].asVector<double>().size());
         } else if (m_distributionType == "TwoTermApproximation") {
+            if (rootNode.hasKey("cross-sections")) {
+                // CQM debug
+                writelog("I have cross-sections!\n");
+                // By default, add all CS from the 'cross-sections' section
+                for (const auto& item : rootNode["cross-sections"].asVector<AnyMap>()) {
+                    addElectronCrossSection( newElectronCrossSection(item) );
+                }
+                writelog("m_ncs = {:3d}\n", m_ncs);
+            } else {
+                throw CanteraError("PlasmaPhase::setParameters",
+                    "Cross section data are required.");
+            }
             // CQM use the energy-levels input as initial grid??
             //m_nPoints = eedf["energy-levels"].asVector<double>().size();
             //auto levels = eedf["energy-levels"].asVector<double>().data();
@@ -269,15 +289,6 @@ void PlasmaPhase::setParameters(const AnyMap& phaseNode, const AnyMap& rootNode)
             m_nPoints = nGridCells + 1;
             ptrEEDFSolver->setLinearGrid(kTe_max, nGridCells);
         }
-    }
-    if (rootNode.hasKey("cross-sections")) {
-        // CQM debug
-        writelog("I have cross-sections!\n");
-        // By default, add all CS from the 'cross-sections' section
-        for (const auto& item : rootNode["cross-sections"].asVector<AnyMap>()) {
-            addElectronCrossSection( newElectronCrossSection(item) );
-        }
-        writelog("m_ncs = {:3d}\n", m_ncs);
     }
 }
 
