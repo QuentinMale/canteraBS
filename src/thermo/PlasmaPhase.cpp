@@ -13,6 +13,8 @@ namespace Cantera {
 
 PlasmaPhase::PlasmaPhase(const string& inputFile, const string& id_)
 {
+    initialize();
+
     initThermoFile(inputFile, id_);
 
     // initial grid
@@ -20,6 +22,14 @@ PlasmaPhase::PlasmaPhase(const string& inputFile, const string& id_)
 
     // initial electron temperature
     setElectronTemperature(temperature());
+}
+
+void PlasmaPhase::initialize()
+{
+    m_ncs = 0;
+    m_f0_ok = false;
+    m_EN = 0.0;
+    m_E = 0.0;
 }
 
 void PlasmaPhase::updateElectronEnergyDistribution()
@@ -30,9 +40,11 @@ void PlasmaPhase::updateElectronEnergyDistribution()
     } else if (m_distributionType == "isotropic") {
         setIsotropicElectronEnergyDistribution();
     } else if (m_distributionType == "TwoTermApproximation") {
-        // TODO call to EEDF solver
+        writelog("call to calculateDistributionFunction()\n");
+        ptrEEDFSolver->calculateDistributionFunction();
     }
     electronEnergyDistributionChanged();
+    writelog("Done!\n");
 }
 
 void PlasmaPhase::normalizeElectronEnergyDistribution() {
@@ -242,8 +254,77 @@ void PlasmaPhase::setParameters(const AnyMap& phaseNode, const AnyMap& rootNode)
             setDiscretizedElectronEnergyDist(eedf["energy-levels"].asVector<double>().data(),
                                              eedf["distribution"].asVector<double>().data(),
                                              eedf["energy-levels"].asVector<double>().size());
+        } else if (m_distributionType == "TwoTermApproximation") {
+            // CQM use the energy-levels input as initial grid??
+            //m_nPoints = eedf["energy-levels"].asVector<double>().size();
+            //auto levels = eedf["energy-levels"].asVector<double>().data();
+            //m_electronEnergyLevels = Eigen::Map<const Eigen::ArrayXd>(levels, m_nPoints);
+            ptrEEDFSolver = new EEDFTwoTermApproximation(*this); // CQM TODO must be deleted later
+            // CQM hard coded for now
+            // TODO set kTe_max and ncell from user 
+            double kTe_max = 60.0;
+            size_t nGridCells = 300;
+            // CQM WARNING m_nPoints is nEdges in PlasmaPhase (i.e. nCells+1)
+            // It would be nice to change nPoints to nGridEdges
+            m_nPoints = nGridCells + 1;
+            ptrEEDFSolver->setLinearGrid(kTe_max, nGridCells);
         }
     }
+    if (rootNode.hasKey("cross-sections")) {
+        // CQM debug
+        writelog("I have cross-sections!\n");
+        // By default, add all CS from the 'cross-sections' section
+        for (const auto& item : rootNode["cross-sections"].asVector<AnyMap>()) {
+            addElectronCrossSection( newElectronCrossSection(item) );
+        }
+        writelog("m_ncs = {:3d}\n", m_ncs);
+    }
+}
+
+bool PlasmaPhase::addElectronCrossSection(shared_ptr<ElectronCrossSection> ecs)
+{
+    // ecs->validate();
+    m_ecss.push_back(ecs);
+
+    m_energyLevels.push_back(ecs->energyLevel);
+    m_crossSections.push_back(ecs->crossSection);
+
+    // shift factor
+    if (ecs->kind == "ionization") {
+        m_shiftFactor.push_back(2);
+    } else {
+        m_shiftFactor.push_back(1);
+    }
+
+    // scattering-in factor
+    if (ecs->kind == "ionization") {
+        m_inFactor.push_back(2);
+    } else if (ecs->kind == "attachment") {
+        m_inFactor.push_back(0);
+    } else {
+        m_inFactor.push_back(1);
+    }
+
+    if (ecs->kind == "effective" || ecs->kind == "elastic") {
+        for (size_t k = 0; k < m_ncs; k++) {
+            if (target(k) == ecs->target)
+                if (kind(k) == "elastic" || kind(k) == "effective") {
+                    throw CanteraError("PlasmaPhase::addElectronCrossSection"
+                                       "Already contains a data of effective/ELASTIC cross section for '{}'.",
+                                       ecs->target);
+            }
+        }
+        m_kElastic.push_back(m_ncs);
+    } else {
+        m_kInelastic.push_back(m_ncs);
+    }
+
+    // add one to number of cross sections
+    m_ncs++;
+
+    m_f0_ok = false;
+
+    return true;
 }
 
 bool PlasmaPhase::addSpecies(shared_ptr<Species> spec)

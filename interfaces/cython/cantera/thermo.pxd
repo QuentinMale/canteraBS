@@ -191,6 +191,7 @@ cdef extern from "cantera/thermo/PlasmaPhase.h":
     cdef cppclass CxxPlasmaPhase "Cantera::PlasmaPhase" (CxxThermoPhase):
         CxxPlasmaPhase()
         void setElectronTemperature(double) except +translate_exception
+        void setReducedElectricField(double) except +translate_exception
         void setElectronEnergyLevels(double*, size_t) except +translate_exception
         void getElectronEnergyLevels(double*)
         void setDiscretizedElectronEnergyDist(double*, double*, size_t) except +translate_exception
@@ -208,6 +209,8 @@ cdef extern from "cantera/thermo/PlasmaPhase.h":
         size_t nElectronEnergyLevels()
         double electronPressure()
         string electronSpeciesName()
+        double EN()
+        void updateElectronEnergyDistribution()
 
 
 cdef extern from "cantera/cython/thermo_utils.h":

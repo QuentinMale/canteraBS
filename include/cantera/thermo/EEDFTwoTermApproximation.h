@@ -8,10 +8,10 @@
 #ifndef CT_EEDF_TWO_TERM_APPROXIMATION_H
 #define CT_EEDF_TWO_TERM_APPROXIMATION_H
 
-#include "cantera/thermo/PlasmaPhase.h"
 #include "cantera/base/ct_defs.h"
 #include "cantera/numerics/eigen_sparse.h"
 #include "cantera/numerics/funcs.h"
+#include "cantera/base/global.h"
 
 namespace Cantera
 {
@@ -37,6 +37,7 @@ public:
     size_t m_points = 150; //!< Number of points for energy grid
     double m_rtol = 1e-4; //!< Relative tolerance of EEDF for solving Boltzmann equation
     string m_growth = "temporal"; //!< String for the growth model (none, temporal or spatial)
+    double m_moleFractionThreshold = 0.01; //!< Threshold for species not considered in the Boltzmann solver but present in the mixture
 
 }; // end of class TwoTermOpt
 
@@ -44,6 +45,7 @@ class EEDFTwoTermApproximation
 {
 public:
     EEDFTwoTermApproximation() = default;
+
 
     //! Constructor combined with the initialization function
     /*!
@@ -61,7 +63,9 @@ public:
     // from the PlasmaPhase object.
     // It will write the EEDF and its grid into the PlasmaPhase object.
     // Successful returns are indicated by a return value of 0.
-    int compute(PlasmaPhase& s, double EN, int loglevel = 0);
+    int calculateDistributionFunction();
+
+    void setLinearGrid(double& kTe_max, size_t& ncell);
 
     /**
      * Options controlling how the calculation is carried out.
@@ -154,10 +158,20 @@ protected:
     //! Mobility
     double electronMobility(const Eigen::VectorXd f0);
 
-    double norm(const Eigen::VectorXd& f, const vector_fp& grid);
+    void initSpeciesIndexCS();
+
+    void checkSpeciesNoCrossSection();
+
+    void updateCS();
+
+    void calculateTotalElasticCrossSection();
+
+    void calculateTotalCrossSection();
+
+    double norm(const Eigen::VectorXd& f, const Eigen::VectorXd& grid);
 
     //! Grid of electron energy (cell center) [eV]
-    vector_fp m_gridCenter;
+    Eigen::VectorXd m_gridCenter;
 
     //! Grid of electron energy (cell boundary i-1/2) [eV]
     vector_fp m_gridEdge;
@@ -191,6 +205,24 @@ protected:
     //! scattering-in processes.
     vector<int> m_inFactor;
 
+    //! list of target species indices in global Cantera numbering (1 index per cs)
+    vector<size_t> m_kTargets;
+
+    //! list of target species indices in local X EEDF numbering (1 index per cs)
+    vector<size_t> m_klocTargets;
+
+    //! Indices of species which has no cross-section data
+    vector<size_t> m_kOthers;
+
+    //! Local to global indices
+    vector<size_t> m_k_lg_Targets;
+
+    //! Mole fraction of targets
+    vector_fp m_X_targets;
+
+    //! Previous mole fraction of targets used to compute eedf
+    vector_fp m_X_targets_prev;
+
     //! Constant. \f$ \gamma = (\frac{2 e}{m})^{1/2} \f$, where \f$ e \f$ is the elementary charge
     //! and \f$ m \f$ is the mass of an electron.
     double m_gamma;
@@ -198,7 +230,8 @@ protected:
     //! boolean for the electron-electron collisions
     bool m_eeCol = false;
 
-
+    //! First call to calculateDistributionFunction
+    bool m_first_call;
 
 private:
 
