@@ -12,6 +12,7 @@
 #include "cantera/thermo/IdealGasPhase.h"
 #include "cantera/numerics/eigen_sparse.h"
 #include "cantera/kinetics/ElectronCrossSection.h"
+#include "cantera/thermo/EEDFTwoTermApproximation.h"
 
 namespace Cantera
 {
@@ -77,6 +78,8 @@ public:
     }
 
     void initThermo() override;
+
+    bool addElectronCrossSection(shared_ptr<ElectronCrossSection> ecs);
 
     //! Set electron energy levels.
     //! @param  levels The vector of electron energy levels (eV).
@@ -257,6 +260,9 @@ public:
     void setParameters(const AnyMap& phaseNode,
                        const AnyMap& rootNode=AnyMap()) override;
 
+    //! Update electron energy distribution.
+    void updateElectronEnergyDistribution();
+
     //! Electron species name
     string electronSpeciesName() const {
         return speciesName(m_electronSpeciesIndex);
@@ -289,6 +295,16 @@ public:
         return m_ncs;
     }
 
+    //! target of a specific process
+    string target(size_t k) {
+        return m_ecss[k]->target;
+    }
+
+    //! product of a specific process
+    string product(size_t k) {
+        return m_ecss[k]->product;
+    }
+
     //! kind of a specific process
     string kind(size_t k) {
         return m_ecss[k]->kind;
@@ -314,7 +330,32 @@ public:
         return m_kT;
     }
 
+    double EN() const {
+        return m_EN;
+    }
+
+    vector<vector<double>> crossSections() const {
+        return m_crossSections;
+    }
+
+    vector<vector<double>> energyLevels() const {
+        return m_energyLevels;
+    }
+
+    vector<size_t> kElastic() const {
+        return m_kElastic;
+    }
+
+    //! Set reduced electric field given in [V.m2]
+    void setReducedElectricField(double EN) {
+        m_EN = EN; // [V.m2]
+        m_E = m_EN/molarDensity()/Avogadro; // [V/m]
+    }
+
 protected:
+
+    void initialize();
+
     void updateThermo() const override;
 
     //! When electron energy distribution changed, plasma properties such as
@@ -346,9 +387,6 @@ protected:
      *  energy levels.
      */
     void checkElectronEnergyDistribution() const;
-
-    //! Update electron energy distribution.
-    void updateElectronEnergyDistribution();
 
     //! Set isotropic electron energy distribution
     void setIsotropicElectronEnergyDistribution();
@@ -395,10 +433,13 @@ protected:
     vector<size_t> m_kInelastic;
 
     //! electric field [V/m]
-    double m_E = 0.0;
+    double m_E;
+
+    //! reduced electric field [V.m2]
+    double m_EN;
 
     //! reduced electric field [Td]
-    double m_EN_Td = 0.0;
+    //double m_EN_Td;
 
     //! electric field freq [Hz]
     double m_F;
@@ -418,6 +459,27 @@ protected:
     //! array of cross-section object
     vector<shared_ptr<ElectronCrossSection>> m_ecss;
 
+    //! Cross section data. m_crossSections[i][j], where i is the specific process,
+    //! j is the index of vector. Unit: [m^2]
+    std::vector<vector<double>> m_crossSections;
+
+    //! Electron energy levels correpsonding to the cross section data. m_energyLevels[i][j],
+    //! where i is the specific process, j is the index of vector. Unit: [eV]
+    std::vector<vector<double>> m_energyLevels;
+
+    //! shift factor. This is used for calculating the collision term.
+    std::vector<int> m_shiftFactor;
+
+    //! in factor. This is used for calculating the Q matrix of
+    //! scattering-in processes.
+    std::vector<int> m_inFactor;
+
+    //! Indices of elastic collisions in m_crossSections
+    std::vector<size_t> m_kElastic;
+
+    //! flag of electron energy distribution function
+    bool m_f0_ok;
+
     //! ionization degree for the electron-electron collisions (tmp is the previous one)
     double m_ionDegree;
 
@@ -425,6 +487,9 @@ protected:
     double m_kT;
 
 private:
+
+    EEDFTwoTermApproximation* ptrEEDFSolver;
+
     //! Electron energy distribution change variable. Whenever
     //! #m_electronEnergyDist changes, this int is incremented.
     int m_distNum = -1;

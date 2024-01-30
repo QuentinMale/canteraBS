@@ -9,28 +9,59 @@
 
 #include "cantera/thermo/EEDFTwoTermApproximation.h"
 #include "cantera/base/ctexceptions.h"
+#include "cantera/thermo/PlasmaPhase.h"
 
 namespace Cantera
 {
 
 EEDFTwoTermApproximation::EEDFTwoTermApproximation(PlasmaPhase& s)
 {
+    writelog("EEDFTwoTermApproximation\n");
     initialize(s);
 }
 
 void EEDFTwoTermApproximation::initialize(PlasmaPhase& s)
 {
+    writelog("initialize EEDFTwoTermApproximation\n");
     // store a pointer to s.
     m_phase = &s;
+    m_first_call = true;
 }
 
-int EEDFTwoTermApproximation::compute(PlasmaPhase& s, double EN, int loglevel)
+void EEDFTwoTermApproximation::setLinearGrid(double& kTe_max, size_t& ncell)
+{
+    writelog("Grid info : Linear grid is used \n");
+    writelog("Grid info : Maximum energy of the grid is {:15.3g} [eV]\n", kTe_max);
+    options.m_points = ncell;
+    m_gridCenter.resize(options.m_points);
+    m_gridEdge.resize(options.m_points + 1);
+    m_f0.resize(options.m_points);
+    for (size_t j = 0; j < options.m_points; j++) {
+        m_gridCenter[j] = kTe_max * ( j + 0.5 ) / options.m_points;
+        m_gridEdge[j] = kTe_max * j / options.m_points;
+    }
+    m_gridEdge[options.m_points] = kTe_max;
+}
+
+int EEDFTwoTermApproximation::calculateDistributionFunction()
 {
     // TODO
     // -> call to converge to get f0
     // -> update EEDF dist and grid in the PlasmaPhase object!
-    throw CanteraError("EEDFTwoTermApproximation::compute", "To be implemented");
-    return 0;
+
+    // During the first call to this function the indices of target species need to be defined
+    if (m_first_call)
+    {
+        writelog("First call to calculateDistributionFunction\n");
+        m_first_call = false;
+        initSpeciesIndexCS();
+        checkSpeciesNoCrossSection();
+        updateCS();
+    } else {
+        writelog("pass init\n");
+    }
+    writelog("{:d}\n",m_phase->nSpecies());
+
 }
 
 void EEDFTwoTermApproximation::converge(Eigen::VectorXd& f0)
@@ -335,12 +366,132 @@ double EEDFTwoTermApproximation::electronMobility(const Eigen::VectorXd m_f0)
     return -1./3. * m_gamma * simpson(f, x) / m_phase->N();
 }
 
-double EEDFTwoTermApproximation::norm(const Eigen::VectorXd& f, const vector_fp& grid)
+void EEDFTwoTermApproximation::initSpeciesIndexCS()
 {
-    // TODO
-    // CQM /!\ already a norm function in PlasmaPhase
-    throw CanteraError("EEDFTwoTermApproximation::norm", "To be implemented");
-    return 0.0;
+    writelog("initSpeciesIndexCS 1\n");
+    // set up target index
+    m_kTargets.resize(m_phase->nElectronCrossSections());
+    m_klocTargets.resize(m_phase->nElectronCrossSections());
+    for (size_t k = 0; k < m_phase->nElectronCrossSections(); k++)
+    {
+        writelog("{:d} {:s}\n", k, m_phase->target(k));
+        m_kTargets[k] = m_phase->speciesIndex(m_phase->target(k));
+        if (m_kTargets[k] == string::npos) {
+            throw CanteraError("EEDFTwoTermApproximation::initSpeciesIndexCS"
+                               " species not found!",
+                               m_phase->target(k));
+        }
+        // Check if it is a new target or not :
+        auto it = find(m_k_lg_Targets.begin(), m_k_lg_Targets.end(), m_kTargets[k]);
+        writelog("Indice = {:d}\n", distance(m_k_lg_Targets.begin(), it));
+        if (it == m_k_lg_Targets.end()){
+            writelog("New target found: {:s} with index {:d}\n", m_phase->target(k), distance(m_k_lg_Targets.begin(), it));
+            m_k_lg_Targets.push_back(m_kTargets[k]);
+            m_klocTargets[k] = m_k_lg_Targets.size() - 1;
+        } else {
+            m_klocTargets[k] = distance(m_k_lg_Targets.begin(), it);
+        }
+    }
+
+    writelog("initSpeciesIndexCS 2\n");
+
+    writelog("Number of target species found: {:d}\n", m_k_lg_Targets.size());
+    m_X_targets.resize(m_k_lg_Targets.size());
+    m_X_targets_prev.resize(m_k_lg_Targets.size());
+    writelog("Number of target species found: {:d}\n", m_X_targets.size());
+    writelog("initSpeciesIndexCS 21\n");
+    for (size_t k = 0; k < m_X_targets.size(); k++)
+    {
+        writelog("initSpeciesIndexCS 22 {:d}\n", k);
+        writelog("m_k_lg_Targets[{:d}] = {:d}\n", k, m_k_lg_Targets[k]);
+        writelog("moleFraction[{:d}] = {:g}\n", m_k_lg_Targets[k], m_phase->moleFraction(m_k_lg_Targets[k]));
+        size_t k_glob = m_k_lg_Targets[k];
+        m_X_targets[k] = m_phase->moleFraction(k_glob);
+        m_X_targets_prev[k] = m_phase->moleFraction(k_glob);
+        writelog("The target number {:d} has X = {:.3g}\n", k, m_X_targets[k]);
+    }
+
+    writelog("initSpeciesIndexCS 3\n");
+
+    // set up indices of species which has no cross-section data
+    for (size_t k = 0; k < m_phase->nSpecies(); k++)
+    {
+        auto it = std::find(m_kTargets.begin(), m_kTargets.end(), k);
+        if (it == m_kTargets.end()) {
+            m_kOthers.push_back(k);
+        }
+    }
+}
+
+void EEDFTwoTermApproximation::checkSpeciesNoCrossSection()
+{
+    // warn that a specific species needs cross-section data.
+    for (size_t k : m_kOthers) {
+        if (m_phase->moleFraction(k) > options.m_moleFractionThreshold) {
+            writelog("EEDFTwoTermApproximation:checkSpeciesNoCrossSection\n");
+            writelog("Warning:The mole fraction of species {} is more than 0.01 (X = {:.3g}) but it has no cross-section data\n", m_phase->speciesName(k), m_phase->moleFraction(k));
+        }
+    }
+}
+
+void EEDFTwoTermApproximation::updateCS()
+{
+    writelog("updateCS\n");
+    // Compute sigma_m and sigma_\epsilon
+    calculateTotalCrossSection();
+    calculateTotalElasticCrossSection();
+}
+
+void EEDFTwoTermApproximation::calculateTotalCrossSection()
+{
+    writelog("calculateTotalCrossSection\n");
+    m_totalCrossSectionCenter.assign(options.m_points, 0.0);
+    m_totalCrossSectionEdge.assign(options.m_points + 1, 0.0);
+    for (size_t k = 0; k < m_phase->nElectronCrossSections(); k++) {
+        vector_fp& x = m_phase->energyLevels()[k];
+        vector_fp& y = m_phase->crossSections()[k];
+        writelog("Kind :    {:s}\n", m_phase->kind(k));
+        writelog("Target :    {:s}\n", m_phase->target(k));
+        writelog("Product :    {:s}\n", m_phase->product(k));
+        writelog("Check X: {:g} =? {:g}\n", m_phase->moleFraction(m_kTargets[k]), m_X_targets[m_klocTargets[k]]);
+        writelog("\n");
+        for (size_t i = 0; i < options.m_points; i++) {
+            m_totalCrossSectionCenter[i] += m_X_targets[m_klocTargets[k]] *
+                                            linearInterp(m_gridCenter[i], x, y);
+        }
+        for (size_t i = 0; i < options.m_points + 1; i++) {
+            m_totalCrossSectionEdge[i] += m_X_targets[m_klocTargets[k]] *
+                                          linearInterp(m_gridEdge[i], x, y);
+        }
+    }
+}
+
+void EEDFTwoTermApproximation::calculateTotalElasticCrossSection()
+{
+    writelog("calculateTotalElasticCrossSection\n");
+    m_sigmaElastic.clear();
+    m_sigmaElastic.resize(options.m_points, 0.0);
+    for (size_t k : m_phase->kElastic()) {
+        vector_fp& x = m_phase->energyLevels()[k];
+        vector_fp& y = m_phase->crossSections()[k];
+        // Note:
+        // moleFraction(m_kTargets[k]) <=> m_X_targets[m_klocTargets[k]]
+        double mass_ratio = ElectronMass / (m_phase->molecularWeight(m_kTargets[k]) / Avogadro);
+        for (size_t i = 0; i < options.m_points; i++) {
+            m_sigmaElastic[i] += 2.0 * mass_ratio * m_X_targets[m_klocTargets[k]] *
+                                 linearInterp(m_gridEdge[i], x, y);
+        }
+    }
+}
+
+double EEDFTwoTermApproximation::norm(const Eigen::VectorXd& f, const Eigen::VectorXd& grid)
+{
+    string m_quadratureMethod = "simpson";
+    Eigen::VectorXd p(f.size());
+    for (int i = 0; i < f.size(); i++) {
+        p[i] = f(i) * pow(grid[i], 0.5);
+    }
+    return numericalQuadrature(m_quadratureMethod, p, grid);
 }
 
 } // end of namespace Cantera
