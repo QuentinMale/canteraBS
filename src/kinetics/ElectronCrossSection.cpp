@@ -37,20 +37,13 @@ unique_ptr<ElectronCrossSection> newElectronCrossSection(const AnyMap& node)
 {
     unique_ptr<ElectronCrossSection> ecs(new ElectronCrossSection());
 
-    // XML_Node& dataNode = node.child("data");
-    // node["energy-levels"].asVector<double>()
-
     ecs->kind = node["kind"].asString();
     ecs->target = node["target"].asString();
 
-    vector<double> coeffs_flat;
-    //getFloatArray(node, coeffs_flat, false,"", "data");
-    coeffs_flat = node["data"].asVector<double>();
-    //std::vector<vector_fp> data = node["data"].asVector<vector_fp>();
-    // transpose data
-    for (size_t i = 0; i < coeffs_flat.size()/2; i++) {
-        ecs->energyLevel.push_back(coeffs_flat[2*i]);
-        ecs->crossSection.push_back(coeffs_flat[2*i+1]);
+    auto& data = node["data"].asVector<vector<double>>();
+    for (size_t i = 0; i < data.size(); i++) {
+        ecs->energyLevel.push_back(data[i][0]);
+        ecs->crossSection.push_back(data[i][1]);
     }
 
     if (node.hasKey("threshold")){
@@ -66,14 +59,14 @@ unique_ptr<ElectronCrossSection> newElectronCrossSection(const AnyMap& node)
     }
 
     // Some writelog to check the datas loaded concerning the cross section
-    // writelog("Kind :    {:s}\n",ecs->kind);
-    // writelog("Target :    {:s}\n",ecs->target);
-    // writelog("Product :    {:s}\n",ecs->product);
-    // writelog("Threshold :    {:14.5g} eV\n",ecs->threshold);
-    // writelog("Energy :  \n");
-    // for (size_t i = 0; i < ecs->energyLevel.size(); i++){
-    // 	writelog("{:7.2g} {:7.2g} \n",ecs->energyLevel[i], ecs->crossSection[i]);
-    // }
+    //writelog("Kind :    {:s}\n",ecs->kind);
+    //writelog("Target :    {:s}\n",ecs->target);
+    //writelog("Product :    {:s}\n",ecs->product);
+    //writelog("Threshold :    {:14.5g} eV\n",ecs->threshold);
+    //writelog("Energy :  \n");
+    //for (size_t i = 0; i < ecs->energyLevel.size(); i++){
+    //   writelog("{:9.4g} {:9.4g} \n",ecs->energyLevel[i], ecs->crossSection[i]);
+    //}
 
     return ecs;
 }

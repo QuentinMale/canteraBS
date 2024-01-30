@@ -9,7 +9,6 @@
 #include "cantera/base/ct_defs.h"
 #include "cantera/base/AnyMap.h"
 
-
 namespace Cantera
 {
 
