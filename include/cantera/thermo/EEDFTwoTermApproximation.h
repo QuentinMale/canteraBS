@@ -76,6 +76,14 @@ public:
      */
     TwoTermOpt options;
 
+    vector<double> getGridEdge() const {
+        return m_gridEdge;
+    }
+
+    vector<double> getEEDFEdge() const {
+        return m_f0_edge;
+    }
+
 protected:
     /**
      * Prepare for EEDF calculations.
@@ -200,6 +208,9 @@ protected:
 
     //! normalized electron energy distribution function
     Eigen::VectorXd m_f0;
+
+    //! EEDF at grid edges (cell boundaries)
+    vector_fp m_f0_edge;
 
     //! Total electron cross section on the cell center of energy grid
     vector_fp m_totalCrossSectionCenter;

@@ -49,7 +49,17 @@ void PlasmaPhase::updateElectronEnergyDistribution()
         setIsotropicElectronEnergyDistribution();
     } else if (m_distributionType == "TwoTermApproximation") {
         writelog("call to calculateDistributionFunction()\n");
-        ptrEEDFSolver->calculateDistributionFunction();
+        auto ierr = ptrEEDFSolver->calculateDistributionFunction();
+        if (ierr == 0) {
+            auto x = ptrEEDFSolver->getGridEdge();
+            auto y = ptrEEDFSolver->getEEDFEdge();
+            m_nPoints = x.size();
+            m_electronEnergyLevels = Eigen::Map<const Eigen::ArrayXd>(x.data(), m_nPoints);
+            m_electronEnergyDist = Eigen::Map<const Eigen::ArrayXd>(y.data(), m_nPoints);
+        } else {
+            throw CanteraError("PlasmaPhase::updateElectronEnergyDistribution",
+                "Call to calculateDistributionFunction failed.");
+        }
     }
     electronEnergyDistributionChanged();
     writelog("Done!\n");

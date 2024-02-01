@@ -39,6 +39,7 @@ void EEDFTwoTermApproximation::setLinearGrid(double& kTe_max, size_t& ncell)
     m_gridCenter.resize(options.m_points);
     m_gridEdge.resize(options.m_points + 1);
     m_f0.resize(options.m_points);
+    m_f0_edge.resize(options.m_points + 1);
     for (size_t j = 0; j < options.m_points; j++) {
         m_gridCenter[j] = kTe_max * ( j + 0.5 ) / options.m_points;
         m_gridEdge[j] = kTe_max * j / options.m_points;
@@ -70,7 +71,7 @@ int EEDFTwoTermApproximation::calculateDistributionFunction()
     if (!m_has_EEDF) {
         if (options.m_firstguess == "maxwell") {
             writelog("First guess EEDF maxwell\n");
-            auto kTe_max = 10.0 * options.m_init_kTe;
+            //auto kTe_max = 10.0 * options.m_init_kTe;
             for (size_t j = 0; j < options.m_points; j++) {
                 m_f0(j) = 2.0 * pow(1.0 / Pi, 0.5) * pow(options.m_init_kTe, -3. / 2.) *
                           exp(-m_gridCenter[j] / options.m_init_kTe);
@@ -90,7 +91,16 @@ int EEDFTwoTermApproximation::calculateDistributionFunction()
     // End of monitoring
     m_timer_eedf->stop();
 
+    // write the EEDF at grid edges
+    vector<double> f(m_f0.data(), m_f0.data() + m_f0.rows() * m_f0.cols());
+    vector<double> x(m_gridCenter.data(), m_gridCenter.data() + m_gridCenter.rows() * m_gridCenter.cols());
+    for (size_t i = 0; i < options.m_points + 1; i++) {
+        m_f0_edge[i] = linearInterp(m_gridEdge[i], x, f);
+    }
+
     m_has_EEDF = true;
+
+    return 0;
 
 }
 
@@ -531,8 +541,8 @@ void EEDFTwoTermApproximation::calculateTotalCrossSection()
     m_totalCrossSectionCenter.assign(options.m_points, 0.0);
     m_totalCrossSectionEdge.assign(options.m_points + 1, 0.0);
     for (size_t k = 0; k < m_phase->nElectronCrossSections(); k++) {
-        vector_fp& x = m_phase->energyLevels()[k];
-        vector_fp& y = m_phase->crossSections()[k];
+        vector_fp x = m_phase->energyLevels()[k];
+        vector_fp y = m_phase->crossSections()[k];
         writelog("Kind :    {:s}\n", m_phase->kind(k));
         writelog("Target :    {:s}\n", m_phase->target(k));
         writelog("Product :    {:s}\n", m_phase->product(k));
@@ -555,8 +565,8 @@ void EEDFTwoTermApproximation::calculateTotalElasticCrossSection()
     m_sigmaElastic.clear();
     m_sigmaElastic.resize(options.m_points, 0.0);
     for (size_t k : m_phase->kElastic()) {
-        vector_fp& x = m_phase->energyLevels()[k];
-        vector_fp& y = m_phase->crossSections()[k];
+        vector_fp x = m_phase->energyLevels()[k];
+        vector_fp y = m_phase->crossSections()[k];
         // Note:
         // moleFraction(m_kTargets[k]) <=> m_X_targets[m_klocTargets[k]]
         double mass_ratio = ElectronMass / (m_phase->molecularWeight(m_kTargets[k]) / Avogadro);
