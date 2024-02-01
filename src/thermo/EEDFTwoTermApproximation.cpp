@@ -158,7 +158,7 @@ Eigen::VectorXd EEDFTwoTermApproximation::iterate(const Eigen::VectorXd& f0, dou
     A += I;
 
     // Check matrix validity
-    writelog("{:d}rows {:d}cols\n", A.rows(), A.cols());
+    //writelog("{:d}rows {:d}cols\n", A.rows(), A.cols());
     writelog("Number of non zero values: {:d}\n", A.nonZeros());
     if (!A.isVector()) {
         writelog("The matrix A is not sparse!\n");
@@ -198,7 +198,7 @@ Eigen::VectorXd EEDFTwoTermApproximation::iterate(const Eigen::VectorXd& f0, dou
 double EEDFTwoTermApproximation::integralPQ(double a, double b, double u0, double u1,
                                             double g, double x0)
 {
-    writelog("EEDFTwoTermApproximation::integralPQ\n");
+    //writelog("EEDFTwoTermApproximation::integralPQ\n");
     double A1;
     double A2;
     if (g != 0.0) {
@@ -225,7 +225,7 @@ double EEDFTwoTermApproximation::integralPQ(double a, double b, double u0, doubl
 
 vector_fp EEDFTwoTermApproximation::vector_g(const Eigen::VectorXd& f0)
 {
-    writelog("EEDFTwoTermApproximation::vector_g\n");
+    //writelog("EEDFTwoTermApproximation::vector_g\n");
     vector_fp g(options.m_points, 0.0);
     g[0] = log(f0(1)/f0(0)) / (m_gridCenter[1] - m_gridCenter[0]);
     size_t N = options.m_points - 1;
@@ -238,7 +238,7 @@ vector_fp EEDFTwoTermApproximation::vector_g(const Eigen::VectorXd& f0)
 
 SparseMat_fp EEDFTwoTermApproximation::matrix_P(const vector_fp& g, size_t k)
 {
-    writelog("EEDFTwoTermApproximation::matrix_P\n");
+    //writelog("EEDFTwoTermApproximation::matrix_P\n");
     vector<Triplet_fp> tripletList;
     for (size_t n = 0; n < m_eps[k].size(); n++) {
         double eps_a = m_eps[k][n][0];
@@ -257,7 +257,7 @@ SparseMat_fp EEDFTwoTermApproximation::matrix_P(const vector_fp& g, size_t k)
 
 SparseMat_fp EEDFTwoTermApproximation::matrix_Q(const vector_fp& g, size_t k)
 {
-    writelog("EEDFTwoTermApproximation::matrix_Q\n");
+    //writelog("EEDFTwoTermApproximation::matrix_Q\n");
     vector<Triplet_fp> tripletList;
     for (size_t n = 0; n < m_eps[k].size(); n++) {
         double eps_a = m_eps[k][n][0];
@@ -277,7 +277,7 @@ SparseMat_fp EEDFTwoTermApproximation::matrix_Q(const vector_fp& g, size_t k)
 
 SparseMat_fp EEDFTwoTermApproximation::matrix_A(const Eigen::VectorXd& f0)
 {
-    writelog("EEDFTwoTermApproximation::matrix_A\n");
+    //writelog("EEDFTwoTermApproximation::matrix_A\n");
     vector_fp a0(options.m_points + 1);
     vector_fp a1(options.m_points + 1);
     size_t N = options.m_points - 1;
@@ -382,7 +382,7 @@ double EEDFTwoTermApproximation::netProductionFreq(const Eigen::VectorXd& f0)
     double nu = 0.0;
     vector_fp g = vector_g(f0);
 
-    writelog("EEDFTwoTermApproximation::netProductionFreq\n");
+    //writelog("EEDFTwoTermApproximation::netProductionFreq\n");
 
     for (size_t k = 0; k < m_phase->nElectronCrossSections(); k++) {
         if (m_phase->kind(k) == "ionization" ||
@@ -432,7 +432,7 @@ double EEDFTwoTermApproximation::electronMobility(const Eigen::VectorXd& f0)
 
 void EEDFTwoTermApproximation::initSpeciesIndexCS()
 {
-    writelog("initSpeciesIndexCS 1\n");
+    //writelog("initSpeciesIndexCS 1\n");
     // set up target index
     m_kTargets.resize(m_phase->nElectronCrossSections());
     m_klocTargets.resize(m_phase->nElectronCrossSections());
@@ -457,16 +457,16 @@ void EEDFTwoTermApproximation::initSpeciesIndexCS()
         }
     }
 
-    writelog("initSpeciesIndexCS 2\n");
+    //writelog("initSpeciesIndexCS 2\n");
 
     writelog("Number of target species found: {:d}\n", m_k_lg_Targets.size());
     m_X_targets.resize(m_k_lg_Targets.size());
     m_X_targets_prev.resize(m_k_lg_Targets.size());
     writelog("Number of target species found: {:d}\n", m_X_targets.size());
-    writelog("initSpeciesIndexCS 21\n");
+    //writelog("initSpeciesIndexCS 21\n");
     for (size_t k = 0; k < m_X_targets.size(); k++)
     {
-        writelog("initSpeciesIndexCS 22 {:d}\n", k);
+        //writelog("initSpeciesIndexCS 22 {:d}\n", k);
         writelog("m_k_lg_Targets[{:d}] = {:d}\n", k, m_k_lg_Targets[k]);
         writelog("moleFraction[{:d}] = {:g}\n", m_k_lg_Targets[k], m_phase->moleFraction(m_k_lg_Targets[k]));
         size_t k_glob = m_k_lg_Targets[k];
@@ -475,7 +475,7 @@ void EEDFTwoTermApproximation::initSpeciesIndexCS()
         writelog("The target number {:d} has X = {:.3g}\n", k, m_X_targets[k]);
     }
 
-    writelog("initSpeciesIndexCS 3\n");
+    //writelog("initSpeciesIndexCS 3\n");
 
     // set up indices of species which has no cross-section data
     for (size_t k = 0; k < m_phase->nSpecies(); k++)
@@ -509,7 +509,7 @@ void EEDFTwoTermApproximation::updateCS()
 // Update the species mole fractions used for EEDF computation
 void EEDFTwoTermApproximation::update_mole_fractions()
 {
-    writelog("Update mole fractions in EEDFTwoTermApproximation 1\n");
+    writelog("Update mole fractions in EEDFTwoTermApproximation\n");
     double tmp_sum = 0.0;
     for (size_t k = 0; k < m_X_targets.size(); k++)
     {
@@ -518,7 +518,7 @@ void EEDFTwoTermApproximation::update_mole_fractions()
         m_X_targets[k] = m_phase->moleFraction(m_k_lg_Targets[k]);
         tmp_sum = tmp_sum + m_phase->moleFraction(m_k_lg_Targets[k]);
     }
-    writelog("Update mole fractions in EEDFTwoTermApproximation 2\n");
+    //writelog("Update mole fractions in EEDFTwoTermApproximation 2\n");
     writelog("Sum of mole fraction is equal to {:.2g}\n", tmp_sum);
 
     // Normalize the mole fractions to unity:
@@ -532,7 +532,7 @@ void EEDFTwoTermApproximation::update_mole_fractions()
         //     m_f0_ok = false;
         // }
     }
-    writelog("Update mole fractions in EEDFTwoTermApproximation 3\n");
+    //writelog("Update mole fractions in EEDFTwoTermApproximation 3\n");
 }
 
 void EEDFTwoTermApproximation::calculateTotalCrossSection()
