@@ -36,7 +36,7 @@ public:
     size_t m_maxn = 200; //!< Maximum number of iterations
     double m_factorM = 4.0; //!< Reduction factor of error
     size_t m_points = 150; //!< Number of points for energy grid
-    double m_rtol = 1e-4; //!< Relative tolerance of EEDF for solving Boltzmann equation
+    double m_rtol = 1e-5; //!< Relative tolerance of EEDF for solving Boltzmann equation
     string m_growth = "temporal"; //!< String for the growth model (none, temporal or spatial)
     double m_moleFractionThreshold = 0.01; //!< Threshold for species not considered in the Boltzmann solver but present in the mixture
     string m_firstguess = "maxwell"; //!< String for EEDF first guess
