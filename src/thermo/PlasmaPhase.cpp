@@ -289,7 +289,7 @@ void PlasmaPhase::setParameters(const AnyMap& phaseNode, const AnyMap& rootNode)
             //m_nPoints = eedf["energy-levels"].asVector<double>().size();
             //auto levels = eedf["energy-levels"].asVector<double>().data();
             //m_electronEnergyLevels = Eigen::Map<const Eigen::ArrayXd>(levels, m_nPoints);
-            ptrEEDFSolver = new EEDFTwoTermApproximation(*this); // CQM TODO must be deleted later
+            ptrEEDFSolver = make_unique<EEDFTwoTermApproximation>(*this);
             // CQM hard coded for now
             // TODO set kTe_max and ncell from user 
             double kTe_max = 60.0;

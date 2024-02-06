@@ -505,7 +505,8 @@ protected:
 
 private:
 
-    EEDFTwoTermApproximation* ptrEEDFSolver;
+    //! pointer to EEDF solver
+    unique_ptr<EEDFTwoTermApproximation> ptrEEDFSolver = nullptr;
 
     //! Electron energy distribution change variable. Whenever
     //! #m_electronEnergyDist changes, this int is incremented.
