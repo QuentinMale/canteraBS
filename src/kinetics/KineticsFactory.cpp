@@ -98,8 +98,9 @@ shared_ptr<Kinetics> newKinetics(const vector<shared_ptr<ThermoPhase>>& phases,
     for (auto& phase : phases) {
         kin->addThermo(phase);
     }
-    kin->init();
+
     if (!kin->ready()) {
+        kin->init();
         addReactions(*kin, phaseNode, rootNode);
     }
     return kin;
