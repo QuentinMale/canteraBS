@@ -99,7 +99,9 @@ shared_ptr<Kinetics> newKinetics(const vector<shared_ptr<ThermoPhase>>& phases,
         kin->addThermo(phase);
     }
     kin->init();
-    addReactions(*kin, phaseNode, rootNode);
+    if (!kin->ready()) {
+        addReactions(*kin, phaseNode, rootNode);
+    }
     return kin;
 }
 
@@ -112,7 +114,8 @@ shared_ptr<Kinetics> newKinetics(const vector<shared_ptr<ThermoPhase>>& phases,
     return newKinetics(phases, phaseNode, root);
 }
 
-void addReactions(Kinetics& kin, const AnyMap& phaseNode, const AnyMap& rootNode)
+vector<AnyMap> reactionsAnyMapList(Kinetics& kin, const AnyMap& phaseNode,
+                                   const AnyMap& rootNode)
 {
     kin.skipUndeclaredThirdBodies(
         phaseNode.getBool("skip-undeclared-third-bodies", false));
@@ -171,6 +174,7 @@ void addReactions(Kinetics& kin, const AnyMap& phaseNode, const AnyMap& rootNode
 
     // Add reactions from each section
     fmt::memory_buffer add_rxn_err;
+    vector<AnyMap> reactionsList;
     for (size_t i = 0; i < sections.size(); i++) {
         if (rules[i] == "all") {
             kin.skipUndeclaredSpecies(false);
@@ -191,31 +195,34 @@ void addReactions(Kinetics& kin, const AnyMap& phaseNode, const AnyMap& rootNode
             AnyMap reactions = AnyMap::fromYamlFile(fileName,
                 rootNode.getString("__file__", ""));
             loadExtensions(reactions);
+
             for (const auto& R : reactions[node].asVector<AnyMap>()) {
-                #ifdef NDEBUG
-                    try {
-                        kin.addReaction(newReaction(R, kin), false);
-                    } catch (CanteraError& err) {
-                        fmt_append(add_rxn_err, "{}", err.what());
-                    }
-                #else
-                    kin.addReaction(newReaction(R, kin), false);
-                #endif
+                reactionsList.push_back(R);
             }
         } else {
             // specified section is in the current file
             for (const auto& R : rootNode.at(sections[i]).asVector<AnyMap>()) {
-                #ifdef NDEBUG
-                    try {
-                        kin.addReaction(newReaction(R, kin), false);
-                    } catch (CanteraError& err) {
-                        fmt_append(add_rxn_err, "{}", err.what());
-                    }
-                #else
-                    kin.addReaction(newReaction(R, kin), false);
-                #endif
+                reactionsList.push_back(R);
             }
         }
+    }
+    return reactionsList;
+}
+
+
+void addReactions(Kinetics& kin, const AnyMap& phaseNode, const AnyMap& rootNode)
+{
+    fmt::memory_buffer add_rxn_err;
+    for (AnyMap R : reactionsAnyMapList(kin, phaseNode, rootNode)) {
+        #ifdef NDEBUG
+            try {
+                kin.addReaction(newReaction(R, kin), false);
+            } catch (CanteraError& err) {
+                fmt_append(add_rxn_err, "{}", err.what());
+            }
+        #else
+            kin.addReaction(newReaction(R, kin), false);
+        #endif
     }
 
     if (add_rxn_err.size()) {
