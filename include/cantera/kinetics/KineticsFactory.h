@@ -86,6 +86,14 @@ void addReactions(Kinetics& kin, const AnyMap& phaseNode,
                   const AnyMap& rootNode=AnyMap());
 
 /**
+ * Add reactions to a Kinetics object.
+ *
+ * @param kin        The Kinetics object to be initialized
+ * @param rxnList    The list of Reaction objects
+ */
+void addReactions(Kinetics& kin, vector<shared_ptr<Reaction>> rxnList);
+
+/**
  * Get the list of reactions in AnyMap.
  *
  * @param kin        The Kinetics object to be initialized

@@ -210,6 +210,27 @@ vector<AnyMap> reactionsAnyMapList(Kinetics& kin, const AnyMap& phaseNode,
     return reactionsList;
 }
 
+void addReactions(Kinetics& kin, vector<shared_ptr<Reaction>> rxnList)
+{
+    fmt::memory_buffer add_rxn_err;
+    for (shared_ptr<Reaction> rxn : rxnList) {
+        #ifdef NDEBUG
+            try {
+                kin.addReaction(rxn, false);
+            } catch (CanteraError& err) {
+                fmt_append(add_rxn_err, "{}", err.what());
+            }
+        #else
+            kin.addReaction(rxn, false);
+        #endif
+    }
+
+    if (add_rxn_err.size()) {
+        throw CanteraError("addReactions", to_string(add_rxn_err));
+    }
+    kin.checkDuplicates();
+    kin.resizeReactions();
+}
 
 void addReactions(Kinetics& kin, const AnyMap& phaseNode, const AnyMap& rootNode)
 {
