@@ -11,11 +11,17 @@
 
 #include "cantera/thermo/IdealGasPhase.h"
 #include "cantera/numerics/eigen_sparse.h"
+<<<<<<< HEAD
 #include "cantera/kinetics/ElectronCrossSection.h"
 #include "cantera/thermo/EEDFTwoTermApproximation.h"
+=======
+#include "cantera/base/AnyMap.h"
+>>>>>>> 27daa73a1... [phase] implement m_collisions a vector of reaction objects for plasma phase and elasticElectronEnergyLossRate
 
 namespace Cantera
 {
+
+class Reaction;
 
 /**
  * Base class for a phase with plasma properties. This class manages the
@@ -368,12 +374,25 @@ public:
         m_EN = EN; // [V.m2]
         m_E = m_EN * molarDensity() * Avogadro; // [V/m]
     }
+    //! Get elastic electron energy loss rate (eV/s)
+    double elasticElectronEnergyLossRate() {
+        return concentration(m_electronSpeciesIndex) *
+               normalizedElasticElectronEnergyLossRate();
+    }
+
+    //! Get normalized elastic electron energy loss rate (eV-m3/kmol/s)
+    double normalizedElasticElectronEnergyLossRate();
 
 protected:
 
     void initialize();
 
     void updateThermo() const override;
+
+    //! update interpolated cross sections
+    //! This function needs to be called when the EEDF is updated or
+    //! when the cross sections are updated
+    void updateInterpolatedCrossSections();
 
     //! When electron energy distribution changed, plasma properties such as
     //! electron-collision reaction rates need to be re-evaluated.
@@ -502,6 +521,14 @@ protected:
 
     //! Boltzmann constant times gas temperature [eV]
     double m_kT;
+    //! Data for initiate reaction
+    AnyMap m_root;
+
+    //! get the target species index
+    size_t targetSpeciesIndex(shared_ptr<Reaction> R);
+
+    //! get cross section interpolated
+    vector<double> crossSection(shared_ptr<Reaction> reaction);
 
 private:
 
@@ -515,6 +542,15 @@ private:
     //! Electron energy level change variable. Whenever
     //! #m_electronEnergyLevels changes, this int is incremented.
     int m_levelNum = -1;
+
+    //! The list of shared pointers of plasma collision reactions
+    vector<shared_ptr<Reaction>> m_collisions;
+
+    //! Indices of elastic collisions
+    vector<size_t> m_elasticCollisionIndices;
+
+    //! Collision cross section
+    vector<Eigen::ArrayXd> m_interpolatedCrossSections;
 };
 
 }

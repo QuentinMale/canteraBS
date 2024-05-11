@@ -9,6 +9,9 @@
 #include "cantera/base/global.h"
 #include "cantera/numerics/funcs.h"
 #include "cantera/kinetics/KineticsFactory.h"
+#include "cantera/kinetics/Reaction.h"
+#include <boost/polymorphic_pointer_cast.hpp>
+#include "cantera/kinetics/ElectronCollisionPlasmaRate.h"
 
 namespace Cantera {
 
@@ -132,6 +135,10 @@ void PlasmaPhase::electronEnergyDistributionChanged()
 
 void PlasmaPhase::electronEnergyLevelChanged()
 {
+    // The cross sections are interpolated on the energy levels
+    if (m_collisions.size() > 0) {
+        updateInterpolatedCrossSections();
+    }
     m_levelNum++;
 }
 
@@ -236,6 +243,7 @@ void PlasmaPhase::getParameters(AnyMap& phaseNode) const
 void PlasmaPhase::setParameters(const AnyMap& phaseNode, const AnyMap& rootNode)
 {
     IdealGasPhase::setParameters(phaseNode, rootNode);
+    m_root = rootNode;
     if (phaseNode.hasKey("electron-energy-distribution")) {
         const AnyMap eedf = phaseNode["electron-energy-distribution"].as<AnyMap>();
         m_distributionType = eedf["type"].asString();
@@ -379,6 +387,112 @@ void PlasmaPhase::initThermo()
 
     m_kinetics = newKinetics("bulk");
     m_kinetics->addThermo(shared_from_this());
+
+    vector<shared_ptr<Reaction>> reactions;
+    for (AnyMap R : reactionsAnyMapList(*m_kinetics, m_input, m_root)) {
+        reactions.push_back(newReaction(R, *m_kinetics));
+    }
+
+    // add reactions to kinetics object
+    addReactions(*m_kinetics, reactions);
+
+    // init m_collisions
+    m_collisions.resize(0);
+    size_t i = 0;
+    for (shared_ptr<Reaction> reaction : reactions) {
+        if (reaction->type() == "electron-collision-plasma") {
+            m_collisions.push_back(reaction);
+            if (reaction->reactants == reaction->products) {
+                // store the indices of elastic collisions
+                m_elasticCollisionIndices.push_back(i);
+            }
+            // only count the electron collision plasma type
+            i++;
+        }
+    }
+    updateInterpolatedCrossSections();
+}
+
+void PlasmaPhase::updateInterpolatedCrossSections()
+{
+    for (shared_ptr<Reaction> collision : m_collisions) {
+        auto rate = boost::polymorphic_pointer_downcast
+            <ElectronCollisionPlasmaRate>(collision->rate());
+        vector<double> cs_interp;
+        for (double level : m_electronEnergyLevels) {
+            cs_interp.push_back(linearInterp(level,
+                rate->energyLevels(), rate->crossSections()));
+        }
+        // Set the interpolated cross section
+        rate->setCrossSectionInterpolated(cs_interp);
+    }
+}
+
+size_t PlasmaPhase::targetSpeciesIndex(shared_ptr<Reaction> R)
+{
+    if (R->type() != "electron-collision-plasma") {
+        throw CanteraError("PlasmaPhase::targetSpeciesIndex",
+            "Invalid reaction type. Type electron-collision-plasma is needed.");
+    }
+    for (const auto& [name, stoich] : R->reactants) {
+        if (name != electronSpeciesName()) {
+            return speciesIndex(name);
+        }
+    }
+    throw CanteraError("PlasmaPhase::targetSpeciesIndex",
+        "No target found. Target cannot be electron.");
+}
+
+vector<double> PlasmaPhase::crossSection(shared_ptr<Reaction> reaction)
+{
+    if (reaction->type() != "electron-collision-plasma") {
+        throw CanteraError("PlasmaPhase::crossSection",
+            "Invalid reaction type. Type electron-collision-plasma is needed.");
+    } else {
+        auto rate = boost::polymorphic_pointer_downcast
+            <ElectronCollisionPlasmaRate>(reaction->rate());
+        std::vector<double> cs_interp;
+        for (double level : m_electronEnergyLevels) {
+            cs_interp.push_back(linearInterp(level,
+                                rate->energyLevels(),
+                                rate->crossSections()));
+        }
+        return cs_interp;
+    }
+}
+
+double PlasmaPhase::normalizedElasticElectronEnergyLossRate()
+{
+    double rate = 0.0;
+    // calculate dF/dε (forward difference)
+    Eigen::ArrayXd dF(nElectronEnergyLevels());
+    for (size_t i = 0; i < nElectronEnergyLevels() - 1; i++) {
+        dF[i] = (m_electronEnergyDist[i+1] - m_electronEnergyDist[i]) /
+                (m_electronEnergyLevels[i+1] - m_electronEnergyLevels[i]);
+    }
+    dF[nElectronEnergyLevels()-1] = dF[nElectronEnergyLevels()-2];
+
+    for (size_t i : m_elasticCollisionIndices) {
+        size_t k = targetSpeciesIndex(m_collisions[i]);
+        // get the interpolated cross sections
+        auto collision = boost::polymorphic_pointer_downcast
+            <ElectronCollisionPlasmaRate>(m_collisions[i]->rate());
+        // Map cross sections to Eigen::ArrayXd
+        auto cs_array = Eigen::Map<const Eigen::ArrayXd>(
+            collision->crossSectionInterpolated().data(),
+            collision->crossSectionInterpolated().size()
+        );
+
+        double mass_ratio = ElectronMass / molecularWeight(k) * Avogadro;
+        rate += mass_ratio * Avogadro * concentration(k) * (
+            simpson(1.0 / 3.0 * m_electronEnergyDist.cwiseProduct(
+                    cs_array), m_electronEnergyLevels.pow(3.0)) +
+            simpson(Boltzmann * temperature() / ElectronCharge *
+                    cs_array.cwiseProduct(dF), m_electronEnergyLevels));
+    }
+    double gamma = sqrt(2 * ElectronCharge / ElectronMass);
+
+    return 2.0 * gamma * rate;
 }
 
 void PlasmaPhase::updateThermo() const
