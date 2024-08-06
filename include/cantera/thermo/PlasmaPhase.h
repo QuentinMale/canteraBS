@@ -11,6 +11,7 @@
 
 #include "cantera/thermo/IdealGasPhase.h"
 #include "cantera/numerics/eigen_sparse.h"
+#include "cantera/kinetics/ElectronCrossSection.h"
 
 namespace Cantera
 {
@@ -283,6 +284,36 @@ public:
         return m_klocTargets;
     }
 
+    //! number of cross section dataset
+    size_t nElectronCrossSections() const {
+        return m_ncs;
+    }
+
+    //! kind of a specific process
+    string kind(size_t k) {
+        return m_ecss[k]->kind;
+    }
+
+    double N() const {
+        return m_N;
+    }
+
+    double F() const {
+        return m_F;
+    }
+
+    double E() const {
+        return m_E;
+    }
+
+    double ionDegree() const {
+        return m_ionDegree;
+    }
+
+    double kT() const {
+        return m_kT;
+    }
+
 protected:
     void updateThermo() const override;
 
@@ -348,6 +379,9 @@ protected:
     //! Electron temperature [K]
     double m_electronTemp;
 
+    //! Gas number density
+    double m_N;
+
     //! Electron energy distribution type
     string m_distributionType = "isotropic";
 
@@ -360,8 +394,14 @@ protected:
     //! Indices of inelastic collisions in m_crossSections
     vector<size_t> m_kInelastic;
 
+    //! electric field [V/m]
+    double m_E = 0.0;
+
     //! reduced electric field [Td]
     double m_EN_Td = 0.0;
+
+    //! electric field freq [Hz]
+    double m_F;
 
     //! normalized electron energy distribution function
     Eigen::VectorXd m_f0;
@@ -371,6 +411,18 @@ protected:
 
     //! list of target species indices in local X EEDF numbering (1 index per cs)
     std::vector<size_t> m_klocTargets;
+
+    //! number of cross section sets
+    size_t m_ncs;
+
+    //! array of cross-section object
+    vector<shared_ptr<ElectronCrossSection>> m_ecss;
+
+    //! ionization degree for the electron-electron collisions (tmp is the previous one)
+    double m_ionDegree;
+
+    //! Boltzmann constant times gas temperature [eV]
+    double m_kT;
 
 private:
     //! Electron energy distribution change variable. Whenever
