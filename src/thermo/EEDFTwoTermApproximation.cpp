@@ -159,13 +159,13 @@ Eigen::VectorXd EEDFTwoTermApproximation::iterate(const Eigen::VectorXd& f0, dou
 
     // Check matrix validity
     //writelog("{:d}rows {:d}cols\n", A.rows(), A.cols());
-    writelog("Number of non zero values: {:d}\n", A.nonZeros());
-    if (!A.isVector()) {
-        writelog("The matrix A is not sparse!\n");
-    }
-    if (!A.isCompressed()) {
-        writelog("The matrix A is not in compressed form!\n");
-    }
+    // writelog("Number of non zero values: {:d}\n", A.nonZeros());
+    // if (!A.isVector()) {
+    //     writelog("The matrix A is not sparse!\n");
+    // }
+    // if (!A.isCompressed()) {
+    //     writelog("The matrix A is not in compressed form!\n");
+    // }
 
     // Matrix decomposition
 

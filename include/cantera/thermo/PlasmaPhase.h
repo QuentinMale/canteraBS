@@ -11,12 +11,9 @@
 
 #include "cantera/thermo/IdealGasPhase.h"
 #include "cantera/numerics/eigen_sparse.h"
-<<<<<<< HEAD
 #include "cantera/kinetics/ElectronCrossSection.h"
 #include "cantera/thermo/EEDFTwoTermApproximation.h"
-=======
 #include "cantera/base/AnyMap.h"
->>>>>>> 27daa73a1... [phase] implement m_collisions a vector of reaction objects for plasma phase and elasticElectronEnergyLossRate
 
 namespace Cantera
 {

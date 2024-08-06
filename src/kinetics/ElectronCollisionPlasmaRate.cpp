@@ -49,18 +49,49 @@ bool ElectronCollisionPlasmaData::update(const ThermoPhase& phase, const Kinetic
 void ElectronCollisionPlasmaRate::setParameters(const AnyMap& node, const UnitStack& rate_units)
 {
     ReactionRate::setParameters(node, rate_units);
-    if (!node.hasKey("energy-levels") && !node.hasKey("cross-sections")) {
-        return;
+
+    // Two options are available to define the cross sections of the Electron Collision Plasma Rate:
+    // 1) The data are retrieved from a set of cross-section provided in the yaml file, in that case
+    //    the kind of the process, as well as target and product of the process must be provided in
+    //    the reaction and must match with one of the loaded cross-section. In that case, the data are 
+    //    loaded in PlasmaPhase::initThermo. Recommended when the EEDF is solved
+    // 2) The energy levels and cross sections are directly given in the reaction. This can be usefull
+    //    when the EEDF is not solved (no set of cross-sections loaded) or if you want to include cross-
+    //    section that is not part of the cross-section dataset or if you want to force some cross-sections.
+
+    // Method 1:
+    // Retrieve the associated process data (must match with one loaded cross-section)
+    // Mandatory if energy levels and cross-sections are note given in the reaction
+    if (node.hasKey("kind"))
+    {
+        m_kind = node["kind"].asString();
     }
-    if (node.hasKey("energy-levels")) {
-        m_energyLevels = node["energy-levels"].asVector<double>();
+    if (node.hasKey("target"))
+    {
+        m_target = node["target"].asString();
     }
-    if (node.hasKey("cross-sections")) {
-        m_crossSections = node["cross-sections"].asVector<double>();
+    if (node.hasKey("product"))
+    {
+        m_product = node["product"].asString();
     }
-    if (m_energyLevels.size() != m_crossSections.size()) {
-        throw CanteraError("ElectronCollisionPlasmaRate::setParameters",
-            "Energy levels and cross section must have the same length.");
+
+    // Method 2:
+    if (node.hasKey("energy-levels") && node.hasKey("cross-sections"))
+    {
+        if (node.hasKey("energy-levels"))
+        {
+            m_energyLevels = node["energy-levels"].asVector<double>();
+        }
+        if (node.hasKey("cross-sections"))
+        {
+            m_crossSections = node["cross-sections"].asVector<double>();
+        }
+        if (m_energyLevels.size() != m_crossSections.size())
+        {
+            throw CanteraError("ElectronCollisionPlasmaRate::setParameters",
+                                "Energy levels and cross section must have the same length.");
+        }
+        cs_ok = true;
     }
 }
 
