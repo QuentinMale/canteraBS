@@ -6,14 +6,12 @@
 #include "cantera/zeroD/PlasmaReactor.h"
 #include "cantera/thermo/ThermoPhase.h"
 #include "cantera/base/utilities.h"
-#include <iostream>
 
 namespace Cantera
 {
 
 void PlasmaReactor::setThermo(ThermoPhase& thermo)
 {
-    std::cout << thermo.type() << "\n";
     if (thermo.type() != "plasma") {
         throw CanteraError("PlasmaReactor::setThermo",
                            "Incompatible phase type provided");
