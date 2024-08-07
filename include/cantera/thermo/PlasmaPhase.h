@@ -227,21 +227,21 @@ public:
      */
     double enthalpy_mole() const override;
 
-    double cp_mole() const override {
-        throw NotImplementedError("PlasmaPhase::cp_mole");
-    }
+    // TODO correct for electron
+    // take function from IdealGasPhase from now...
+    //double cp_mole() const override;
 
-    double entropy_mole() const override {
-        throw NotImplementedError("PlasmaPhase::entropy_mole");
-    }
+    // TODO correct for electron
+    // take function from IdealGasPhase from now...
+    //double entropy_mole() const override;
 
-    double gibbs_mole() const override {
-        throw NotImplementedError("PlasmaPhase::gibbs_mole");
-    }
+    // TODO correct for electron
+    // take function from IdealGasPhase from now...
+    //double gibbs_mole() const override;
 
-    double intEnergy_mole() const override {
-        throw NotImplementedError("PlasmaPhase::intEnergy_mole");
-    }
+    // TODO correct for electron
+    // take function from IdealGasPhase from now...
+    //double intEnergy_mole() const override;
 
     void getEntropy_R(double* sr) const override;
 

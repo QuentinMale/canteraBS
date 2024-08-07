@@ -456,6 +456,10 @@ cdef class IdealGasReactor(Reactor):
     """ A constant volume, zero-dimensional reactor for ideal gas mixtures. """
     reactor_type = "IdealGasReactor"
 
+cdef class PlasmaReactor(Reactor):
+    """ A constant volume, zero-dimensional reactor for plasma. """
+    reactor_type = "PlasmaReactor"
+
 
 cdef class IdealGasMoleReactor(Reactor):
     """

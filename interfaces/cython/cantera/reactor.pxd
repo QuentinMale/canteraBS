@@ -259,6 +259,9 @@ cdef class ConstPressureMoleReactor(Reactor):
 cdef class IdealGasReactor(Reactor):
     pass
 
+cdef class PlasmaReactor(Reactor):
+    pass
+
 cdef class IdealGasConstPressureReactor(Reactor):
     pass
 

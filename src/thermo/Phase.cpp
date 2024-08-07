@@ -845,11 +845,16 @@ void Phase::addSpeciesAlias(const string& name, const string& alias)
 
 void Phase::removeSpeciesLock()
 {
-    if (!m_nSpeciesLocks) {
-        throw CanteraError("Phase::removeSpeciesLock",
-                "ThermoPhase '{}' has no current species locks.", m_name);
+    //if (!m_nSpeciesLocks) {
+    //    throw CanteraError("Phase::removeSpeciesLock",
+    //            "ThermoPhase '{}' has no current species locks.", m_name);
+    //}
+    // TODO discuss with main dev about this
+    if (m_nSpeciesLocks > 0) {
+        m_nSpeciesLocks--;
+    } else {
+        writelog("Phase::removeSpeciesLock\n m_nSpeciesLocks cannot go bellow 0");
     }
-    m_nSpeciesLocks--;
 }
 
 vector<string> Phase::findIsomers(const Composition& compMap) const
