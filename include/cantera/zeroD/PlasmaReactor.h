@@ -7,6 +7,7 @@
 #define CT_PLASMAREACTOR_H
 
 #include "IdealGasReactor.h"
+#include "cantera/thermo/PlasmaPhase.h"
 
 namespace Cantera
 {
@@ -34,11 +35,14 @@ public:
         return m_dis_vol;
     }
 
+    double disPowerv();
+
 protected:
     void setThermo(ThermoPhase& thermo) override;
 
     double m_dis_vol; //!< Discharge volume
 
+    PlasmaPhase* m_plasma = nullptr;
 };
 }
 

@@ -288,6 +288,9 @@ public:
         return m_kInelastic;
     }
 
+    // compute the number densities
+    void compute_nDensity();
+
 //    vector<double> X_targets() const {
 //        return m_X_targets;
 //    }
@@ -352,6 +355,18 @@ public:
 
     double EN() const {
         return m_EN;
+    }
+
+    // number density of electron
+    // TODO ensure that m_nDensity is updated
+    double nElectron() const {
+        return m_nDensity[speciesIndex("Electron")];
+    }
+
+    // number density of electron
+    // TODO ensure that m_electronMobility is updated
+    double electronMobility() const {
+        return m_electronMobility;
     }
 
     vector<vector<double>> crossSections() const {
@@ -548,6 +563,13 @@ private:
 
     //! Collision cross section
     vector<Eigen::ArrayXd> m_interpolatedCrossSections;
+
+    //! list of number densities
+    vector<double> m_nDensity;
+
+    //! Electron mobility
+    double m_electronMobility;
+
 };
 
 }

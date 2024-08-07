@@ -26,6 +26,9 @@ PlasmaPhase::PlasmaPhase(const string& inputFile, const string& id_)
 
     // initial electron temperature
     setElectronTemperature(temperature());
+
+    // allocation
+    m_nDensity.resize(m_kk);
 }
 
 void PlasmaPhase::initialize()
@@ -562,6 +565,15 @@ void PlasmaPhase::updateThermo() const
     }
     // update the species Gibbs functions
     m_g0_RT[k] = m_h0_RT[k] - m_s0_R[k];
+}
+
+void PlasmaPhase::compute_nDensity() {
+    const double* Y = massFractions();
+    const vector<double> mw = molecularWeights();
+    double dens = density();
+    for (size_t j = 0; j < m_kk; j++) {
+        m_nDensity[j] = Y[j] / mw[j] * Avogadro * dens;
+    }
 }
 
 double PlasmaPhase::enthalpy_mole() const {

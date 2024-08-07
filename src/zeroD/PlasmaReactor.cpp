@@ -5,7 +5,9 @@
 
 #include "cantera/zeroD/PlasmaReactor.h"
 #include "cantera/thermo/ThermoPhase.h"
+#include "cantera/thermo/PlasmaPhase.h"
 #include "cantera/base/utilities.h"
+#include "cantera/base/global.h"
 
 namespace Cantera
 {
@@ -17,8 +19,13 @@ void PlasmaReactor::setThermo(ThermoPhase& thermo)
                            "Incompatible phase type provided");
     }
     Reactor::setThermo(thermo);
+    m_plasma = &dynamic_cast<PlasmaPhase&>(thermo);
 }
 
-
+double PlasmaReactor::disPowerv() {
+    return ElectronCharge * m_plasma->nElectron()
+            * m_plasma->electronMobility()
+            * pow(m_plasma->E(), 2);
+    }
 
 }
