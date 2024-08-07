@@ -84,6 +84,10 @@ public:
         return m_f0_edge;
     }
 
+    double getElectronMobility() const {
+        return m_electronMobility;
+    }
+
 protected:
     /**
      * Prepare for EEDF calculations.
@@ -184,6 +188,8 @@ protected:
     void setGridCache();
 
     double norm(const Eigen::VectorXd& f, const Eigen::VectorXd& grid);
+
+    double m_electronMobility;
 
     //! Grid of electron energy (cell center) [eV]
     Eigen::VectorXd m_gridCenter;

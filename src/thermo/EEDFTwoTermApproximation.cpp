@@ -427,7 +427,9 @@ double EEDFTwoTermApproximation::electronMobility(const Eigen::VectorXd& f0)
     }
     auto f = Eigen::Map<const Eigen::ArrayXd>(y.data(), y.size());
     auto x = Eigen::Map<const Eigen::ArrayXd>(m_gridEdge.data(), m_gridEdge.size());
-    return -1./3. * m_gamma * simpson(f, x) / m_phase->N();
+    double value = -1./3. * m_gamma * simpson(f, x) / m_phase->N();
+    m_electronMobility = value;
+    return value;
 }
 
 void EEDFTwoTermApproximation::initSpeciesIndexCS()

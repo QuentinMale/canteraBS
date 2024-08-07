@@ -20,10 +20,11 @@ void PlasmaReactor::setThermo(ThermoPhase& thermo)
     }
     Reactor::setThermo(thermo);
     m_plasma = &dynamic_cast<PlasmaPhase&>(thermo);
+    compute_disVPower();
 }
 
-double PlasmaReactor::disPowerv() {
-    return ElectronCharge * m_plasma->nElectron()
+void PlasmaReactor::compute_disVPower() {
+    m_disVPower = ElectronCharge * m_plasma->nElectron()
             * m_plasma->electronMobility()
             * pow(m_plasma->E(), 2);
     }

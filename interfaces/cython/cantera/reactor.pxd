@@ -82,6 +82,12 @@ cdef extern from "cantera/zerodim.h" namespace "Cantera":
         int inletSurfaceMaxErrorFailures()
         void setInletSurfaceMaxErrorFailures(int) except +translate_exception
 
+    cdef cppclass CxxPlasmaReactor "Cantera::PlasmaReactor" (CxxReactor):
+        CxxPlasmaReactor()
+        double disVol()
+        void setDisVol(double)
+        double disVPower()
+
     # walls
     cdef cppclass CxxWallBase "Cantera::WallBase":
         CxxWallBase()

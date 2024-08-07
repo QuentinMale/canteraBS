@@ -460,6 +460,18 @@ cdef class PlasmaReactor(Reactor):
     """ A constant volume, zero-dimensional reactor for plasma. """
     reactor_type = "PlasmaReactor"
 
+    @property
+    def dis_vol(self):
+        return (<CxxPlasmaReactor*>self.reactor).disVol()
+
+    @dis_vol.setter
+    def dis_vol(self, vol):
+        (<CxxPlasmaReactor*>self.reactor).setDisVol(vol)
+
+    @property
+    def dis_power(self):
+        return (<CxxPlasmaReactor*>self.reactor).disVPower()
+
 
 cdef class IdealGasMoleReactor(Reactor):
     """

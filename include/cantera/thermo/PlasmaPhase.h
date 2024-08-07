@@ -288,8 +288,9 @@ public:
         return m_kInelastic;
     }
 
-    // compute the number densities
-    void compute_nDensity();
+    void compute_nDensity() const;
+
+    void compute_electronMobility() const;
 
 //    vector<double> X_targets() const {
 //        return m_X_targets;
@@ -358,14 +359,14 @@ public:
     }
 
     // number density of electron
-    // TODO ensure that m_nDensity is updated
     double nElectron() const {
+        compute_nDensity();
         return m_nDensity[speciesIndex("Electron")];
     }
 
-    // number density of electron
-    // TODO ensure that m_electronMobility is updated
+    // electron mobility
     double electronMobility() const {
+        compute_electronMobility();
         return m_electronMobility;
     }
 
@@ -565,10 +566,10 @@ private:
     vector<Eigen::ArrayXd> m_interpolatedCrossSections;
 
     //! list of number densities
-    vector<double> m_nDensity;
+    mutable vector<double> m_nDensity;
 
     //! Electron mobility
-    double m_electronMobility;
+    mutable double m_electronMobility;
 
 };
 

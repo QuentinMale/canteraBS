@@ -28,19 +28,27 @@ public:
     }
 
     //! Set/Get discharge volume
-    void setDisVol(doublereal dis_vol) {
+    void setDisVol(double dis_vol) {
         m_dis_vol = dis_vol;
     }
-    double disVol() {
+    double disVol() const {
         return m_dis_vol;
     }
 
-    double disPowerv();
+    //! Get discharge volumetric power
+    //CQM may not be up to date
+    double disVPower() const{
+        return m_disVPower;
+    }
+
+    void compute_disVPower();
 
 protected:
     void setThermo(ThermoPhase& thermo) override;
 
     double m_dis_vol; //!< Discharge volume
+
+    double m_disVPower; //!< Volumetric discharge power
 
     PlasmaPhase* m_plasma = nullptr;
 };
