@@ -67,6 +67,7 @@ void PlasmaPhase::updateElectronEnergyDistribution()
         }
     }
     electronEnergyDistributionChanged();
+    updateElectronTemperatureFromEnergyDist();
     writelog("Done!\n");
 }
 
