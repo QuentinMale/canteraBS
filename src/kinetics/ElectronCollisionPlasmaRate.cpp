@@ -36,12 +36,12 @@ bool ElectronCollisionPlasmaData::update(const ThermoPhase& phase, const Kinetic
     pp.getElectronEnergyDistribution(distribution.data());
 
     // Update energy levels
-    levelChanged = pp.levelNumber() != m_level_number;
-    if (levelChanged) {
+    // levelChanged = pp.levelNumber() != m_level_number;
+    // if (levelChanged) {
         m_level_number = pp.levelNumber();
         energyLevels.resize(pp.nElectronEnergyLevels());
         pp.getElectronEnergyLevels(energyLevels.data());
-    }
+    // }
 
     return true;
 }
@@ -77,7 +77,8 @@ void ElectronCollisionPlasmaRate::setParameters(const AnyMap& node, const UnitSt
 
     // Method 2:
     if (node.hasKey("energy-levels") && node.hasKey("cross-sections"))
-    {
+    {   
+        writelog("WARNING: cross section is found in the reaction and imposed!\n");
         if (node.hasKey("energy-levels"))
         {
             m_energyLevels = node["energy-levels"].asVector<double>();
@@ -131,9 +132,19 @@ double ElectronCollisionPlasmaRate::evalFromStruct(
         shared_data.distribution.data(), shared_data.distribution.size()
     );
 
-    // unit in kmol/m3/s
-    return 0.5 * pow(2.0 * ElectronCharge / ElectronMass, 0.5) * Avogadro *
-           simpson(distribution.cwiseProduct(cs_array), eps.pow(2.0));
+    // Integrate reaction rate (unit in kmol/m3/s)
+    string quadratureMethod = "simpson";
+    Eigen::VectorXd y(distribution.size());
+    for (size_t i = 0; i < distribution.size(); i++)
+    {
+        y[i] = cs_array[i] * eps[i] * distribution[i];
+    }
+    return pow(2.0 * ElectronCharge / ElectronMass, 0.5) * numericalQuadrature(quadratureMethod, y, eps) * Avogadro;
+
+    
+    // return 0.5 *
+    //         pow(2.0 * ElectronCharge / ElectronMass, 0.5) * Avogadro *
+    //         simpson(distribution.cwiseProduct(cs_array), eps.pow(2.0));
 }
 
 void ElectronCollisionPlasmaRate::setContext(const Reaction& rxn, const Kinetics& kin)
