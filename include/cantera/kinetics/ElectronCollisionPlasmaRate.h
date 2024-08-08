@@ -157,6 +157,12 @@ public:
         m_crossSections = sigma;
     }
 
+    //! Set the value of m_threshold [eV]
+    void set_threshold(double threshold)
+    {
+        m_threshold = threshold;
+    }
+
     void set_cs_ok() {
         cs_ok = true;
     }
@@ -195,6 +201,9 @@ private:
 
     //! The product of electron collision
     string m_product;
+
+    //! The energy threshold of electron collision
+    double m_threshold;
 
     //! Check if a cross-section is define for this rate
     bool cs_ok = false;

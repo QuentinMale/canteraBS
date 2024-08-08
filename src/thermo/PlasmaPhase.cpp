@@ -403,6 +403,7 @@ void PlasmaPhase::initThermo()
                 {
                     rate->set_crossSections(m_ecss[k]->crossSection);
                     rate->set_energyLevels(m_ecss[k]->energyLevel);
+                    rate->set_threshold(m_ecss[k]->threshold);
                     rate->set_cs_ok();
                 }
             }
