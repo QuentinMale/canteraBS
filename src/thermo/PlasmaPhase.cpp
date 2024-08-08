@@ -302,8 +302,8 @@ void PlasmaPhase::setParameters(const AnyMap& phaseNode, const AnyMap& rootNode)
             ptrEEDFSolver = make_unique<EEDFTwoTermApproximation>(*this);
             // CQM hard coded for now
             // TODO set kTe_max and ncell from user 
-            double kTe_max = 60.0;
-            size_t nGridCells = 300;
+            double kTe_max = 60;
+            size_t nGridCells = 301;
             // CQM WARNING m_nPoints is nEdges in PlasmaPhase (i.e. nCells+1)
             // It would be nice to change nPoints to nGridEdges
             m_nPoints = nGridCells + 1;
@@ -391,66 +391,41 @@ void PlasmaPhase::initThermo()
 
     vector<shared_ptr<Reaction>> reactions;
     for (AnyMap R : reactionsAnyMapList(*m_kinetics, m_input, m_root)) {
-        reactions.push_back(newReaction(R, *m_kinetics));
+        shared_ptr<Reaction> reaction = newReaction(R, *m_kinetics);
+
+        // Check if the reaction is related to an existing cross-section loaded in the EEDF solver
+        if (reaction->type() == "electron-collision-plasma")
+        {
+            auto rate = std::dynamic_pointer_cast<ElectronCollisionPlasmaRate>(reaction->rate());
+            for (size_t k = 0; k < m_ncs; k++)
+            {
+                if (rate->target() == m_ecss[k]->target && rate->product() == m_ecss[k]->product && rate->kind() == m_ecss[k]->kind)
+                {
+                    rate->set_crossSections(m_ecss[k]->crossSection);
+                    rate->set_energyLevels(m_ecss[k]->energyLevel);
+                    rate->set_cs_ok();
+                }
+            }
+            // Check if cross-sections have been defined for the current reaction:
+            // Warning: if the cs is not found and does not already exist CRASH
+            if (!(rate->get_cs_ok()))
+            {
+                throw CanteraError("PlasmaPhase::initThermo",
+                                   "Energy levels and cross section are undefined");
+            }
+        }
+        reactions.push_back(reaction);
     }
 
     // add reactions to kinetics object
     addReactions(*m_kinetics, reactions);
 
-    writelog("PlasmaPhase::initThermo\n");
-
-    // init m_collisions
+    // init m_collisions and look for elastic collisions
     m_collisions.resize(0);
     size_t i = 0;
     for (shared_ptr<Reaction> reaction : reactions) {
         if (reaction->type() == "electron-collision-plasma") {
             m_collisions.push_back(reaction);
-
-            const auto rate = std::dynamic_pointer_cast<ElectronCollisionPlasmaRate>(reaction->rate());
-
-
-            // CNB: Remove all these comments/print at the end
-            writelog("CS Before update\n");
-            writelog("epsilon   sigma\n");
-            for (size_t k = 0; k < rate->energyLevels().size(); k++)
-            {
-                writelog("{:g} {:g}\n", rate->energyLevels()[k], rate->crossSections()[k]);
-            }
-
-            // Now search in m_ecss and add setter method in bolsig rate
-            writelog("Current rate target: {:s}\n",rate->target());
-            writelog("Current rate product: {:s}\n", rate->product());
-            writelog("Current rate kind: {:s}\n", rate->kind());
-
-            for (size_t k = 0; k < m_ncs; k++) {
-                writelog("Current process target: {:s}\n", m_ecss[k]->target);
-                writelog("Current process product: {:s}\n", m_ecss[k]->product);
-                writelog("Current process kind: {:s}\n", m_ecss[k]->kind);
-
-                if ( rate->target() == m_ecss[k]->target 
-                    && rate->product() == m_ecss[k]->product 
-                    && rate->kind() == m_ecss[k]->kind ){
-                        rate->set_crossSections(m_ecss[k]->crossSection);
-                        rate->set_energyLevels(m_ecss[k]->energyLevel);
-                        rate->set_cs_ok();
-                    }
-            }
-
-            // Check if cross-sections have been defined for the current reaction:
-            // Warning: if the cs is not found and does not already exist CRASH
-            if ( !(rate->get_cs_ok()) ) {
-                throw CanteraError("PlasmaPhase::initThermo",
-                                   "Energy levels and cross section are undefined");
-            }
-
-            
-
-            writelog("CS After update\n");
-            writelog("epsilon   sigma\n");
-            for (size_t k = 0; k < rate->energyLevels().size(); k++)
-            {
-                writelog("{:g} {:g}\n", rate->energyLevels()[k], rate->crossSections()[k]);
-            }
 
             if (reaction->reactants == reaction->products) {
                 // store the indices of elastic collisions
