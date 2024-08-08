@@ -7,6 +7,7 @@ phases:
 - name: air-plasma_Phelps
   thermo: plasma
   elements: [N, O, E]
+  kinetics: gas
   species:
   - nasa_gas.yaml/species: [Electron, O2, N2, O2+, N2+]
   state: {T: 300.0, P: 1 atm, X: {O2: 0.21, N2: 0.79}}
@@ -17,6 +18,15 @@ phases:
                     18.0, 19.0, 20.0, 21.0, 22.0, 23.0, 24.0, 25.0,
                     26.0, 27.0, 28.0, 29.0, 30.0, 31.0, 32.0, 33.0,
                     34.0, 35.0, 36.0, 37.0, 38.0, 39.0, 40.0]
+
+reactions:
+- equation: O2 + Electron => Electron + Electron + O2+
+  type: electron-collision-plasma
+  kind: ionization
+  target: O2
+  product: O2^+
+  energy-levels: [12.06, 13.0, 18.0, 28.0, 38.0, 48.0, 58.0, 68.0, 78.0, 88.0, 100.0, 150.0]
+  cross-sections: [0.0, 2.3e-22, 2.0e-21, 7.4e-21, 1.32e-20, 1.8e-20, 2.1e-20, 2.33e-20, 2.5e-20, 2.6e-20, 2.7e-20, 2.7e-20]
  
 cross-sections:
 - target: N2
