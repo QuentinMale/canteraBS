@@ -27,6 +27,8 @@ public:
         return "PlasmaReactor";
     }
 
+    void eval(double t, double* LHS, double* RHS) override;
+
     //! Set/Get discharge volume
     void setDisVol(double dis_vol) {
         m_dis_vol = dis_vol;

@@ -25,3 +25,14 @@ print(r.dis_power)
 sim = ct.ReactorNet([r])
 sim.verbose = True
 
+dt_max = 1.e-10
+t_end = 100 * dt_max
+states = ct.SolutionArray(gas, extra=['t'])
+
+print('{:10s} {:10s} {:10s} {:14s}'.format(
+    't [s]', 'T [K]', 'P [Pa]', 'u [J/kg]'))
+while sim.time < t_end:
+    sim.advance(sim.time + dt_max)
+    states.append(r.thermo.state, t=sim.time*1e3)
+    print('{:10.3e} {:10.3f} {:10.3f} {:14.6f}'.format(
+            sim.time, r.T, r.thermo.P, r.thermo.u))
