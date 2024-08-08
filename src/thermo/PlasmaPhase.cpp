@@ -27,6 +27,9 @@ PlasmaPhase::PlasmaPhase(const string& inputFile, const string& id_)
     // initial electron temperature
     setElectronTemperature(temperature());
 
+    //CQM TODO set m_nspevib
+    m_evib.resize(m_nspevib);
+
 }
 
 void PlasmaPhase::initialize()
@@ -560,6 +563,16 @@ void PlasmaPhase::compute_electronMobility() const {
     } else {
         throw NotImplementedError("PlasmaPhase::compute_electronMobility");
     }
+}
+
+void PlasmaPhase::getVibrationalEnergies(double* const evib) const
+{
+    copy(m_evib.begin(), m_evib.end(), evib);
+}
+
+void PlasmaPhase::setVibrationalEnergies(const double* const evib)
+{
+    copy(evib, evib + m_nspevib, m_evib.begin());
 }
 
 double PlasmaPhase::enthalpy_mole() const {

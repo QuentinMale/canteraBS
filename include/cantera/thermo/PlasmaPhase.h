@@ -396,6 +396,18 @@ public:
     //! Get normalized elastic electron energy loss rate (eV-m3/kmol/s)
     double normalizedElasticElectronEnergyLossRate();
 
+    size_t nsp_evib() const {
+        return m_nspevib;
+    }
+
+    //! Get the species vibrational energies
+    //!     @param[out] evib Array of species vibrational energies, length m_nspevib
+    void getVibrationalEnergies(double* const evib) const;
+
+    //! Set the species vibrational energies to the specified values.
+    //!     @param[in] evib Array of species vibrational energy values.
+    virtual void setVibrationalEnergies(const double* const evib);
+
 protected:
 
     void initialize();
@@ -543,6 +555,18 @@ protected:
     //! get cross section interpolated
     vector<double> crossSection(shared_ptr<Reaction> reaction);
 
+    //! number of species with vibrational excitation
+    size_t m_nspevib = 1;
+
+    //! species vibrational energies
+    vector<double> m_evib;
+
+    //! list of number densities
+    mutable vector<double> m_nDensity;
+
+    //! Electron mobility
+    mutable double m_electronMobility;
+
 private:
 
     //! pointer to EEDF solver
@@ -564,12 +588,6 @@ private:
 
     //! Collision cross section
     vector<Eigen::ArrayXd> m_interpolatedCrossSections;
-
-    //! list of number densities
-    mutable vector<double> m_nDensity;
-
-    //! Electron mobility
-    mutable double m_electronMobility;
 
 };
 

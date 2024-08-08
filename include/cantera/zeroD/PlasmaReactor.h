@@ -27,6 +27,12 @@ public:
         return "PlasmaReactor";
     }
 
+    void getState(double* y) override;
+
+    void initialize(double t0=0.0) override;
+
+    void updateState(double* y) override;
+
     void eval(double t, double* LHS, double* RHS) override;
 
     //! Set/Get discharge volume
@@ -43,6 +49,9 @@ public:
         return m_disVPower;
     }
 
+    size_t componentIndex(const string& nm) const override;
+    string componentName(size_t k) override;
+
     void compute_disVPower();
 
 protected:
@@ -51,6 +60,8 @@ protected:
     double m_dis_vol; //!< Discharge volume
 
     double m_disVPower; //!< Volumetric discharge power
+
+    size_t m_nspevib = 1; //!< Number of species with vibrational excitation
 
     PlasmaPhase* m_plasma = nullptr;
 };

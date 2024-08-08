@@ -25,11 +25,66 @@ void PlasmaReactor::setThermo(ThermoPhase& thermo)
     compute_disVPower();
 }
 
+void PlasmaReactor::getState(double* y)
+{
+    if (m_plasma == 0) {
+        throw CanteraError("IdealGasReactor::getState",
+                           "Error: reactor is empty.");
+    }
+    m_plasma->restoreState(m_state);
+
+    // set the first component to the total mass
+    m_mass = m_plasma->density() * m_vol;
+    y[0] = m_mass;
+
+    // set the second component to the total volume
+    y[1] = m_vol;
+
+    // Set the third component to the temperature
+    y[2] = m_plasma->temperature();
+
+    // set components y+3 ... y+K+2 to the vibrational energy of each species
+    m_plasma->getVibrationalEnergies(y+3);
+
+    // set components y+3+m_nspevib ... y+K+2+m_nspevib to the mass fractions of each species
+    m_plasma->getMassFractions(y+3+m_nspevib);
+
+    // set the remaining components to the surface species
+    // coverages on the walls
+    getSurfaceInitialConditions(y + m_nsp + 3 + m_nspevib);
+}
+
+void PlasmaReactor::initialize(double t0)
+{
+    IdealGasReactor::initialize(t0);
+
+    // Number of equation in the reactor
+    // Equation for vibrational energy density is taken into account here.
+    m_nspevib = m_plasma->nsp_evib();
+    m_nv += m_nspevib;
+}
+
+void PlasmaReactor::updateState(double* y)
+{
+    // The components of y are [0] the total mass, [1] the total volume,
+    // [2] the temperature, [3...K+3] are the species vibrational energies,
+    // [3+m_nspevib...K+3+m_nspevib] are the mass fractions of each species,
+    // and [K+3+m_nspevib...] are the coverages of surface species on each wall.
+    m_mass = y[0];
+    m_vol = y[1];
+    m_plasma->setVibrationalEnergies(y+3);
+    m_plasma->setMassFractions_NoNorm(y+3+m_nspevib);
+    m_plasma->setState_TD(y[2], m_mass / m_vol);
+    updateConnected(true);
+    updateSurfaceState(y + m_nsp + 3 + m_nspevib);
+}
+
 void PlasmaReactor::eval(double time, double* LHS, double* RHS)
 {
     double& dmdt = RHS[0]; // dm/dt (gas phase)
     double& mcvdTdt = RHS[2]; // m * c_v * dT/dt
-    double* mdYdt = RHS + 3; // mass * dY/dt
+    double* devibdt = RHS + 3; // devib/dt
+    double* mdYdt = RHS + 3 + m_nspevib; // mass * dY/dt
 
     evalWalls(time);
     m_plasma->restoreState(m_state);
@@ -41,7 +96,7 @@ void PlasmaReactor::eval(double time, double* LHS, double* RHS)
         m_kin->getNetProductionRates(&m_wdot[0]); // "omega dot"
     }
 
-    evalSurfaces(LHS + m_nsp + 3, RHS + m_nsp + 3, m_sdot.data());
+    evalSurfaces(LHS + m_nsp + m_nspevib + 3, RHS + m_nsp + m_nspevib + 3, m_sdot.data());
     double mdot_surf = dot(m_sdot.begin(), m_sdot.end(), mw.begin());
     dmdt += mdot_surf;
 
@@ -66,7 +121,12 @@ void PlasmaReactor::eval(double time, double* LHS, double* RHS)
         // dilution by net surface mass flux
         mdYdt[n] -= Y[n] * mdot_surf;
         //Assign left-hand side of dYdt ODE as total mass
-        LHS[n+3] = m_mass;
+        LHS[n+3+m_nspevib] = m_mass;
+    }
+
+    // Assign left-hand side of devibdt as one
+    for (size_t n = 0; n < m_nspevib; n++){
+        LHS[3+n] = 1.0;
     }
 
     // add terms for outlets
@@ -97,6 +157,38 @@ void PlasmaReactor::eval(double time, double* LHS, double* RHS)
         LHS[2] = m_mass * m_plasma->cv_mass();
     } else {
         RHS[2] = 0;
+    }
+}
+
+size_t PlasmaReactor::componentIndex(const string& nm) const
+{
+    size_t k = speciesIndex(nm);
+    if (k != npos) {
+        return k + 3 + m_nspevib;
+    } else if (nm == "mass") {
+        return 0;
+    } else if (nm == "volume") {
+        return 1;
+    } else if (nm == "temperature") {
+        return 2;
+    } else if (nm == "evib") {
+        return 3;
+    } else {
+        return npos;
+    }
+}
+
+string PlasmaReactor::componentName(size_t k) {
+    if (k == 2) {
+        return "temperature";
+    } else if (k == 0) {
+        return "mass";
+    } else if (k == 1) {
+        return "volume";
+    } else if (k >= 3 && k < 3 + m_nspevib) {
+        return "evib";
+    } else {
+        return Reactor::componentName(k-m_nspevib);
     }
 }
 
