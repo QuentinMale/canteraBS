@@ -24,11 +24,9 @@ reactions:
   kind: ionization
   target: O2
   product: O2^+
-  energy-levels: [12.06, 13.0, 18.0, 28.0, 38.0, 48.0, 58.0, 68.0, 78.0, 88.0, 100.0, 150.0]
-  cross-sections: [0.0, 2.3e-22, 2.0e-21, 7.4e-21, 1.32e-20, 1.8e-20, 2.1e-20, 2.33e-20, 2.5e-20, 2.6e-20, 2.7e-20, 2.7e-20]
 - equation: O2+ + Electron => O + O  # Kossyi(40)
   type: two-temperature-plasma
-  rate-constant: {A: 6.0e-5, b: 1.0, Ea_gas: 100000.0, be: -1.0, Ea_electron: 1000000.0}
+  rate-constant: {A: 6.0e-5, b: 0.0, Ea_gas: 0.0, be: -1.0, Ea_electron: 0.0}
  
 cross-sections:
 - target: N2
