@@ -146,13 +146,17 @@ protected:
     bool m_negativeA_ok = false; //!< Permissible negative A values
     double m_A = NAN; //!< Pre-exponential factor
     double m_b = NAN; //!< Temperature exponent
+    double m_be = 0.; //!< Temperature exponent
     double m_Ea_R = 0.; //!< Activation energy (in temperature units)
+    double m_Eae_R = 0.; //!< Electron activation energy (in temperature units)
     double m_E4_R = 0.; //!< Optional 4th energy parameter (in temperature units)
     double m_logA = NAN; //!< Logarithm of pre-exponential factor
     double m_order = NAN; //!< Reaction order
     string m_A_str = "A"; //!< The string for the pre-exponential factor
     string m_b_str = "b"; //!< The string for temperature exponent
+    string m_be_str = "be"; //!< The string for electron temperature exponent
     string m_Ea_str = "Ea"; //!< The string for activation energy
+    string m_Eae_str = "Eae"; //!< The string for electron activation energy
     string m_E4_str = ""; //!< The string for an optional 4th parameter
 };
 

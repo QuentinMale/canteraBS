@@ -333,34 +333,38 @@ cdef class TwoTempPlasmaRate(ArrheniusRateBase):
     """
     _reaction_rate_type = "two-temperature-plasma"
 
-    def __cinit__(self, A=None, b=None, Ea_gas=0.0, Ea_electron=0.0,
-            input_data=None, init=True):
+
+    def __cinit__(self, A=None, b=None, Ea_gas=0.0, be=0.0, Ea_electron=0.0,
+                  input_data=None, init=True):
         if init:
-            if A is None and b is None:
-                Ea_gas = None
-                Ea_electron = None
-            self._cinit(input_data, A=A, b=b, Ea_gas=Ea_gas, Ea_electron=Ea_electron)
+            if isinstance(input_data, dict):
+                self._from_dict(input_data)
+            elif A is not None and b is not None:
+                self._from_parameters(A, b, Ea_gas, be, Ea_electron)
+            elif input_data is None:
+            #     self._from_dict({})
+            # else:
+                raise TypeError("Invalid input parameters")
+            self.set_cxx_object()
 
-    def __call__(self, double temperature, double elec_temp):
-        """
-        Evaluate rate expression based on temperature and enthalpy change of reaction.
-        """
-        return self.rate.eval(temperature, elec_temp)
-
-    def _from_dict(self, input_data):
+    def _from_dict(self, dict input_data):
         self._rate.reset(
             new CxxTwoTempPlasmaRate(py_to_anymap(input_data, hyphenize=True))
         )
 
-    def _from_parameters(self, A, b, Ea_gas, Ea_electron):
-        self._rate.reset(new CxxTwoTempPlasmaRate(A, b, Ea_gas, Ea_electron))
+    def _from_parameters(self, A, b, Ea_gas, be, Ea_electron):
+        # check length
+        input_data = {'type': 'two-temperature-plasma',
+                      'A': A,
+                      'b': b,
+                      'Ea_gas': Ea_gas,
+                      'be': be,
+                      'Ea_electron': Ea_electron}
+        self._from_dict(input_data)
 
     cdef set_cxx_object(self):
         self.rate = self._rate.get()
-        self.base = <CxxArrheniusBase*>self.rate
-
-    cdef CxxTwoTempPlasmaRate* cxx_object(self):
-        return <CxxTwoTempPlasmaRate*>self.rate
+        self.base = <CxxTwoTempPlasmaRate*>self.rate
 
     property activation_electron_energy:
         """

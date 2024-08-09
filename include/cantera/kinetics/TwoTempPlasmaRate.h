@@ -68,11 +68,12 @@ public:
      *      depend on the reaction order and the dimensionality (surface or bulk).
      *  @param b  Temperature exponent (non-dimensional)
      *  @param Ea  Activation energy in energy units [J/kmol]
-     *  @param EE  Activation electron energy in energy units [J/kmol]
+     *  @param be  Electron temperature exponent (non-dimensional)
+     *  @param Eae  Activation electron energy in energy units [J/kmol]
      */
-    TwoTempPlasmaRate(double A, double b, double Ea=0.0, double EE=0.0);
+    TwoTempPlasmaRate(double A, double b, double Ea=0.0, double be=0.0, double Eae=0.0);
 
-    TwoTempPlasmaRate(const AnyMap& node, const UnitStack& rate_units={});
+    explicit TwoTempPlasmaRate(const AnyMap& node, const UnitStack& rate_units={});
 
     unique_ptr<MultiRateBase> newMultiRate() const override {
         return make_unique<MultiRate<TwoTempPlasmaRate, TwoTempPlasmaData>>();
@@ -89,11 +90,8 @@ public:
      *  @param shared_data  data shared by all reactions of a given type
      */
     double evalFromStruct(const TwoTempPlasmaData& shared_data) const {
-        // m_E4_R is the electron activation (in temperature units)
-        return m_A * std::exp(m_b * shared_data.logTe -
-                              m_Ea_R * shared_data.recipT +
-                              m_E4_R * (shared_data.electronTemp - shared_data.temperature)
-                              * shared_data.recipTe * shared_data.recipT);
+        return m_A * std::exp(m_b * shared_data.logT + m_be * shared_data.logTe
+                               - m_Ea_R * shared_data.recipT - m_Eae_R * shared_data.recipTe );
     }
 
     //! Evaluate derivative of reaction rate with respect to temperature
@@ -107,7 +105,7 @@ public:
 
     //! Return the electron activation energy *Ea* [J/kmol]
     double activationElectronEnergy() const {
-        return m_E4_R * GasConstant;
+        return m_Eae_R * GasConstant;
     }
 };
 

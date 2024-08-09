@@ -47,29 +47,47 @@ void TwoTempPlasmaData::updateTe(double Te)
 
 TwoTempPlasmaRate::TwoTempPlasmaRate()
 {
-    m_Ea_str = "Ea-gas";
-    m_E4_str = "Ea-electron";
+    m_be_str = "be";
+    m_Ea_str = "Ea_gas";
+    m_Eae_str = "Ea_electron";
 }
 
-TwoTempPlasmaRate::TwoTempPlasmaRate(double A, double b, double Ea, double EE)
+TwoTempPlasmaRate::TwoTempPlasmaRate(double A, double b, double Ea, double be, double Eae)
     : ArrheniusBase(A, b, Ea)
 {
-    m_Ea_str = "Ea-gas";
-    m_E4_str = "Ea-electron";
-    m_E4_R = EE / GasConstant;
+    writelog("On passe dans TwoTempPlasmaRate::TwoTempPlasmaRate(double A, double b, double Ea, double EE)\n");
+    m_Ea_str = "Ea_gas";
+    m_Eae_str = "Ea_electron";
+    m_be = be;
+    m_Eae_R = Eae / GasConstant;
 }
 
 TwoTempPlasmaRate::TwoTempPlasmaRate(const AnyMap& node, const UnitStack& rate_units)
     : TwoTempPlasmaRate()
 {
+    // CNB: setParameters method must be implemented in TwoTempPlasmaRate
+    AnyMap rate_map = node["rate-constant"].as<AnyMap>();
+    UnitSystem units = node.units();
+
+    if (rate_map.hasKey(m_be_str))
+    {
+        m_be = rate_map[m_be_str].asDouble();
+        
+    }
+
+    if (rate_map.hasKey(m_Eae_str))
+    {
+        m_Eae_R = units.convertActivationEnergy(rate_map[m_Eae_str], "K");
+    }
+
     setParameters(node, rate_units);
 }
 
-double TwoTempPlasmaRate::ddTScaledFromStruct(const TwoTempPlasmaData& shared_data) const
-{
-    warn_user("TwoTempPlasmaRate::ddTScaledFromStruct",
-        "Temperature derivative does not consider changes of electron temperature.");
-    return (m_Ea_R - m_E4_R) * shared_data.recipT * shared_data.recipT;
+double TwoTempPlasmaRate::ddTScaledFromStruct(const TwoTempPlasmaData &shared_data) const
+    {
+        warn_user("TwoTempPlasmaRate::ddTScaledFromStruct",
+                  "Temperature derivative does not consider changes of electron temperature.");
+        return (m_Ea_R - m_E4_R) * shared_data.recipT * shared_data.recipT;
 }
 
 void TwoTempPlasmaRate::setContext(const Reaction& rxn, const Kinetics& kin)

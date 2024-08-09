@@ -70,7 +70,7 @@ cdef extern from "cantera/kinetics/Arrhenius.h" namespace "Cantera":
 cdef extern from "cantera/kinetics/TwoTempPlasmaRate.h" namespace "Cantera":
     cdef cppclass CxxTwoTempPlasmaRate "Cantera::TwoTempPlasmaRate" (CxxArrheniusBase):
         CxxTwoTempPlasmaRate(CxxAnyMap) except +translate_exception
-        CxxTwoTempPlasmaRate(double, double, double, double)
+        CxxTwoTempPlasmaRate(double, double, double, double, double)
         double activationElectronEnergy()
 
 cdef extern from "cantera/kinetics/ElectronCollisionPlasmaRate.h" namespace "Cantera":

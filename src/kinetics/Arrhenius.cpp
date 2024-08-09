@@ -35,6 +35,7 @@ ArrheniusBase::ArrheniusBase(const AnyMap& node, const UnitStack& rate_units)
 void ArrheniusBase::setRateParameters(
     const AnyValue& rate, const UnitSystem& units, const UnitStack& rate_units)
 {
+    
     m_Ea_R = 0.; // assume zero if not provided
     m_E4_R = 0.; // assume zero if not provided
     if (rate.empty()) {
