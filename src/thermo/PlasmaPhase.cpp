@@ -414,7 +414,8 @@ void PlasmaPhase::initThermo()
             // Check if cross-sections have been defined for the current reaction:
             // Warning: if the cs is not found and does not already exist CRASH
             if (!(rate->get_cs_ok()))
-            {
+            {   
+                writelog("{} -> {}", rate->target(), rate->product());
                 throw CanteraError("PlasmaPhase::initThermo",
                                    "Energy levels and cross section are undefined");
             }
