@@ -162,6 +162,11 @@ public:
         return bool(m_third_body);
     }
 
+    //! Return the boolean stating whether the reaction goes into slow gas heating or fast gas heating when activating the PACMING-like plasma model.
+    bool vibBool() const {
+        return m_vibBool;
+    }
+
 protected:
     //! Store the parameters of a Reaction needed to reconstruct an identical
     //! object using the newReaction(AnyMap&, Kinetics&) function. Does not
@@ -176,6 +181,9 @@ protected:
 
     //! Flag indicating that object was instantiated from reactant/product compositions
     bool m_from_composition = false;
+
+    //! Flag indicating whether a reaction is producing vibrationnally excited species to know whether it should be included in the plasma slow or fast gas heating
+    bool m_vibBool = false;
 
     //! Reaction rate used by generic reactions
     shared_ptr<ReactionRate> m_rate;

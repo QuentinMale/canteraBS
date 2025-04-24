@@ -472,6 +472,21 @@ cdef class PlasmaReactor(Reactor):
     def dis_power(self):
         return (<CxxPlasmaReactor*>self.reactor).disVPower()
 
+    @property
+    def dis_vib_v_power(self):
+        return (<CxxPlasmaReactor*>self.reactor).get_disVibVPower()
+
+    @property
+    def rvt_v_power(self):
+        return (<CxxPlasmaReactor*>self.reactor).get_RvtVPower()
+
+    @property
+    def evib(self):
+        return (<CxxPlasmaReactor*>self.reactor).get_eVib()
+
+    
+
+
 
 cdef class IdealGasMoleReactor(Reactor):
     """

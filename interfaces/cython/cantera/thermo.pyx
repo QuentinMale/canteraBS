@@ -1851,6 +1851,14 @@ cdef class ThermoPhase(_SolutionBase):
                 np.ascontiguousarray(levels, dtype=np.double)
             self.plasma.setElectronEnergyLevels(&data[0], len(levels))
 
+    property electron_mobility:
+        """ Electron mobility [m^2/(V.s)]"""
+        def __get__(self):
+            if not self._enable_plasma:
+                raise ThermoModelMethodError(self.thermo_model)
+            
+            return self.plasma.electronMobility()
+
     property electron_energy_distribution:
         """ Electron energy distribution """
         def __get__(self):
@@ -1860,6 +1868,23 @@ cdef class ThermoPhase(_SolutionBase):
                 self.n_electron_energy_levels)
             self.plasma.getElectronEnergyDistribution(&data[0])
             return data
+
+    @property
+    def nsp_evib(self):
+        """Retourne le nombre de réactions dont vib_bool == True"""
+        if not self._enable_plasma:
+            raise ThermoModelMethodError(self.thermo_model)
+        
+        return self.plasma.nsp_evib()
+    
+    @property
+    def nr_evib(self):
+        """Retourne le nombre de réactions dont vib_bool == True"""
+        if not self._enable_plasma:
+            raise ThermoModelMethodError(self.thermo_model)
+        
+        return self.plasma.nr_evib()
+    
 
     property isotropic_shape_factor:
         """ Shape factor of isotropic-velocity distribution for electron energy """

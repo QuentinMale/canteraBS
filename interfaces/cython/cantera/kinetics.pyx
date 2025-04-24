@@ -151,6 +151,8 @@ cdef class Kinetics(_SolutionBase):
             self._check_kinetics_species_index(k)
             self._check_phase_index(k)
             return self.kinetics.kineticsSpeciesIndex(k, phase)
+    
+    
 
     def kinetics_species_name(self, k):
         """

@@ -215,6 +215,9 @@ cdef extern from "cantera/thermo/PlasmaPhase.h":
         void updateElectronEnergyDistribution()
         double elasticElectronEnergyLossRate()
         double normalizedElasticElectronEnergyLossRate()
+        double electronMobility()
+        size_t nsp_evib()
+        size_t nr_evib()
 
 
 cdef extern from "cantera/cython/thermo_utils.h":

@@ -396,9 +396,14 @@ public:
     //! Get normalized elastic electron energy loss rate (eV-m3/kmol/s)
     double normalizedElasticElectronEnergyLossRate();
 
-    size_t nsp_evib() const {
-        return m_nspevib;
-    }
+    std::vector<AnyMap> m_speciesData; // vient, via le cpp, récupérer les données du .yaml
+
+    size_t nr_evib();
+
+    size_t nsp_evib();
+
+    //! Sets the number of vibrationally excited species as the size of the m_evib array
+    void setMsp_evib(size_t m_nspevib);
 
     //! Get the species vibrational energies
     //!     @param[out] evib Array of species vibrational energies, length m_nspevib
@@ -407,6 +412,8 @@ public:
     //! Set the species vibrational energies to the specified values.
     //!     @param[in] evib Array of species vibrational energy values.
     virtual void setVibrationalEnergies(const double* const evib);
+
+    double getDuvib(int n);
 
 protected:
 
@@ -458,6 +465,8 @@ protected:
 
     //! Electron energy distribution norm
     void normalizeElectronEnergyDistribution();
+
+    
 
     // Electron energy order in the exponential term
     double m_isotropicShapeFactor = 2.0;
@@ -557,6 +566,10 @@ protected:
 
     //! number of species with vibrational excitation
     size_t m_nspevib = 1;
+    size_t m_nrevib;
+
+    //! species energy delta going into vibrationnal energy
+    vector<double> m_duvib;
 
     //! species vibrational energies
     vector<double> m_evib;
@@ -588,6 +601,10 @@ private:
 
     //! Collision cross section
     vector<Eigen::ArrayXd> m_interpolatedCrossSections;
+
+
+
+
 
 };
 

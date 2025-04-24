@@ -54,6 +54,18 @@ public:
 
     void compute_disVPower();
 
+    void compute_disVibVPower();
+
+    void compute_RvtVPower();
+
+    void compute_TauRelaxN2();
+
+    double get_disVibVPower();
+
+    double get_RvtVPower();
+
+    double get_eVib();
+
 protected:
     void setThermo(ThermoPhase& thermo) override;
 
@@ -61,7 +73,13 @@ protected:
 
     double m_disVPower; //!< Volumetric discharge power
 
+    double disVibVPower = 0; //!< Volumetric discharge power going into vibrational excitation
+
+    double RvtVPower = 0; // Vibrational energy relaxation into heat
+
     size_t m_nspevib = 1; //!< Number of species with vibrational excitation
+
+    double tau_relax_vib_N2;
 
     PlasmaPhase* m_plasma = nullptr;
 };

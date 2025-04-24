@@ -12,8 +12,10 @@
 #include "cantera/kinetics/Reaction.h"
 #include <boost/polymorphic_pointer_cast.hpp>
 #include "cantera/kinetics/ElectronCollisionPlasmaRate.h"
+#include "cantera/kinetics/Kinetics.h"
 
 namespace Cantera {
+
 
 PlasmaPhase::PlasmaPhase(const string& inputFile, const string& id_)
 {
@@ -28,7 +30,10 @@ PlasmaPhase::PlasmaPhase(const string& inputFile, const string& id_)
     setElectronTemperature(temperature());
 
     //CQM TODO set m_nspevib
-    m_evib.resize(m_nspevib);
+    m_nspevib = nsp_evib(); 
+    m_nrevib = nr_evib();
+    setMsp_evib(m_nspevib);
+    printf("********************** m_evib.size() = %d\n **************************************", m_evib.size());
 
 }
 
@@ -41,6 +46,21 @@ void PlasmaPhase::initialize()
     m_F = 0.0;
     m_ionDegree = 0.0;
 }
+
+
+size_t PlasmaPhase::nsp_evib() { //TO MODIFY LATER
+    return m_nspevib;
+}
+
+size_t PlasmaPhase::nr_evib() { //TO MODIFY LATER
+    return m_nrevib;
+}
+
+void PlasmaPhase::setMsp_evib(size_t m_nspevib_to_set){
+
+    m_evib.resize(m_nspevib_to_set);
+
+} 
 
 void PlasmaPhase::setTemperature(const double temp)
 {
@@ -364,6 +384,31 @@ bool PlasmaPhase::addElectronCrossSection(shared_ptr<ElectronCrossSection> ecs)
 
 bool PlasmaPhase::addSpecies(shared_ptr<Species> spec)
 {
+    // 🔹 Affichage pour déboguer
+    std::cout << "Ajout de l'espèce : " << spec->name << std::endl;
+
+    const auto& input = spec->input;
+    for (const auto& entry : input) {
+        std::cout << "  - " << entry.first << " : ";
+    
+        if (entry.second.is<bool>()) {
+            std::cout << (entry.second.as<bool>() ? "true" : "false");
+        } else if (entry.second.is<std::string>()) {
+            std::cout << entry.second.as<std::string>();
+        } else if (entry.second.is<long int>()) {
+            std::cout << entry.second.as<long int>();
+        } else if (entry.second.is<double>()) {
+            std::cout << entry.second.as<double>();
+        } else {
+            std::cout << "(type non pris en charge pour l'impression)";
+        }
+    
+        std::cout << std::endl;
+    }
+    
+
+    m_speciesData.push_back(spec->input);  // <--- ligne ajoutée
+
     bool added = IdealGasPhase::addSpecies(spec);
     size_t k = m_kk - 1;
 
@@ -378,8 +423,13 @@ bool PlasmaPhase::addSpecies(shared_ptr<Species> spec)
                                "Only one electron species is allowed.", spec->name);
         }
     }
+
+    // Afficher la taille de m_speciesData après ajout
+    std::cout << "Taille actuelle de m_speciesData : " << m_speciesData.size() << std::endl;
+
     return added;
 }
+
 
 void PlasmaPhase::initThermo()
 {
@@ -393,11 +443,32 @@ void PlasmaPhase::initThermo()
     m_kinetics = newKinetics("bulk");
     m_kinetics->addThermo(shared_from_this());
 
+    size_t count = 0;
+
     vector<shared_ptr<Reaction>> reactions;
+    printf("initiating the count of reactions given a d_u_vib within launching initThermo");
+
     for (AnyMap R : reactionsAnyMapList(*m_kinetics, m_input, m_root)) {
         shared_ptr<Reaction> reaction = newReaction(R, *m_kinetics);
 
         // Check if the reaction is related to an existing cross-section loaded in the EEDF solver
+
+        // COUNT THER NUMBER OF EVVIB
+        double DUVibValue = 0.0;
+        if (reaction->input.hasKey("d_u_vib")) {
+            DUVibValue = reaction->input["d_u_vib"].asDouble();
+            printf("d_u_vib = %f\n", DUVibValue);
+            // std::cout << "Reaction: vib_bool = " << vibBoolValue << std::endl;
+            if (DUVibValue > 0) {
+                ++count;
+                printf("Count now has the value = %d\n", count);
+                // std::cout << "Count now has the value = " << count << std::endl;
+            }
+        }
+        m_duvib.push_back(DUVibValue);
+
+
+
         if (reaction->type() == "electron-collision-plasma")
         {
             auto rate = std::dynamic_pointer_cast<ElectronCollisionPlasmaRate>(reaction->rate());
@@ -422,6 +493,16 @@ void PlasmaPhase::initThermo()
         }
         reactions.push_back(reaction);
     }
+
+    m_nrevib = count;
+    printf("Final value of count = %d\n", count);
+    // std::cout << "Final value of count = " << count << std::endl;
+    printf("TO CHECK:valeurs dans la liste m_duvib\n");
+    for (size_t i = 0; i < m_duvib.size(); i++) {
+        printf("%f, ", m_duvib[i]);
+    }
+    printf("\n END OF m_duvib LISTING\n");
+
 
     // add reactions to kinetics object
     addReactions(*m_kinetics, reactions);
@@ -662,6 +743,12 @@ void PlasmaPhase::getGibbs_RT(double* grt) const
             grt[k] += log(electronPressure() / refPressure());
         }
     }
+}
+
+double PlasmaPhase::getDuvib(int n){
+
+    return m_duvib[n];
+
 }
 
 }

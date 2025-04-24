@@ -307,6 +307,8 @@ void Reaction::setParameters(const AnyMap& node, const Kinetics& kin)
             "Reaction '{}' specifies efficiency parameters\n"
             "but does not involve third body colliders.", equation());
     }
+    
+
 }
 
 void Reaction::setRate(shared_ptr<ReactionRate> rate)
@@ -850,7 +852,20 @@ unique_ptr<Reaction> newReaction(const string& type)
 
 unique_ptr<Reaction> newReaction(const AnyMap& rxn_node, const Kinetics& kin)
 {
-    return make_unique<Reaction>(rxn_node, kin);
+    // Création de la réaction
+    auto rxn = make_unique<Reaction>(rxn_node, kin);
+
+    // Vérification et ajout de l'attribut vib_bool
+    if (rxn_node.hasKey("d_u_vib")) {
+        double DUVibValue = rxn_node["d_u_vib"].asDouble();  // Récupérer la valeur de vib_bool
+        printf("d_u_vib trouvé : %d\n", DUVibValue);  // Afficher la valeur de vib_bool
+        //std::cout << "d_u_vib trouvé : " << vibBoolFlag << std::endl;
+
+        // Ajouter cette information à la réactionsco
+        rxn->input["d_u_vib"] = DUVibValue;  // Ajouter l'information dans le champ input
+    }
+    
+    return rxn;
 }
 
 void parseReactionEquation(Reaction& R, const string& equation,

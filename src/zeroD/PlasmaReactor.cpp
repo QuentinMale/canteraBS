@@ -54,6 +54,8 @@ void PlasmaReactor::getState(double* y)
     getSurfaceInitialConditions(y + m_nsp + 3 + m_nspevib);
 }
 
+Kinetics* m_kinetics;
+
 void PlasmaReactor::initialize(double t0)
 {
     IdealGasReactor::initialize(t0);
@@ -81,6 +83,7 @@ void PlasmaReactor::updateState(double* y)
 
 void PlasmaReactor::eval(double time, double* LHS, double* RHS)
 {
+    printf(" **************************** Entering eval function ******************************************\n");
     double& dmdt = RHS[0]; // dm/dt (gas phase)
     double& mcvdTdt = RHS[2]; // m * c_v * dT/dt
     double* devibdt = RHS + 3; // devib/dt
@@ -105,14 +108,20 @@ void PlasmaReactor::eval(double time, double* LHS, double* RHS)
 
     // gas heating from the discharge
     compute_disVPower();
-    double disVibVPower = 0.0; //CQM TODO
-    mcvdTdt += (m_disVPower - disVibVPower) * m_vol;
+    printf(" **************************** disVPower successfulyy computed with value %f ******************************************\n", m_disVPower);
+    compute_disVibVPower();
+    printf(" **************************** vibrationnal power successfully computed with value %f ******************************************\n", disVibVPower);
+    mcvdTdt += (m_disVPower - disVibVPower) * m_vol; // FAST GAS HEATING POWER
 
     // gas heating from vibrational–translational relaxation
-    double RvtVPower = 0.0; //CQM TODO
-    mcvdTdt += RvtVPower * m_vol;
+    printf(" **************************** Attempting to compute relaxation power  ******************************************\n");
+    compute_RvtVPower();
+    printf(" **************************** relaxation power successfuly computed with value %f ******************************************\n", RvtVPower);
+    mcvdTdt += RvtVPower * m_vol; // SLOW GAS HEATING POWER
 
+    printf(" Entering species chemical for loop\n");
     for (size_t n = 0; n < m_nsp; n++) {
+        
         // heat release from gas phase and surface reactions
         mcvdTdt -= m_wdot[n] * m_uk[n] * m_vol;
         mcvdTdt -= m_sdot[n] * m_uk[n];
@@ -123,18 +132,22 @@ void PlasmaReactor::eval(double time, double* LHS, double* RHS)
         //Assign left-hand side of dYdt ODE as total mass
         LHS[n+3+m_nspevib] = m_mass;
     }
-
+    printf("MARKER 1\n");
+    devibdt[0] = disVibVPower - RvtVPower;
+    printf("MARKER 2\n");
     // Assign left-hand side of devibdt as one
     for (size_t n = 0; n < m_nspevib; n++){
-        LHS[3+n] = 1.0;
+        LHS[3+n] = 1;
+        //LHS[3+n] = devibdt[n];
     }
-
+    printf("MARKER 3\n");
     // add terms for outlets
     for (auto outlet : m_outlet) {
         double mdot = outlet->massFlowRate();
         dmdt -= mdot; // mass flow out of system
         mcvdTdt -= mdot * m_pressure * m_vol / m_mass; // flow work
     }
+    printf("MARKER 4\n");
 
     // add terms for inlets
     for (auto inlet : m_inlet) {
@@ -151,6 +164,7 @@ void PlasmaReactor::eval(double time, double* LHS, double* RHS)
             mcvdTdt -= m_uk[n] / mw[n] * mdot_spec;
         }
     }
+    printf("MARKER 5\n");
 
     RHS[1] = m_vdot;
     if (m_energy) {
@@ -158,6 +172,7 @@ void PlasmaReactor::eval(double time, double* LHS, double* RHS)
     } else {
         RHS[2] = 0;
     }
+    printf("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ EXITING eval function ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
 }
 
 size_t PlasmaReactor::componentIndex(const string& nm) const
@@ -197,5 +212,63 @@ void PlasmaReactor::compute_disVPower() {
             * m_plasma->electronMobility()
             * pow(m_plasma->E(), 2);
     }
+
+void PlasmaReactor::compute_disVibVPower() { // TO IMPLEMENT
+    disVibVPower = 0;
+    m_kin->getNetRatesOfProgress(&m_kr[0]); // "kr"
+
+    for (size_t n = 0; n < m_kin->nReactions(); n++) {
+        
+        double DUVibValue = m_plasma->getDuvib(n)*1.6e-19; // convert to Joules
+        disVibVPower += DUVibValue * m_kr[n] * 6.02e26; //multiply by the avogadro number to actually get a power 
+    }
+    
+}
+
+double PlasmaReactor::get_disVibVPower() {
+    compute_disVibVPower();
+    return disVibVPower;
+}
+
+double PlasmaReactor::get_RvtVPower() {
+    compute_RvtVPower();
+    return RvtVPower;
+}
+
+double PlasmaReactor::get_eVib() {
+
+    size_t n_vib_species = m_plasma->nsp_evib();
+    double* evib_array = new double[n_vib_species];
+    m_plasma->getVibrationalEnergies(evib_array);
+
+    double eVib = evib_array[0];
+
+    delete[] evib_array;
+
+    return eVib;
+}
+
+void PlasmaReactor::compute_RvtVPower() { // TO IMPLEMENT
+    RvtVPower = 0;
+
+    size_t n_vib_species = m_plasma->nsp_evib();
+
+    double* evib_array = new double[n_vib_species];
+    // printf("Hey");
+    m_plasma->getVibrationalEnergies(evib_array);
+    // printf("Hoy");
+    compute_TauRelaxN2();
+     // printf("Hiyaaa");
+    RvtVPower = evib_array[0]/tau_relax_vib_N2;
+
+    delete[] evib_array;
+
+}
+    
+void PlasmaReactor::compute_TauRelaxN2() {
+
+    tau_relax_vib_N2 = 0.0001;
+
+}
 
 }

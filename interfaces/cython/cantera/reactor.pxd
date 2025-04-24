@@ -87,6 +87,9 @@ cdef extern from "cantera/zerodim.h" namespace "Cantera":
         double disVol()
         void setDisVol(double)
         double disVPower()
+        double get_disVibVPower()
+        double get_RvtVPower()
+        double get_eVib()
 
     # walls
     cdef cppclass CxxWallBase "Cantera::WallBase":
@@ -206,6 +209,7 @@ cdef extern from "cantera/zerodim.h" namespace "Cantera":
         void setPreconditioner(shared_ptr[CxxPreconditionerBase] preconditioner)
         void setDerivativeSettings(CxxAnyMap&)
         CxxAnyMap solverStats() except +translate_exception
+        
 
 cdef extern from "cantera/zeroD/ReactorDelegator.h" namespace "Cantera":
     cdef cppclass CxxReactorAccessor "Cantera::ReactorAccessor":

@@ -175,6 +175,8 @@ public:
     //! @name Information/Lookup Functions about Phases and Species
     //! @{
 
+
+
     /**
      * The number of phases participating in the reaction mechanism. For a
      * homogeneous reaction mechanism, this will always return 1, but for a
