@@ -309,6 +309,12 @@ void setupPhase(ThermoPhase& thermo, const AnyMap& phaseNode, const AnyMap& root
         addSpecies(thermo, AnyValue("all"), rootNode["species"]);
     }
 
+    if (phaseNode.hasKey("vib_species")){
+        if (phaseNode["species"].is<std::vector<std::string>>()) {
+            thermo.input()["vib_species"] = phaseNode["vib_species"];
+        }
+    }
+
     auto* vpssThermo = dynamic_cast<VPStandardStateTP*>(&thermo);
     if (vpssThermo) {
         for (size_t k = 0; k < thermo.nSpecies(); k++) {

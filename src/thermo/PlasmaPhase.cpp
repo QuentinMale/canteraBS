@@ -29,11 +29,11 @@ PlasmaPhase::PlasmaPhase(const string& inputFile, const string& id_)
     // initial electron temperature
     setElectronTemperature(temperature());
 
-    //CQM TODO set m_nspevib
-    m_nspevib = nsp_evib(); 
-    m_nrevib = nr_evib();
-    setMsp_evib(m_nspevib);
-    printf("********************** m_evib.size() = %d\n **************************************", m_evib.size());
+    // //CQM TODO set m_nspevib
+    // m_nspevib = nsp_evib(); 
+    // m_nrevib = nr_evib();
+    // setMsp_evib(m_nspevib);
+    // printf("********************** m_evib.size() = %ld\n **************************************", m_evib.size());
 
 }
 
@@ -49,6 +49,7 @@ void PlasmaPhase::initialize()
 
 
 size_t PlasmaPhase::nsp_evib() { //TO MODIFY LATER
+    countVibSpecies();
     return m_nspevib;
 }
 
@@ -453,20 +454,48 @@ void PlasmaPhase::initThermo()
 
         // Check if the reaction is related to an existing cross-section loaded in the EEDF solver
 
-        // COUNT THER NUMBER OF EVVIB
-        double DUVibValue = 0.0;
-        if (reaction->input.hasKey("d_u_vib")) {
-            DUVibValue = reaction->input["d_u_vib"].asDouble();
-            printf("d_u_vib = %f\n", DUVibValue);
-            // std::cout << "Reaction: vib_bool = " << vibBoolValue << std::endl;
-            if (DUVibValue > 0) {
+        // COUNT THER NUMBER OF EVVIB old version saving 
+        // double DUVibValue = 0.0;
+        // if (reaction->input.hasKey("d_u_vib")) {
+        //     DUVibValue = reaction->input["d_u_vib"].asDouble();
+        //     printf("d_u_vib = %f\n", DUVibValue);
+        //     // std::cout << "Reaction: vib_bool = " << vibBoolValue << std::endl;
+        //     if (DUVibValue > 0) {
+        //         ++count;
+        //         printf("Count now has the value = %d\n", count);
+        //         // std::cout << "Count now has the value = " << count << std::endl;
+        //     }
+        // }
+        // m_duvib.push_back(DUVibValue);
+
+
+        double DUVibValue = -1.0;
+        bool vibBool = false;
+        string vibTarget = "-";
+        if (reaction->input.hasKey("vib_bool")) {
+            vibBool = reaction->input["vib_bool"].asBool();
+            printf("vib_bool = %d\n", vibBool);
+            if (vibBool) {
                 ++count;
-                printf("Count now has the value = %d\n", count);
-                // std::cout << "Count now has the value = " << count << std::endl;
+                printf("Count now has the value = %ld\n", count);
+            }
+            if (reaction->input.hasKey("d_u_vib") && vibBool){
+                DUVibValue = reaction->input["d_u_vib"].asDouble();
+                printf("d_u_vib = %f\n", DUVibValue);
+                if (reaction->input.hasKey("vib_target")){
+                    vibTarget = reaction->input["vib_target"].asString();
+                    printf("vib_target = %s\n", vibTarget.c_str());
+                }
+                if (!reaction->input.hasKey("vib_target")){
+                    throw CanteraError("PlasmaPhase::initThermo",
+                        "vib_target not found in the reaction input for a reaction where d_u_vib is given. INCOHERENT YAML SET UP.");
+                }
             }
         }
-        m_duvib.push_back(DUVibValue);
 
+        if (!reaction->input.hasKey("vib_bool")){
+            DUVibValue = 0.0;
+        }
 
 
         if (reaction->type() == "electron-collision-plasma")
@@ -490,18 +519,49 @@ void PlasmaPhase::initThermo()
                 throw CanteraError("PlasmaPhase::initThermo",
                                    "Energy levels and cross section are undefined");
             }
+            // Put DUVibValue in the reaction equal to the threshold
+            if (reaction->input.hasKey("vib_bool")){
+                if (reaction->input["vib_bool"].asBool()){
+                    double old_duvib = DUVibValue;
+                    DUVibValue = rate->get_threshold();
+                    vibTarget = rate->target();
+                    if (reaction->input.hasKey("d_u_vib")){
+                        printf("d_u_vib value found: %f\n", old_duvib);
+                        printf("d_u_vib value should be set to cross-section provided threshold: %f\n", DUVibValue);
+                        throw CanteraError("PlasmaPhase::initThermo",
+                            "A d_u_vib value field has been provided for an electron-collision reaction\n The threshold value provided within the reaction's cross-sections is normally fetched automatically.\n Please remove the d_u_vib field from the reaction in the YAML");
+                    }
+                }
+            }
+            
         }
+        m_duvib.push_back(DUVibValue);
         reactions.push_back(reaction);
+        m_vibTarget.push_back(vibTarget);
     }
 
     m_nrevib = count;
-    printf("Final value of count = %d\n", count);
+    printf("Final value of count = %ld\n", count);
     // std::cout << "Final value of count = " << count << std::endl;
     printf("TO CHECK:valeurs dans la liste m_duvib\n");
     for (size_t i = 0; i < m_duvib.size(); i++) {
         printf("%f, ", m_duvib[i]);
     }
     printf("\n END OF m_duvib LISTING\n");
+
+    // Check that all the d_u_vib values were correctly fetched or given: throw an error is one is still at -1
+    bool all_duvib = true;
+    for (size_t i = 0; i < m_duvib.size(); i++) {
+        if (m_duvib[i] == -1.0) {
+            printf("TO CHECK:valeurs dans la liste m_duvib: reaction %ld seems to be missing d_u_vib or cross-sections\n", i);
+            all_duvib = false;
+        }
+    }
+    if (!all_duvib) {
+        throw CanteraError("PlasmaPhase::initThermo",
+                            "d_u_vib value not found for reaction {} and could not be fetched via the cross-sections.\nPlease check your YAML file");
+        
+    }
 
 
     // add reactions to kinetics object
@@ -523,6 +583,8 @@ void PlasmaPhase::initThermo()
         }
     }
     updateInterpolatedCrossSections();
+    countVibSpecies();
+    setMsp_evib(m_nspevib);
 }
 
 void PlasmaPhase::updateInterpolatedCrossSections()
@@ -749,6 +811,24 @@ double PlasmaPhase::getDuvib(int n){
 
     return m_duvib[n];
 
+}
+
+void PlasmaPhase::countVibSpecies() {
+    int count = 0;
+    if (input().hasKey("vib_species")) {
+        auto vib = input()["vib_species"].asVector<std::string>();
+        std::cout << "Espèces vibr. : ";
+        for (const auto& s : vib) {
+            std::cout << s << " ";
+            count++;
+        }
+        std::cout << std::endl;
+        m_nspevib = count;
+        vib_species = vib;
+    } else {
+        std::cout << "Aucune espèce vibratoire déclarée." << std::endl;
+    }
+    
 }
 
 }

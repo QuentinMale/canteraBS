@@ -163,6 +163,10 @@ public:
         m_threshold = threshold;
     }
 
+    double get_threshold() const {
+        return m_threshold;
+    }
+
     void set_cs_ok() {
         cs_ok = true;
     }
@@ -170,6 +174,7 @@ public:
     const bool get_cs_ok() const {
         return cs_ok;
     }
+
 
 
     //! The value of #m_energyLevels [eV]

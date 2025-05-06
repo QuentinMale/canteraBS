@@ -14,6 +14,13 @@ from .drawnetwork import *
 
 _reactor_counts = _defaultdict(int)
 
+cdef list _vec_to_list(const vector[double]& vec):
+    cdef Py_ssize_t n = vec.size()
+    py_list = [0.0]*n
+    for i in range(n):
+        py_list[i] = vec[i]
+    return py_list
+
 cdef class ReactorBase:
     """
     Common base class for reactors and reservoirs.
@@ -456,37 +463,45 @@ cdef class IdealGasReactor(Reactor):
     """ A constant volume, zero-dimensional reactor for ideal gas mixtures. """
     reactor_type = "IdealGasReactor"
 
-cdef class PlasmaReactor(Reactor):
+
+
+
+
+# Définition de la classe PlasmaReactor en Python
+cdef class PlasmaReactor:
     """ A constant volume, zero-dimensional reactor for plasma. """
+    
     reactor_type = "PlasmaReactor"
+
+
+    # Propriétés en Python correspondant aux méthodes C++ du PlasmaReactor
 
     @property
     def dis_vol(self):
-        return (<CxxPlasmaReactor*>self.reactor).disVol()
+        return (<CxxPlasmaReactor*> self.reactor).disVol()
 
     @dis_vol.setter
     def dis_vol(self, vol):
-        (<CxxPlasmaReactor*>self.reactor).setDisVol(vol)
+        (<CxxPlasmaReactor*> self.reactor).setDisVol(vol)
 
     @property
     def dis_power(self):
-        return (<CxxPlasmaReactor*>self.reactor).disVPower()
+        return (<CxxPlasmaReactor*> self.reactor).disVPower()
 
     @property
     def dis_vib_v_power(self):
-        return (<CxxPlasmaReactor*>self.reactor).get_disVibVPower()
+        cdef vector[double] result = (<CxxPlasmaReactor*> self.reactor).get_disVibVPower()
+        return _vec_to_list(result)
 
     @property
     def rvt_v_power(self):
-        return (<CxxPlasmaReactor*>self.reactor).get_RvtVPower()
+        cdef vector[double] result = (<CxxPlasmaReactor*> self.reactor).get_RvtVPower()
+        return _vec_to_list(result)
 
     @property
     def evib(self):
-        return (<CxxPlasmaReactor*>self.reactor).get_eVib()
-
-    
-
-
+        cdef vector[double] result = (<CxxPlasmaReactor*> self.reactor).get_eVib()
+        return _vec_to_list(result)
 
 cdef class IdealGasMoleReactor(Reactor):
     """

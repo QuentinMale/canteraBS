@@ -37,6 +37,7 @@ public:
     void deleteFactory() override;
 
 private:
+
     //! static member of a single instance
     static ThermoFactory* s_factory;
 

@@ -855,16 +855,32 @@ unique_ptr<Reaction> newReaction(const AnyMap& rxn_node, const Kinetics& kin)
     // Création de la réaction
     auto rxn = make_unique<Reaction>(rxn_node, kin);
 
-    // Vérification et ajout de l'attribut vib_bool
+    // Vérification et ajout des attributs spécifiques aux réactions vibrationnelles
     if (rxn_node.hasKey("d_u_vib")) {
         double DUVibValue = rxn_node["d_u_vib"].asDouble();  // Récupérer la valeur de vib_bool
-        printf("d_u_vib trouvé : %d\n", DUVibValue);  // Afficher la valeur de vib_bool
-        //std::cout << "d_u_vib trouvé : " << vibBoolFlag << std::endl;
+        printf("d_u_vib found : %d\n", DUVibValue);  // Afficher la valeur de vib_bool
+        
 
         // Ajouter cette information à la réactionsco
         rxn->input["d_u_vib"] = DUVibValue;  // Ajouter l'information dans le champ input
     }
+
+    if (rxn_node.hasKey("vib_bool")) {
+        bool VibBool = rxn_node["vib_bool"].asBool();  // Récupérer la valeur de vib_bool
+        printf("vib_bool found : %d\n", VibBool);  // Afficher la valeur de vib_bool
+
+        // Ajouter cette information à la réactionsco
+        rxn->input["vib_bool"] = VibBool;  // Ajouter l'information dans le champ input
+    }
     
+    if (rxn_node.hasKey("vib_target")) {
+        string VibTarget = rxn_node["vib_target"].asString();  // Récupérer la valeur de vib_bool
+        printf("vib_target found : %s\n", VibTarget);  // Afficher la valeur de vib_bool
+
+        // Ajouter cette information à la réactionsco
+        rxn->input["vib_target"] = VibTarget;  // Ajouter l'information dans le champ input
+    }
+
     return rxn;
 }
 

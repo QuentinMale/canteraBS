@@ -8,6 +8,7 @@ from .ctcxx cimport *
 from .kinetics cimport *
 from .func1 cimport *
 from .preconditioners cimport *
+from libcpp.vector cimport vector
 
 cdef extern from "cantera/numerics/Integrator.h" namespace "Cantera":
     # SUNDIALS integrator
@@ -87,9 +88,9 @@ cdef extern from "cantera/zerodim.h" namespace "Cantera":
         double disVol()
         void setDisVol(double)
         double disVPower()
-        double get_disVibVPower()
-        double get_RvtVPower()
-        double get_eVib()
+        vector[double] get_disVibVPower()
+        vector[double] get_RvtVPower()
+        vector[double] get_eVib()
 
     # walls
     cdef cppclass CxxWallBase "Cantera::WallBase":

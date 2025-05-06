@@ -58,13 +58,19 @@ public:
 
     void compute_RvtVPower();
 
-    void compute_TauRelaxN2();
+    double compute_TauRelax_N2();
 
-    double get_disVibVPower();
+    double compute_TauRelax_O2();
 
-    double get_RvtVPower();
+    double  compute_TauRelax(string spec_name);
 
-    double get_eVib();
+    std::vector<double> get_disVibVPower();
+
+    std::vector<double> get_RvtVPower();
+
+    std::vector<double> get_eVib();
+
+    void recoverVibSpecies();
 
 protected:
     void setThermo(ThermoPhase& thermo) override;
@@ -73,13 +79,13 @@ protected:
 
     double m_disVPower; //!< Volumetric discharge power
 
-    double disVibVPower = 0; //!< Volumetric discharge power going into vibrational excitation
+    std::vector<double> disVibVPower; //!< Volumetric discharge power going into vibrational excitation
 
-    double RvtVPower = 0; // Vibrational energy relaxation into heat
+    std::vector<double> RvtVPower; // Vibrational energy relaxation into heat
 
-    size_t m_nspevib = 1; //!< Number of species with vibrational excitation
+    size_t m_nspevib; //!< Number of species with vibrational excitation
 
-    double tau_relax_vib_N2;
+    std::vector<std::string> vib_spec; 
 
     PlasmaPhase* m_plasma = nullptr;
 };

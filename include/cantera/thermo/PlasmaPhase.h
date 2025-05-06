@@ -415,7 +415,21 @@ public:
 
     double getDuvib(int n);
 
+    string getTarget(int n){
+        return m_vibTarget[n];
+    }
+
+    void countVibSpecies();
+
+    std::vector<std::string> getVibSpecies() {
+        return vib_species;
+    }
+
+    std::vector<std::string> vib_species; // a vector to store the names of vibrational species
+
 protected:
+
+    
 
     void initialize();
 
@@ -565,11 +579,14 @@ protected:
     vector<double> crossSection(shared_ptr<Reaction> reaction);
 
     //! number of species with vibrational excitation
-    size_t m_nspevib = 1;
+    size_t m_nspevib;
     size_t m_nrevib;
 
     //! species energy delta going into vibrationnal energy
     vector<double> m_duvib;
+
+    //! species energy delta going into vibrationnal energy
+    vector<string> m_vibTarget;
 
     //! species vibrational energies
     vector<double> m_evib;
