@@ -413,7 +413,7 @@ double PlasmaReactor::tau_castela(string spec_name){
 }
 
 
-// Fonction pour calculer k(T)
+// Fonction pour calculer k(T) en cm3/s
 double PlasmaReactor::compute_k(const RelaxationEntry& entry, double T) {
     return entry.A * std::pow(T, entry.n) * std::exp(
         entry.K - entry.B / std::pow(T, 1.0 / 3.0)
@@ -462,14 +462,15 @@ double PlasmaReactor::tau_starikovskiy(size_t n){
 
     double one_over_tau = 0;
     double T = m_plasma->temperature();
+    double avogadro = 6.022e23; // in m3/mol
 
     std::cout << "Reactions rates for target " << vib_spec[n] << " at T = " << T << " K:\n";
     for (const auto& r : m_data_stari[n]) {
-        double k = compute_k(r, T);
+        double k = 1e-6*compute_k(r, T); // convert to m3/s bc the result from compute_k is in cm3/s
         std::cout << "  " << r.name << ": k = " << k << "\n";
-        double c_partner = m_plasma->moleFraction(r.name);
-        double tau_loc = 1/(k * c_partner);
-        one_over_tau += 1/tau_loc;
+        double x_partner = m_plasma->moleFraction(r.name);
+        double mixture_molar_density = 1000*m_plasma->molarDensity(); // in cantera, the density in kmol/m^3 so we need to convert to mol/m^3 to get things right
+        one_over_tau += k * x_partner * mixture_molar_density * avogadro;
     }
     double tau = 1/one_over_tau;
     std::cout << "Starikovskiy relaxation time for " << vib_spec[n] << ": " << tau << "\n";
