@@ -11,6 +11,14 @@
 #include "cantera/base/utilities.h"
 #include "cantera/base/global.h"
 
+#include <iostream>
+#include <fstream>
+#include <cmath>
+#include <string>
+#include <map>
+#include <vector>
+#include <yaml-cpp/yaml.h>
+
 namespace Cantera
 {
 
@@ -67,6 +75,7 @@ void PlasmaReactor::initialize(double t0)
     disVibVPower.resize(m_nspevib);
     RvtVPower.resize(m_nspevib);
     recoverVibSpecies();
+    initializeStariReading();
 }
 
 void PlasmaReactor::updateState(double* y)
@@ -113,7 +122,7 @@ void PlasmaReactor::eval(double time, double* LHS, double* RHS)
     compute_disVPower();
     printf(" **************************** disVPower successfulyy computed with value %f ******************************************\n", m_disVPower);
     double tot_vib_power = 0;
-    printf("nb of vib species considered : %d \n", m_nspevib);
+    printf("nb of vib species considered : %ld \n", m_nspevib);
     if (m_nspevib > 0) {
         compute_disVibVPower();
         printf("TEST 1\n");
@@ -299,7 +308,7 @@ void PlasmaReactor::compute_RvtVPower() { // TO IMPLEMENT
     
     for (size_t n=0; n<n_vib_species; n++){
         RvtVPower[n] = 0;
-        double tau = compute_TauRelax(vib_spec[n]);
+        double tau = compute_TauRelax(n);
         RvtVPower[n] = evib_array[n]/tau;
     }
 
@@ -307,35 +316,243 @@ void PlasmaReactor::compute_RvtVPower() { // TO IMPLEMENT
     printf("Exiting compute_RVTVPOWER function\n");
 }
 
-double PlasmaReactor::compute_TauRelax(string spec_name){
+double PlasmaReactor::compute_TauRelax(size_t n){
     
     double tau = 0;
+    string spec_name = vib_spec[n];
     printf("Computing relaxation time for species %s\n", spec_name.c_str());
+    if (relax_type == "Millikan&White"){
+        tau = tau_millikan_white(spec_name);
+    }
+    else if (relax_type == "Castela"){
+        tau = tau_castela(spec_name);
+    }
+    else if (relax_type == "Constant"){
+        tau = tau_relax_constant_model;
+    }
+    else if (relax_type == "Starikovskiy"){
+        tau = tau_starikovskiy(n);
+    }
+    
+    else{
+        throw CanteraError("PlasmaReactor::compute_TauRelax",
+                           "Error: species vibrational relaxation type not implemented. Please correct the YAML file or implement this species correlation.");
+    }
+    
+    return tau;
+}
+
+double PlasmaReactor::tau_millikan_white(string spec_name){
+    double tau = 0;
+    double T = m_plasma->temperature();
+    double P = m_plasma->pressure();
+    double reduced_mass = 0;
+    double boltzmann_cst = 1.38e-23; // J/K
+    double epsilon = 0;
+    double epsilon_J = 0;
+    double theta = 0;
+    
     if (spec_name == "N2"){
-        tau = compute_TauRelax_N2();
+        reduced_mass = 1.16e-26; //kg
+        epsilon = 1.21; // eV
     }
     else if (spec_name == "O2"){
-        tau = compute_TauRelax_O2();
+        reduced_mass = 1.33e-26; //kg
+        epsilon = 0.41; // eV
     }
+    
     else{
         throw CanteraError("PlasmaReactor::compute_TauRelax",
                            "Error: species vibrational relaxation time not implemented. Please correct the YAML file or implement this species correlation.");
     }
     
+    epsilon_J = epsilon * 1.6e-19; // J
+    theta = epsilon_J / boltzmann_cst; // K, the vibrational temperature of the molecule.
+    
+    double exponent = 5e-4 * pow(reduced_mass, 0.5) * pow(theta, 0.8) * (pow(T, -0.33) - 0.015*pow(reduced_mass, 0.25));
+    double prefactor = pow(10, -8)/P;
+        
+    tau = prefactor * pow(10, exponent);
+    
+    printf("tau_millikan_%s = %e\n", spec_name.c_str(), tau);
+    
+    return tau;
+} 
+
+double PlasmaReactor::tau_castela(string spec_name){
+    double tau = 1e-12;
+    if (spec_name == "N2") {
+        double a_n2 = 221.0;
+        double b_n2 = 0.029;
+        double a_o2 = 229.0;
+        double b_o2 = 0.0295;
+        double a_o = 72.4; 
+        double b_o = 0.015;
+        
+        double c = 101325; //Pa.s
+
+        double T = m_plasma->temperature();
+        double P = m_plasma->pressure();
+        double x_n2 = m_plasma->moleFraction("N2");
+        double x_o2 = m_plasma->moleFraction("O2");
+        double x_o = m_plasma->moleFraction("O");
+
+        double p_n2 = P * x_n2;
+        double p_o2 = P * x_o2;
+        double p_o = P * x_o;
+
+        double tau_n2 = (exp(a_n2*(pow(T, -0.3333) - b_n2) - 18.42))*c/p_n2;
+        double tau_o2 = (exp(a_o2*(pow(T, -0.3333) - b_o2) - 18.42))*c/p_o2;
+        double tau_o = (exp(a_o*(pow(T, -0.3333) - b_o) - 18.42))*c/p_o;
+
+        tau = 1/(1/tau_n2 + 1/tau_o2 + 1/tau_o);
+        
+    }
+    printf("tau_castela = %e\n", tau);
     return tau;
 }
+
+
+// Fonction pour calculer k(T)
+double PlasmaReactor::compute_k(const RelaxationEntry& entry, double T) {
+    return entry.A * std::pow(T, entry.n) * std::exp(
+        entry.K - entry.B / std::pow(T, 1.0 / 3.0)
+                 + entry.C / std::pow(T, entry.m)
+                 + entry.D / std::pow(T, entry.z)
+    );
+}
+
+
+void PlasmaReactor::readStariRelaxYamlFile(string filename){
+
+    for (size_t n=0; n<m_nspevib; n++){
+
+        string spec_name = vib_spec[n];
+        printf("Reading STARI YAML file for species %s\n", spec_name.c_str()); 
+        std::string key = spec_name + "_relaxations";
+        YAML::Node root = YAML::LoadFile(stari_yaml_path);
+        std::vector<RelaxationEntry> reactions;
+        for (const auto& node : root[key]) {
+            RelaxationEntry r;
+            r.name = node["name"].as<std::string>();
+            r.target = node["target"].as<std::string>();
+            r.A = node["A"].as<double>();
+            r.n = node["n"].as<double>();
+            r.K = node["K"].as<double>();
+            r.B = node["B"].as<double>();
+            r.C = node["C"].as<double>();
+            r.m = node["m"].as<double>();
+            r.D = node["D"].as<double>();
+            r.z = node["z"].as<double>();
+            reactions.push_back(r);
+        }
+        m_data_stari.push_back(reactions);
+    }
+}
+
+
+double PlasmaReactor::tau_starikovskiy(size_t n){
+
+    printf("entering tau_starikovsjiy function\n");
+
+    if (!stari_read) {
+        readStariRelaxYamlFile(stari_yaml_path);
+        stari_read = true;
+    }
+
+    double one_over_tau = 0;
+    double T = m_plasma->temperature();
+
+    std::cout << "Reactions rates for target " << vib_spec[n] << " at T = " << T << " K:\n";
+    for (const auto& r : m_data_stari[n]) {
+        double k = compute_k(r, T);
+        std::cout << "  " << r.name << ": k = " << k << "\n";
+        double c_partner = m_plasma->moleFraction(r.name);
+        double tau_loc = 1/(k * c_partner);
+        one_over_tau += 1/tau_loc;
+    }
+    double tau = 1/one_over_tau;
+    std::cout << "Starikovskiy relaxation time for " << vib_spec[n] << ": " << tau << "\n";
+
+    return tau;
+} 
+
+// double PlasmaReactor::compute_TauRelax(string spec_name){
     
-double PlasmaReactor::compute_TauRelax_N2() {
+//     double tau = 0;
+//     printf("Computing relaxation time for species %s\n", spec_name.c_str());
+//     if (spec_name == "N2"){
+//         tau = compute_TauRelax_N2();
+//     }
+//     else if (spec_name == "O2"){
+//         tau = compute_TauRelax_O2();
+//     }
+//     else{
+//         throw CanteraError("PlasmaReactor::compute_TauRelax",
+//                            "Error: species vibrational relaxation time not implemented. Please correct the YAML file or implement this species correlation.");
+//     }
+    
+//     return tau;
+// }
+    
+// double PlasmaReactor::compute_TauRelax_N2() {
+//     if (relax_type == "Millikan&White") {
+//         double tau_millikan;
+//         double T = m_plasma->temperature();
+//         double P = m_plasma->pressure();
+//         double reduced_mass_N2 = 1.16e-26; //kg
+//         double boltzmann_cst = 1.38e-23; // J/K
+//         double epsilon_N2 = 1.21; // eV
+//         double epsilon_N2_J = epsilon_N2 * 1.6e-19; // J
+//         double theta_N2 = epsilon_N2_J / boltzmann_cst; // K, the vibrational temperature of the molecule.
+//         double exponent = 5e-4 * pow(reduced_mass_N2, 0.5) * pow(theta_N2, 0.8) * (pow(T, -0.33) - 0.015*pow(reduced_mass_N2, 0.25));
+//         double prefactor = pow(10, -8)/P;
+        
+//         tau_millikan = prefactor * pow(10, exponent);
+//         printf("tau_millikan_N2 = %e\n", tau_millikan);
+        
+//         return tau_millikan;
+//     } else if (relax_type == "Castela"){
+//         double tau_castela;
+//         double T = m_plasma->temperature();
+//         double c = 101325; // Pa.s
+        
+//         return 0.01;
+//     } else if (relax_type == "Constant"){
+//         return tau_relax_constant_model;
+//     } else{
+//         throw CanteraError("PlasmaReactor::compute_TauRelax",
+//                            "Error: species vibrational relaxation type correlation not implemented. Please correct the YAML file or implement this species correlation.");
+//     }
 
-    return 0.0001;
+// }
 
-}
-
-double PlasmaReactor::compute_TauRelax_O2() {
-
-    return 0.0001;
-
-}
+// double PlasmaReactor::compute_TauRelax_O2() {
+//     if (relax_type == "Millikan&White") {
+//         double tau_millikan;
+//         double T = m_plasma->temperature();
+//         double P = m_plasma->pressure();
+//         double reduced_mass_O2 = 1.33e-26; //kg
+//         double boltzmann_cst = 1.38e-23; // J/K
+//         double epsilon_O2 = 0.41; // eV
+//         double epsilon_O2_J = epsilon_O2 * 1.6e-19; // J
+//         double theta_O2 = epsilon_O2_J / boltzmann_cst; // K, the vibrational temperature of the molecule.
+//         double exponent = 5e-4 * pow(reduced_mass_O2, 0.5) * pow(theta_O2, 0.8) * (pow(T, -0.33) - 0.015*pow(reduced_mass_O2, 0.25));
+//         double prefactor = pow(10, -8)/P;
+        
+//         tau_millikan = prefactor * pow(10, exponent);
+//         printf("tau_millikan_O2 = %e\n", tau_millikan);
+        
+//         return tau_millikan;
+//     } else if (relax_type == "Castela"){
+//         return 0.01;
+//     } else if (relax_type == "Constant"){
+//         return tau_relax_constant_model;
+//     } else{
+//         throw CanteraError("PlasmaReactor::compute_TauRelax",
+//                            "Error: species vibrational relaxation type correlation not implemented. Please correct the YAML file or implement this species correlation.");
+//     }
+// }
 
 void  PlasmaReactor::recoverVibSpecies(){
     vib_spec = m_plasma->getVibSpecies();
@@ -348,4 +565,24 @@ void  PlasmaReactor::recoverVibSpecies(){
     }
 }
 
+void PlasmaReactor::setVibRelaxType(string relax_type_name){
+    relax_type = relax_type_name;
+    printf("Relaxation type set to %s\n", relax_type.c_str());}
+
+string PlasmaReactor::getVibRelaxType(){
+    return relax_type;
 }
+
+double PlasmaReactor::getVibConstantModelTauRelax(){
+    return tau_relax_constant_model;
+}
+
+void PlasmaReactor::setVibConstantModelTauRelax(double tau_to_set){
+    tau_relax_constant_model = tau_to_set;
+    printf("Relaxation time constant model set to %f\n", tau_relax_constant_model);}
+
+}
+
+
+
+

@@ -58,11 +58,11 @@ public:
 
     void compute_RvtVPower();
 
-    double compute_TauRelax_N2();
+    // double compute_TauRelax_N2();
 
-    double compute_TauRelax_O2();
+    // double compute_TauRelax_O2();
 
-    double  compute_TauRelax(string spec_name);
+    double  compute_TauRelax(size_t n);
 
     std::vector<double> get_disVibVPower();
 
@@ -71,6 +71,46 @@ public:
     std::vector<double> get_eVib();
 
     void recoverVibSpecies();
+
+    void setVibRelaxType(string relax_type_name);
+
+    string getVibRelaxType();
+
+    double getVibConstantModelTauRelax();
+
+    void setVibConstantModelTauRelax(double tau_to_set);
+
+    double tau_millikan_white(string spec_name);
+
+    double tau_castela(string spec_name);
+
+    double tau_starikovskiy(size_t n);
+
+    // Structure pour stocker les coefficients d'une réaction
+    struct RelaxationEntry {
+        std::string name;
+        std::string target;
+        double A, n, K, B, C, m, D, z;
+    };
+
+    double compute_k(const RelaxationEntry& entry, double T);
+
+    string stari_yaml_path;  // attribut à ajouter dans ton .h
+
+    void setStariYamlPath(string path) {
+        stari_yaml_path = path;
+    }
+
+    string getStariYamlPath() {
+        return stari_yaml_path;
+}
+
+    void readStariRelaxYamlFile(string filename);
+
+    void initializeStariReading(){
+        stari_read = false;
+    }
+
 
 protected:
     void setThermo(ThermoPhase& thermo) override;
@@ -88,6 +128,16 @@ protected:
     std::vector<std::string> vib_spec; 
 
     PlasmaPhase* m_plasma = nullptr;
+
+    string relax_type;
+
+    double tau_relax_constant_model;
+
+    std::vector<std::vector<RelaxationEntry>> m_data_stari;
+
+    bool stari_read;
+
+
 };
 }
 

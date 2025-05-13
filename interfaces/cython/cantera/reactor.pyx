@@ -12,6 +12,8 @@ from ._utils import *
 from .delegator cimport *
 from .drawnetwork import *
 
+from libcpp.string cimport string as cpp_string
+
 _reactor_counts = _defaultdict(int)
 
 cdef list _vec_to_list(const vector[double]& vec):
@@ -483,6 +485,40 @@ cdef class PlasmaReactor:
     @dis_vol.setter
     def dis_vol(self, vol):
         (<CxxPlasmaReactor*> self.reactor).setDisVol(vol)
+
+    @property
+    def vib_relax_const_model_value(self):
+        return (<CxxPlasmaReactor*> self.reactor).getVibConstantModelTauRelax()
+
+    @vib_relax_const_model_value.setter
+    def vib_relax_const_model_value(self, tau_const):
+        (<CxxPlasmaReactor*> self.reactor).setVibConstantModelTauRelax(tau_const)
+    
+    @property
+    def vib_relax_type(self):
+        """
+        Chaîne décrivant le modèle de relaxation vibrationnelle.
+        """
+        cdef cpp_string cpp_val = (<CxxPlasmaReactor*> self.reactor).getVibRelaxType()
+        return cpp_val.decode('utf-8')
+
+    @vib_relax_type.setter
+    def vib_relax_type(self, relax_type):
+        cdef cpp_string c_relax = relax_type.encode('utf-8')
+        (<CxxPlasmaReactor*> self.reactor).setVibRelaxType(c_relax)
+    
+    @property
+    def stari_yaml_path(self):
+        """
+        path to the starikovskiy relaxation time coefficient yaml. 
+        """
+        cdef cpp_string cpp_val = (<CxxPlasmaReactor*> self.reactor).getStariYamlPath()
+        return cpp_val.decode('utf-8')
+
+    @stari_yaml_path.setter
+    def stari_yaml_path(self, relax_type):
+        cdef cpp_string c_relax = relax_type.encode('utf-8')
+        (<CxxPlasmaReactor*> self.reactor).setStariYamlPath(c_relax)
 
     @property
     def dis_power(self):
