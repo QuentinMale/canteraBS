@@ -386,7 +386,7 @@ bool PlasmaPhase::addElectronCrossSection(shared_ptr<ElectronCrossSection> ecs)
 bool PlasmaPhase::addSpecies(shared_ptr<Species> spec)
 {
     // 🔹 Affichage pour déboguer
-    std::cout << "Ajout de l'espèce : " << spec->name << std::endl;
+    std::cout << "Adding species : " << spec->name << std::endl;
 
     const auto& input = spec->input;
     for (const auto& entry : input) {
@@ -401,7 +401,7 @@ bool PlasmaPhase::addSpecies(shared_ptr<Species> spec)
         } else if (entry.second.is<double>()) {
             std::cout << entry.second.as<double>();
         } else {
-            std::cout << "(type non pris en charge pour l'impression)";
+            std::cout << "(type not supported for printing)";
         }
     
         std::cout << std::endl;
@@ -426,7 +426,7 @@ bool PlasmaPhase::addSpecies(shared_ptr<Species> spec)
     }
 
     // Afficher la taille de m_speciesData après ajout
-    std::cout << "Taille actuelle de m_speciesData : " << m_speciesData.size() << std::endl;
+    std::cout << "Current size of m_speciesData : " << m_speciesData.size() << std::endl;
 
     return added;
 }
@@ -453,21 +453,6 @@ void PlasmaPhase::initThermo()
         shared_ptr<Reaction> reaction = newReaction(R, *m_kinetics);
 
         // Check if the reaction is related to an existing cross-section loaded in the EEDF solver
-
-        // COUNT THER NUMBER OF EVVIB old version saving 
-        // double DUVibValue = 0.0;
-        // if (reaction->input.hasKey("d_u_vib")) {
-        //     DUVibValue = reaction->input["d_u_vib"].asDouble();
-        //     printf("d_u_vib = %f\n", DUVibValue);
-        //     // std::cout << "Reaction: vib_bool = " << vibBoolValue << std::endl;
-        //     if (DUVibValue > 0) {
-        //         ++count;
-        //         printf("Count now has the value = %d\n", count);
-        //         // std::cout << "Count now has the value = " << count << std::endl;
-        //     }
-        // }
-        // m_duvib.push_back(DUVibValue);
-
 
         double DUVibValue = -1.0;
         bool vibBool = false;
@@ -543,7 +528,7 @@ void PlasmaPhase::initThermo()
     m_nrevib = count;
     printf("Final value of count = %ld\n", count);
     // std::cout << "Final value of count = " << count << std::endl;
-    printf("TO CHECK:valeurs dans la liste m_duvib\n");
+    printf("TO CHECK:values in the list m_duvib\n");
     for (size_t i = 0; i < m_duvib.size(); i++) {
         printf("%f, ", m_duvib[i]);
     }
@@ -553,7 +538,7 @@ void PlasmaPhase::initThermo()
     bool all_duvib = true;
     for (size_t i = 0; i < m_duvib.size(); i++) {
         if (m_duvib[i] == -1.0) {
-            printf("TO CHECK:valeurs dans la liste m_duvib: reaction %ld seems to be missing d_u_vib or cross-sections\n", i);
+            printf("TO CHECK:values in the list m_duvib: reaction %ld seems to be missing d_u_vib or cross-sections\n", i);
             all_duvib = false;
         }
     }
@@ -817,7 +802,7 @@ void PlasmaPhase::countVibSpecies() {
     int count = 0;
     if (input().hasKey("vib_species")) {
         auto vib = input()["vib_species"].asVector<std::string>();
-        std::cout << "Espèces vibr. : ";
+        std::cout << "Vibrational species : ";
         for (const auto& s : vib) {
             std::cout << s << " ";
             count++;
@@ -826,7 +811,7 @@ void PlasmaPhase::countVibSpecies() {
         m_nspevib = count;
         vib_species = vib;
     } else {
-        std::cout << "Aucune espèce vibratoire déclarée." << std::endl;
+        std::cout << "No vibrational species declared." << std::endl;
     }
     
 }

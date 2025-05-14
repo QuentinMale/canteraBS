@@ -86,7 +86,7 @@ public:
 
     double tau_starikovskiy(size_t n);
 
-    // Structure pour stocker les coefficients d'une réaction
+    // a structure to store the relaxation time data for the starikovski model. The data will be read from a yaml file provided by the user.
     struct RelaxationEntry {
         std::string name;
         std::string target;
@@ -95,7 +95,7 @@ public:
 
     double compute_k(const RelaxationEntry& entry, double T);
 
-    string stari_yaml_path;  // attribut à ajouter dans ton .h
+    string stari_yaml_path = "init";  // the path to the yaml file containing the relaxation data for the Starikovskiy model provided by the user
 
     void setStariYamlPath(string path) {
         stari_yaml_path = path;
@@ -125,17 +125,17 @@ protected:
 
     size_t m_nspevib; //!< Number of species with vibrational excitation
 
-    std::vector<std::string> vib_spec; 
+    std::vector<std::string> vib_spec; // a vector to store the names of vibrational species
 
-    PlasmaPhase* m_plasma = nullptr;
+    PlasmaPhase* m_plasma = nullptr; // pointer to the plasma phase
 
-    string relax_type;
+    string relax_type; // relaxation type to be chosen by the user. It will be Castela, Starikovski, Constant or MillikanandWhite
 
-    double tau_relax_constant_model;
+    double tau_relax_constant_model; // relaxation time for the constant model
 
-    std::vector<std::vector<RelaxationEntry>> m_data_stari;
+    std::vector<std::vector<RelaxationEntry>> m_data_stari; // relaxation data input from the relaxation yaml file provided by the user. Used by the Starikovskiy model
 
-    bool stari_read;
+    bool stari_read; // boolean to check if the yaml file has been read or not, to avoid reading it several times
 
 
 };

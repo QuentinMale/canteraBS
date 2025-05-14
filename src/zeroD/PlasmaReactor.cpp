@@ -10,6 +10,8 @@
 #include "cantera/kinetics/Kinetics.h"
 #include "cantera/base/utilities.h"
 #include "cantera/base/global.h"
+#include "cantera/base/ct_defs.h"  // contient findInputFile()
+
 
 #include <iostream>
 #include <fstream>
@@ -74,8 +76,8 @@ void PlasmaReactor::initialize(double t0)
     m_nv += m_nspevib;
     disVibVPower.resize(m_nspevib);
     RvtVPower.resize(m_nspevib);
-    recoverVibSpecies();
-    initializeStariReading();
+    recoverVibSpecies(); // get all the vibrationnal species to use this in the other functions
+    initializeStariReading(); // initialize the reading of the yaml file for the starikovskiy model. This avoids having a heavy I/O operation at each time step.
 }
 
 void PlasmaReactor::updateState(double* y)
@@ -122,14 +124,11 @@ void PlasmaReactor::eval(double time, double* LHS, double* RHS)
     compute_disVPower();
     printf(" **************************** disVPower successfulyy computed with value %f ******************************************\n", m_disVPower);
     double tot_vib_power = 0;
-    printf("nb of vib species considered : %ld \n", m_nspevib);
+    // printf("nb of vib species considered : %ld \n", m_nspevib);
     if (m_nspevib > 0) {
         compute_disVibVPower();
-        printf("TEST 1\n");
         for (size_t n = 0; n < m_nspevib; n++){
-            printf("TEST 2\n");
             tot_vib_power += disVibVPower[n];
-            printf("TEST 3\n");
         }
     }
     printf(" **************************** total vibrational power successfully computed with value %f ******************************************\n", tot_vib_power);
@@ -179,7 +178,6 @@ void PlasmaReactor::eval(double time, double* LHS, double* RHS)
         dmdt -= mdot; // mass flow out of system
         mcvdTdt -= mdot * m_pressure * m_vol / m_mass; // flow work
     }
-    //printf("MARKER 4\n");
 
     // add terms for inlets
     for (auto inlet : m_inlet) {
@@ -196,7 +194,6 @@ void PlasmaReactor::eval(double time, double* LHS, double* RHS)
             mcvdTdt -= m_uk[n] / mw[n] * mdot_spec;
         }
     }
-    //printf("MARKER 5\n");
 
     RHS[1] = m_vdot;
     if (m_energy) {
@@ -204,7 +201,6 @@ void PlasmaReactor::eval(double time, double* LHS, double* RHS)
     } else {
         RHS[2] = 0;
     }
-    //printf("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ EXITING eval function ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
 }
 
 size_t PlasmaReactor::componentIndex(const string& nm) const
@@ -246,8 +242,7 @@ void PlasmaReactor::compute_disVPower() {
     }
 
 void PlasmaReactor::compute_disVibVPower() { 
-
-    printf("Entering compute_disVibVPower function\n");
+;
     m_kin->getNetRatesOfProgress(&m_kr[0]); // "kr"
     size_t n_vib_species = m_nspevib;
     
@@ -255,19 +250,15 @@ void PlasmaReactor::compute_disVibVPower() {
         disVibVPower[k] = 0;
         string vib_spec_here = vib_spec[k];
         
-        printf(" vib spec here: %s\n", vib_spec_here.c_str());
         for (size_t n = 0; n < m_kin->nReactions(); n++) {
             string reac_target_spec = m_plasma->getTarget(n);
-            printf("reac target : %s\n", reac_target_spec.c_str());
             if (reac_target_spec == vib_spec_here) {
                 double DUVibValue = m_plasma->getDuvib(n)*1.6e-19; // convert to Joules
                 disVibVPower[k] += DUVibValue * m_kr[n] * 6.02e26; //multiply by the avogadro number to actually get a power
-                printf("disVibVPower[%ld] = %f\n", k, disVibVPower[k]);
             }
              
         }
     }
-    printf("Exiting compute_disVibVPower function\n");
     
      
 }
@@ -298,8 +289,7 @@ std::vector<double> PlasmaReactor::get_eVib() {
 }
 
 
-void PlasmaReactor::compute_RvtVPower() { // TO IMPLEMENT
-    printf("Entering compute_RVTVPOWER function\n");
+void PlasmaReactor::compute_RvtVPower() {
     size_t n_vib_species = m_nspevib;
 
     double* evib_array = new double[n_vib_species];
@@ -313,7 +303,6 @@ void PlasmaReactor::compute_RvtVPower() { // TO IMPLEMENT
     }
 
     delete[] evib_array;
-    printf("Exiting compute_RVTVPOWER function\n");
 }
 
 double PlasmaReactor::compute_TauRelax(size_t n){
@@ -424,13 +413,23 @@ double PlasmaReactor::compute_k(const RelaxationEntry& entry, double T) {
 
 
 void PlasmaReactor::readStariRelaxYamlFile(string filename){
+    // On retrouve le chemin complet à partir du nom de fichier
+    std::string full_path;
+    try {
+        full_path = findInputFile(filename);  // cherche dans tous les chemins Cantera
+    } catch (CanteraError& err) {
+        throw CanteraError("PlasmaReactor::readStariRelaxYamlFile",
+            "Could not find the YAML file for Starikovskiy relaxation: {}\n"
+            "File requested: {}\n", err.what(), filename);
+    }
+
+    YAML::Node root = YAML::LoadFile(full_path);
 
     for (size_t n=0; n<m_nspevib; n++){
-
         string spec_name = vib_spec[n];
         printf("Reading STARI YAML file for species %s\n", spec_name.c_str()); 
         std::string key = spec_name + "_relaxations";
-        YAML::Node root = YAML::LoadFile(stari_yaml_path);
+
         std::vector<RelaxationEntry> reactions;
         for (const auto& node : root[key]) {
             RelaxationEntry r;
@@ -453,9 +452,11 @@ void PlasmaReactor::readStariRelaxYamlFile(string filename){
 
 double PlasmaReactor::tau_starikovskiy(size_t n){
 
-    printf("entering tau_starikovsjiy function\n");
-
     if (!stari_read) {
+        if (stari_yaml_path == "init"){
+            stari_yaml_path = "plasma_relax/stari_default.yaml"; // default path
+            printf("No yaml file provided for the Starikovskiy relaxation model but this model is used\n. Using default path %s\n", stari_yaml_path.c_str());
+        }
         readStariRelaxYamlFile(stari_yaml_path);
         stari_read = true;
     }
@@ -464,10 +465,10 @@ double PlasmaReactor::tau_starikovskiy(size_t n){
     double T = m_plasma->temperature();
     double avogadro = 6.022e23; // in m3/mol
 
-    std::cout << "Reactions rates for target " << vib_spec[n] << " at T = " << T << " K:\n";
+    // std::cout << "Reactions rates for target " << vib_spec[n] << " at T = " << T << " K:\n";
     for (const auto& r : m_data_stari[n]) {
         double k = 1e-6*compute_k(r, T); // convert to m3/s bc the result from compute_k is in cm3/s
-        std::cout << "  " << r.name << ": k = " << k << "\n";
+        // std::cout << "  " << r.name << ": k = " << k << "\n";
         double x_partner = m_plasma->moleFraction(r.name);
         double mixture_molar_density = 1000*m_plasma->molarDensity(); // in cantera, the density in kmol/m^3 so we need to convert to mol/m^3 to get things right
         one_over_tau += k * x_partner * mixture_molar_density * avogadro;
@@ -477,83 +478,6 @@ double PlasmaReactor::tau_starikovskiy(size_t n){
 
     return tau;
 } 
-
-// double PlasmaReactor::compute_TauRelax(string spec_name){
-    
-//     double tau = 0;
-//     printf("Computing relaxation time for species %s\n", spec_name.c_str());
-//     if (spec_name == "N2"){
-//         tau = compute_TauRelax_N2();
-//     }
-//     else if (spec_name == "O2"){
-//         tau = compute_TauRelax_O2();
-//     }
-//     else{
-//         throw CanteraError("PlasmaReactor::compute_TauRelax",
-//                            "Error: species vibrational relaxation time not implemented. Please correct the YAML file or implement this species correlation.");
-//     }
-    
-//     return tau;
-// }
-    
-// double PlasmaReactor::compute_TauRelax_N2() {
-//     if (relax_type == "Millikan&White") {
-//         double tau_millikan;
-//         double T = m_plasma->temperature();
-//         double P = m_plasma->pressure();
-//         double reduced_mass_N2 = 1.16e-26; //kg
-//         double boltzmann_cst = 1.38e-23; // J/K
-//         double epsilon_N2 = 1.21; // eV
-//         double epsilon_N2_J = epsilon_N2 * 1.6e-19; // J
-//         double theta_N2 = epsilon_N2_J / boltzmann_cst; // K, the vibrational temperature of the molecule.
-//         double exponent = 5e-4 * pow(reduced_mass_N2, 0.5) * pow(theta_N2, 0.8) * (pow(T, -0.33) - 0.015*pow(reduced_mass_N2, 0.25));
-//         double prefactor = pow(10, -8)/P;
-        
-//         tau_millikan = prefactor * pow(10, exponent);
-//         printf("tau_millikan_N2 = %e\n", tau_millikan);
-        
-//         return tau_millikan;
-//     } else if (relax_type == "Castela"){
-//         double tau_castela;
-//         double T = m_plasma->temperature();
-//         double c = 101325; // Pa.s
-        
-//         return 0.01;
-//     } else if (relax_type == "Constant"){
-//         return tau_relax_constant_model;
-//     } else{
-//         throw CanteraError("PlasmaReactor::compute_TauRelax",
-//                            "Error: species vibrational relaxation type correlation not implemented. Please correct the YAML file or implement this species correlation.");
-//     }
-
-// }
-
-// double PlasmaReactor::compute_TauRelax_O2() {
-//     if (relax_type == "Millikan&White") {
-//         double tau_millikan;
-//         double T = m_plasma->temperature();
-//         double P = m_plasma->pressure();
-//         double reduced_mass_O2 = 1.33e-26; //kg
-//         double boltzmann_cst = 1.38e-23; // J/K
-//         double epsilon_O2 = 0.41; // eV
-//         double epsilon_O2_J = epsilon_O2 * 1.6e-19; // J
-//         double theta_O2 = epsilon_O2_J / boltzmann_cst; // K, the vibrational temperature of the molecule.
-//         double exponent = 5e-4 * pow(reduced_mass_O2, 0.5) * pow(theta_O2, 0.8) * (pow(T, -0.33) - 0.015*pow(reduced_mass_O2, 0.25));
-//         double prefactor = pow(10, -8)/P;
-        
-//         tau_millikan = prefactor * pow(10, exponent);
-//         printf("tau_millikan_O2 = %e\n", tau_millikan);
-        
-//         return tau_millikan;
-//     } else if (relax_type == "Castela"){
-//         return 0.01;
-//     } else if (relax_type == "Constant"){
-//         return tau_relax_constant_model;
-//     } else{
-//         throw CanteraError("PlasmaReactor::compute_TauRelax",
-//                            "Error: species vibrational relaxation type correlation not implemented. Please correct the YAML file or implement this species correlation.");
-//     }
-// }
 
 void  PlasmaReactor::recoverVibSpecies(){
     vib_spec = m_plasma->getVibSpecies();
