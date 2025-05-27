@@ -508,17 +508,17 @@ cdef class PlasmaReactor:
         (<CxxPlasmaReactor*> self.reactor).setVibRelaxType(c_relax)
     
     @property
-    def stari_yaml_path(self):
+    def starikovskiy_yaml_path(self):
         """
         path to the starikovskiy relaxation time coefficient yaml. 
         """
-        cdef cpp_string cpp_val = (<CxxPlasmaReactor*> self.reactor).getStariYamlPath()
+        cdef cpp_string cpp_val = (<CxxPlasmaReactor*> self.reactor).getStarikovskiyYamlPath()
         return cpp_val.decode('utf-8')
 
-    @stari_yaml_path.setter
-    def stari_yaml_path(self, relax_type):
+    @starikovskiy_yaml_path.setter
+    def starikovskiy_yaml_path(self, relax_type):
         cdef cpp_string c_relax = relax_type.encode('utf-8')
-        (<CxxPlasmaReactor*> self.reactor).setStariYamlPath(c_relax)
+        (<CxxPlasmaReactor*> self.reactor).setStarikovskiyYamlPath(c_relax)
 
     @property
     def dis_power(self):
@@ -537,6 +537,76 @@ cdef class PlasmaReactor:
     @property
     def evib(self):
         cdef vector[double] result = (<CxxPlasmaReactor*> self.reactor).get_eVib()
+        return _vec_to_list(result)
+
+# Définition de la classe PlasmaPressureReactor en Python
+cdef class PlasmaPressureReactor:
+    """ A constant pressure, zero-dimensional reactor for plasma. """
+    
+    reactor_type = "PlasmaPressureReactor"
+
+
+    # Propriétés en Python correspondant aux méthodes C++ du PlasmaPressureReactor
+
+    @property
+    def dis_vol(self):
+        return (<CxxPlasmaPressureReactor*> self.reactor).disVol()
+
+    @dis_vol.setter
+    def dis_vol(self, vol):
+        (<CxxPlasmaPressureReactor*> self.reactor).setDisVol(vol)
+
+    @property
+    def vib_relax_const_model_value(self):
+        return (<CxxPlasmaPressureReactor*> self.reactor).getVibConstantModelTauRelax()
+
+    @vib_relax_const_model_value.setter
+    def vib_relax_const_model_value(self, tau_const):
+        (<CxxPlasmaPressureReactor*> self.reactor).setVibConstantModelTauRelax(tau_const)
+    
+    @property
+    def vib_relax_type(self):
+        """
+        Chaîne décrivant le modèle de relaxation vibrationnelle.
+        """
+        cdef cpp_string cpp_val = (<CxxPlasmaPressureReactor*> self.reactor).getVibRelaxType()
+        return cpp_val.decode('utf-8')
+
+    @vib_relax_type.setter
+    def vib_relax_type(self, relax_type):
+        cdef cpp_string c_relax = relax_type.encode('utf-8')
+        (<CxxPlasmaPressureReactor*> self.reactor).setVibRelaxType(c_relax)
+    
+    @property
+    def starikovskiy_yaml_path(self):
+        """
+        path to the starikovskiy relaxation time coefficient yaml. 
+        """
+        cdef cpp_string cpp_val = (<CxxPlasmaPressureReactor*> self.reactor).getStarikovskiyYamlPath()
+        return cpp_val.decode('utf-8')
+
+    @starikovskiy_yaml_path.setter
+    def starikovskiy_yaml_path(self, relax_type):
+        cdef cpp_string c_relax = relax_type.encode('utf-8')
+        (<CxxPlasmaPressureReactor*> self.reactor).setStarikovskiyYamlPath(c_relax)
+
+    @property
+    def dis_power(self):
+        return (<CxxPlasmaPressureReactor*> self.reactor).disVPower()
+
+    @property
+    def dis_vib_v_power(self):
+        cdef vector[double] result = (<CxxPlasmaPressureReactor*> self.reactor).get_disVibVPower()
+        return _vec_to_list(result)
+
+    @property
+    def rvt_v_power(self):
+        cdef vector[double] result = (<CxxPlasmaPressureReactor*> self.reactor).get_RvtVPower()
+        return _vec_to_list(result)
+
+    @property
+    def evib(self):
+        cdef vector[double] result = (<CxxPlasmaPressureReactor*> self.reactor).get_eVib()
         return _vec_to_list(result)
 
 cdef class IdealGasMoleReactor(Reactor):

@@ -185,7 +185,7 @@ localenv.Depends(lib, localenv['config_h_target'])
 
 
 plasma_files = [
-    '#data/plasma_relax/stari_default.yaml',
+    '#data/plasma_relax/starikovskiy_default.yaml',
     '#data/plasma_relax/castela_emulator.yaml',
 ]
 

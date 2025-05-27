@@ -1,12 +1,12 @@
-//! @file PlasmaReactor.h
+//! @file PlasmaPressureReactor.h
 
 // This file is part of Cantera. See License.txt in the top-level directory or
 // at https://cantera.org/license.txt for license and copyright information.
 
-#ifndef CT_PLASMAREACTOR_H
-#define CT_PLASMAREACTOR_H
+#ifndef CT_PLASMA_PRESSURE_REACTOR_H
+#define CT_PLASMA_PRESSURE_REACTOR_H
 
-#include "IdealGasReactor.h"
+#include "IdealGasConstPressureReactor.h"
 #include "cantera/thermo/PlasmaPhase.h"
 
 namespace Cantera
@@ -18,13 +18,13 @@ namespace Cantera
  *
  * @ingroup reactorGroup
  */
-class PlasmaReactor : public IdealGasReactor
+class PlasmaPressureReactor : public IdealGasConstPressureReactor
 {
 public:
-    using IdealGasReactor::IdealGasReactor; // inherit constructors
+    using IdealGasConstPressureReactor::IdealGasConstPressureReactor; // inherit constructors
 
     string type() const override {
-        return "PlasmaReactor";
+        return "PlasmaPressureReactor";
     }
 
     void getState(double* y) override;

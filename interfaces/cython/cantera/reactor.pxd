@@ -96,8 +96,23 @@ cdef extern from "cantera/zerodim.h" namespace "Cantera":
         string getVibRelaxType()
         double getVibConstantModelTauRelax();
         void setVibConstantModelTauRelax(double);
-        void setStariYamlPath(string)
-        string getStariYamlPath()
+        void setStarikovskiyYamlPath(string)
+        string getStarikovskiyYamlPath()
+
+    cdef cppclass CxxPlasmaPressureReactor "Cantera::PlasmaPressureReactor" (CxxReactor):
+        CxxPlasmaPressureReactor()
+        double disVol()
+        void setDisVol(double)
+        double disVPower()
+        vector[double] get_disVibVPower()
+        vector[double] get_RvtVPower()
+        vector[double] get_eVib()
+        void setVibRelaxType(string)
+        string getVibRelaxType()
+        double getVibConstantModelTauRelax();
+        void setVibConstantModelTauRelax(double);
+        void setStarikovskiyYamlPath(string)
+        string getStarikovskiyYamlPath()
 
     # walls
     cdef cppclass CxxWallBase "Cantera::WallBase":
@@ -278,6 +293,9 @@ cdef class IdealGasReactor(Reactor):
     pass
 
 cdef class PlasmaReactor(Reactor):
+    pass
+
+cdef class PlasmaPressureReactor(Reactor):
     pass
 
 cdef class IdealGasConstPressureReactor(Reactor):
