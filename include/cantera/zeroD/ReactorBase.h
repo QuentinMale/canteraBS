@@ -277,6 +277,14 @@ public:
     //! Set the ReactorNet that this reactor belongs to.
     void setNetwork(ReactorNet* net);
 
+    ThermoPhase& getThermo() {
+        if (!m_thermo) {
+            throw CanteraError("ReactorBase::thermo",
+                               "Reactor contents not defined.");
+        }
+        return *m_thermo;
+    }
+
 protected:
     //! Specify the mixture contained in the reactor. Note that a pointer to
     //! this substance is stored, and as the integration proceeds, the state of

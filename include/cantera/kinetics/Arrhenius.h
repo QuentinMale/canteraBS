@@ -152,12 +152,21 @@ protected:
     double m_E4_R = 0.; //!< Optional 4th energy parameter (in temperature units)
     double m_logA = NAN; //!< Logarithm of pre-exponential factor
     double m_order = NAN; //!< Reaction order
+    double m_B = 0; // the B constant in the formula for VV-VT
+    double m_C = 0; // the C constant in the formula for VV-VT
+    double m_D = 0; // the D constant in the formula for VV-VT
+    double m_scaling = 1; // the scaling factor in the formula for VV-VT
     string m_A_str = "A"; //!< The string for the pre-exponential factor
     string m_b_str = "b"; //!< The string for temperature exponent
     string m_be_str = "be"; //!< The string for electron temperature exponent
     string m_Ea_str = "Ea"; //!< The string for activation energy
     string m_Eae_str = "Eae"; //!< The string for electron activation energy
     string m_E4_str = ""; //!< The string for an optional 4th parameter
+    string m_B_str = "B"; //!< The string for the B parameter in VV-VT reactions
+    string m_C_str = "C"; //!< The string for the C parameter in VV-VT reactions
+    string m_D_str = "D"; //!< The string for the D parameter in VV-VT reactions
+    string m_scaling_str = "scaling"; //!< The string for the B parameter in VV-VT reactions
+    
 };
 
 //! Arrhenius reaction rate type depends only on temperature

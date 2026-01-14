@@ -133,6 +133,7 @@ double ElectronCollisionPlasmaRate::evalFromStruct(
     );
 
     // Integrate reaction rate (unit in kmol/m3/s)
+    // writelog("ElectronCollisionPlasmaRate::evalFromStruct - Integrating reaction rate ...\n");
     string quadratureMethod = "simpson";
     Eigen::VectorXd y(distribution.size());
     for (size_t i = 0; i < distribution.size(); i++)

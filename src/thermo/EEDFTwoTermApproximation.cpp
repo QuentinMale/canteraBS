@@ -17,13 +17,13 @@ namespace Cantera
 
 EEDFTwoTermApproximation::EEDFTwoTermApproximation(PlasmaPhase& s)
 {
-    writelog("EEDFTwoTermApproximation\n");
+    //writelog("EEDFTwoTermApproximation\n");
     initialize(s);
 }
 
 void EEDFTwoTermApproximation::initialize(PlasmaPhase& s)
 {
-    writelog("initialize EEDFTwoTermApproximation\n");
+    //writelog("initialize EEDFTwoTermApproximation\n");
     // store a pointer to s.
     m_phase = &s;
     m_first_call = true;
@@ -33,8 +33,8 @@ void EEDFTwoTermApproximation::initialize(PlasmaPhase& s)
 
 void EEDFTwoTermApproximation::setLinearGrid(double& kTe_max, size_t& ncell)
 {
-    writelog("Grid info : Linear grid is used \n");
-    writelog("Grid info : Maximum energy of the grid is {:15.3g} [eV]\n", kTe_max);
+    // writelog("Grid info : Linear grid is used \n");
+    // writelog("Grid info : Maximum energy of the grid is {:15.3g} [eV]\n", kTe_max);
     options.m_points = ncell;
     m_gridCenter.resize(options.m_points);
     m_gridEdge.resize(options.m_points + 1);
@@ -48,6 +48,82 @@ void EEDFTwoTermApproximation::setLinearGrid(double& kTe_max, size_t& ncell)
     setGridCache();
 }
 
+void EEDFTwoTermApproximation::setQuadraticGrid(double& kTe_max, size_t& ncell)
+{
+    // writelog("Grid info : Quadratic grid is used \n");
+    // writelog("Grid info : Maximum energy of the grid is {:15.3g} [eV]\n", kTe_max);
+    options.m_points = ncell;
+    m_gridCenter.resize(options.m_points);
+    m_gridEdge.resize(options.m_points + 1);
+    m_f0.resize(options.m_points);
+    m_f0_edge.resize(options.m_points + 1);
+    double delta = 2*kTe_max/(ncell*(ncell+1));
+    for (size_t j = 0; j < options.m_points; j++) {
+        m_gridCenter[j] = 0.5*delta*(j+0.5)*(j+1+0.5);
+        m_gridEdge[j] = 0.5*delta*j*(j+1);
+    }
+    m_gridEdge[options.m_points] = kTe_max;
+    setGridCache();
+}
+
+void EEDFTwoTermApproximation::setGeometricGrid(double& kTe_max, size_t& ncell)
+{
+    // writelog("Grid info : Geometric grid is used \n");
+    // writelog("Grid info : Maximum energy of the grid is {:15.3g} [eV]\n", kTe_max);
+    options.m_points = ncell;
+    m_gridCenter.resize(options.m_points);
+    m_gridEdge.resize(options.m_points + 1);
+    m_f0.resize(options.m_points);
+    m_f0_edge.resize(options.m_points + 1);
+    
+    auto f = [=](double x) {
+        return pow(x, ncell) - kTe_max * x + kTe_max - 1;
+    };
+
+    auto df = [=](double x) {
+        return ncell * pow(x, ncell - 1) - kTe_max;
+    };
+
+    auto newton = [&](std::function<double(double)> func, std::function<double(double)> dfunc,
+                    double x0, double tol = 1e-6, int max_iter = 100) -> double {
+        double x = x0;
+        for (int i = 0; i < max_iter; ++i) {
+            double fx = func(x);
+            double dfx = dfunc(x);
+            if (std::abs(fx) < tol) return x;
+            if (std::abs(dfx) < 1e-12)
+                throw std::runtime_error("Dérivée proche de 0");
+            x = x - fx / dfx;
+        }
+        return x;
+    };
+    double delta = 1;
+    try {
+        delta = newton(f, df, 2*kTe_max/(ncell*(ncell+1)));
+        std::cout << "Root found: energy grid delta set to: " << delta << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "Error while computing the energy grid geometric delta: " << e.what() << std::endl;
+    }
+    for (size_t j = 0; j < options.m_points; j++) {
+        m_gridCenter[j] = (delta / (1-delta))*(1-pow(delta, j + 0.5));
+        m_gridEdge[j] = (delta / (1-delta))*(1-pow(delta, j));
+    }
+    m_gridEdge[options.m_points] = kTe_max;
+    setGridCache();
+}
+
+void EEDFTwoTermApproximation::updateGrid(double kTe_to_set){
+    size_t ncell = m_phase->getNGridPointsEEDF(); // retrieve the number of points given in entry by the user
+    string grid_type = m_phase->get_DiscretisationType(); // retrieve the disctretisation type chosen by the user (Linear, Quadratic or Geometric)
+    if (grid_type == "Linear"){
+        setLinearGrid(kTe_to_set, ncell);
+    } else if (grid_type == "Quadratic"){
+        setQuadraticGrid(kTe_to_set, ncell);
+    } else if (grid_type == "Geometric"){
+        setGeometricGrid(kTe_to_set, ncell);
+    }
+}
+
 int EEDFTwoTermApproximation::calculateDistributionFunction()
 {
     // TODO
@@ -57,11 +133,11 @@ int EEDFTwoTermApproximation::calculateDistributionFunction()
     // During the first call to this function the indices of target species need to be defined
     if (m_first_call)
     {
-        writelog("First call to calculateDistributionFunction\n");
+        //writelog("First call to calculateDistributionFunction\n");
         initSpeciesIndexCS();
         m_first_call = false;
     } else {
-        writelog("pass init\n");
+        // writelog("pass init\n");
     }
 
     update_mole_fractions();
@@ -70,8 +146,8 @@ int EEDFTwoTermApproximation::calculateDistributionFunction()
 
     if (!m_has_EEDF) {
         if (options.m_firstguess == "maxwell") {
-            writelog("First guess EEDF maxwell\n");
-            //auto kTe_max = 10.0 * options.m_init_kTe;
+            //writelog("First guess EEDF maxwell\n");
+            m_kTe_max = m_phase->get_kTe_max(); // old option: 30.0 * options.m_init_kTe; The new option takes as initial guess the entry of the user. Hopefully it is more accurate.
             for (size_t j = 0; j < options.m_points; j++) {
                 m_f0(j) = 2.0 * pow(1.0 / Pi, 0.5) * pow(options.m_init_kTe, -3. / 2.) *
                           exp(-m_gridCenter[j] / options.m_init_kTe);
@@ -87,6 +163,29 @@ int EEDFTwoTermApproximation::calculateDistributionFunction()
 
     // Computation of the EEDF
     converge(m_f0);
+
+    if (m_isSmart) {
+        // Compute EEDF and change the grid until :
+        double decades = std::log10(m_f0(0)) - std::log10(m_f0(options.m_points-1));
+        while (decades < m_minEedfDecay){
+            m_kTe_max = m_kTe_max * (1. + m_updateFactor);
+            // writelog("Right boundary too low. Ndecades was {:5.1e}. ", decades);
+            // writelog("New boundary is {:5.3e} eV.\n", m_kTe_max);
+            updateGrid(m_kTe_max);
+            updateCS();
+            converge(m_f0);
+            decades = std::log10(m_f0(0)) - std::log10(m_f0(options.m_points-1));
+        }
+        while (decades > m_maxEedfDecay){
+            m_kTe_max = m_kTe_max / (1. + m_updateFactor);
+            // writelog("Right boundary too high. Ndecades was {:5.1e}. ", decades);
+            // writelog("New boundary is {:5.3e} eV.\n", m_kTe_max);
+            updateGrid(m_kTe_max);
+            updateCS();
+            converge(m_f0);
+            decades = std::log10(m_f0(0)) - std::log10(m_f0(options.m_points-1));
+        }
+    }
 
     // End of monitoring
     m_timer_eedf->stop();
@@ -109,7 +208,7 @@ int EEDFTwoTermApproximation::calculateDistributionFunction()
 
 void EEDFTwoTermApproximation::converge(Eigen::VectorXd& f0)
 {
-    writelog("EEDFTwoTermApproximation::converge\n");
+    writelog("EEDFTwoTermApproximation::converge is called\n");
     double err0 = 0.0;
     double err1 = 0.0;
     double delta = options.m_delta0;
@@ -126,14 +225,14 @@ void EEDFTwoTermApproximation::converge(Eigen::VectorXd& f0)
             Df0(i) = abs(f0_old(i) - f0(i));
         }
         err1 = norm(Df0, m_gridCenter);
-        writelog("After iteration {:3d}, err = {:.3e} (target: {:.3e}), delta = {:.3e}\n", 
-                  n + 1, err1, options.m_rtol, delta);
-        writelog("err1 = {:14.5g} \n",err1);
+        //writelog("After iteration {:3d}, err = {:.3e} (target: {:.3e}), delta = {:.3e}\n", 
+        //          n + 1, err1, options.m_rtol, delta);
+        //writelog("err1 = {:14.5g} \n",err1);
         if (err1 < options.m_rtol) {
-            writelog("Boltzmann solver convergence after {:d} iterations\n", n);
+            //writelog("Boltzmann solver convergence after {:d} iterations\n", n);
             break;
         } else if (n == options.m_maxn - 1) {
-            throw CanteraError("WeaklyIonizedGas::converge", "Convergence failed");
+            throw CanteraError("EEDFTwoTermApproximation::converge", "Convergence failed");
         }
     }
 }
@@ -144,7 +243,7 @@ Eigen::VectorXd EEDFTwoTermApproximation::iterate(const Eigen::VectorXd& f0, dou
     // probably extremely ineficient
     // must be refactored!!
 
-    writelog("EEDFTwoTermApproximation::iterate\n");
+    //writelog("EEDFTwoTermApproximation::iterate\n");
     SparseMat_fp PQ(options.m_points, options.m_points);
     vector_fp g = vector_g(f0);
     for (size_t k : m_phase->kInelastic()) {
@@ -441,7 +540,7 @@ void EEDFTwoTermApproximation::initSpeciesIndexCS()
     m_klocTargets.resize(m_phase->nElectronCrossSections());
     for (size_t k = 0; k < m_phase->nElectronCrossSections(); k++)
     {
-        writelog("{:d} {:s}\n", k, m_phase->target(k));
+        //writelog("{:d} {:s}\n", k, m_phase->target(k));
         m_kTargets[k] = m_phase->speciesIndex(m_phase->target(k));
         if (m_kTargets[k] == string::npos) {
             throw CanteraError("EEDFTwoTermApproximation::initSpeciesIndexCS"
@@ -450,9 +549,9 @@ void EEDFTwoTermApproximation::initSpeciesIndexCS()
         }
         // Check if it is a new target or not :
         auto it = find(m_k_lg_Targets.begin(), m_k_lg_Targets.end(), m_kTargets[k]);
-        writelog("Indice = {:d}\n", distance(m_k_lg_Targets.begin(), it));
+        //writelog("Indice = {:d}\n", distance(m_k_lg_Targets.begin(), it));
         if (it == m_k_lg_Targets.end()){
-            writelog("New target found: {:s} with index {:d}\n", m_phase->target(k), distance(m_k_lg_Targets.begin(), it));
+            //writelog("New target found: {:s} with index {:d}\n", m_phase->target(k), distance(m_k_lg_Targets.begin(), it));
             m_k_lg_Targets.push_back(m_kTargets[k]);
             m_klocTargets[k] = m_k_lg_Targets.size() - 1;
         } else {
@@ -462,20 +561,20 @@ void EEDFTwoTermApproximation::initSpeciesIndexCS()
 
     //writelog("initSpeciesIndexCS 2\n");
 
-    writelog("Number of target species found: {:d}\n", m_k_lg_Targets.size());
+    //writelog("Number of target species found: {:d}\n", m_k_lg_Targets.size());
     m_X_targets.resize(m_k_lg_Targets.size());
     m_X_targets_prev.resize(m_k_lg_Targets.size());
-    writelog("Number of target species found: {:d}\n", m_X_targets.size());
+    //writelog("Number of target species found: {:d}\n", m_X_targets.size());
     //writelog("initSpeciesIndexCS 21\n");
     for (size_t k = 0; k < m_X_targets.size(); k++)
     {
         //writelog("initSpeciesIndexCS 22 {:d}\n", k);
-        writelog("m_k_lg_Targets[{:d}] = {:d}\n", k, m_k_lg_Targets[k]);
-        writelog("moleFraction[{:d}] = {:g}\n", m_k_lg_Targets[k], m_phase->moleFraction(m_k_lg_Targets[k]));
+        //writelog("m_k_lg_Targets[{:d}] = {:d}\n", k, m_k_lg_Targets[k]);
+        //writelog("moleFraction[{:d}] = {:g}\n", m_k_lg_Targets[k], m_phase->moleFraction(m_k_lg_Targets[k]));
         size_t k_glob = m_k_lg_Targets[k];
         m_X_targets[k] = m_phase->moleFraction(k_glob);
         m_X_targets_prev[k] = m_phase->moleFraction(k_glob);
-        writelog("The target number {:d} has X = {:.3g}\n", k, m_X_targets[k]);
+        //writelog("The target number {:d} has X = {:.3g}\n", k, m_X_targets[k]);
     }
 
     //writelog("initSpeciesIndexCS 3\n");
@@ -495,15 +594,15 @@ void EEDFTwoTermApproximation::checkSpeciesNoCrossSection()
     // warn that a specific species needs cross-section data.
     for (size_t k : m_kOthers) {
         if (m_phase->moleFraction(k) > options.m_moleFractionThreshold) {
-            writelog("EEDFTwoTermApproximation:checkSpeciesNoCrossSection\n");
-            writelog("Warning:The mole fraction of species {} is more than 0.01 (X = {:.3g}) but it has no cross-section data\n", m_phase->speciesName(k), m_phase->moleFraction(k));
+            // writelog("EEDFTwoTermApproximation:checkSpeciesNoCrossSection\n");
+            // writelog("Warning:The mole fraction of species {} is more than 0.01 (X = {:.3g}) but it has no cross-section data\n", m_phase->speciesName(k), m_phase->moleFraction(k));
         }
     }
 }
 
 void EEDFTwoTermApproximation::updateCS()
 {
-    writelog("updateCS\n");
+    //writelog("updateCS\n");
     // Compute sigma_m and sigma_\epsilon
     calculateTotalCrossSection();
     calculateTotalElasticCrossSection();
@@ -512,23 +611,23 @@ void EEDFTwoTermApproximation::updateCS()
 // Update the species mole fractions used for EEDF computation
 void EEDFTwoTermApproximation::update_mole_fractions()
 {
-    writelog("Update mole fractions in EEDFTwoTermApproximation\n");
+    //writelog("Update mole fractions in EEDFTwoTermApproximation\n");
     double tmp_sum = 0.0;
     for (size_t k = 0; k < m_X_targets.size(); k++)
     {
-        writelog("The target number {:d} has X = {:.3g}\n", k, m_phase->moleFraction(m_k_lg_Targets[k]));
-        writelog("update X {:d}\n", k);
+        // writelog("The target number {:d} has X = {:.3g}\n", k, m_phase->moleFraction(m_k_lg_Targets[k]));
+        // writelog("update X {:d}\n", k);
         m_X_targets[k] = m_phase->moleFraction(m_k_lg_Targets[k]);
         tmp_sum = tmp_sum + m_phase->moleFraction(m_k_lg_Targets[k]);
     }
     //writelog("Update mole fractions in EEDFTwoTermApproximation 2\n");
-    writelog("Sum of mole fraction is equal to {:.2g}\n", tmp_sum);
+    // writelog("Sum of mole fraction is equal to {:.2g}\n", tmp_sum);
 
     // Normalize the mole fractions to unity:
     for (size_t k = 0; k < m_X_targets.size(); k++)
     {
         m_X_targets[k] = m_X_targets[k] / tmp_sum;
-        writelog("The target number {:d} has X = {:.3g}\n", k, m_X_targets[k]);
+        // writelog("The target number {:d} has X = {:.3g}\n", k, m_X_targets[k]);
         // if (fabs(m_X_targets[k] - m_X_targets_prev[k]) >= m_X_atol)
         // {
         //     writelog("Mole fractions change a lot, m_f0_ok is set to false\n");
@@ -540,17 +639,17 @@ void EEDFTwoTermApproximation::update_mole_fractions()
 
 void EEDFTwoTermApproximation::calculateTotalCrossSection()
 {
-    writelog("calculateTotalCrossSection\n");
+    //writelog("calculateTotalCrossSection\n");
     m_totalCrossSectionCenter.assign(options.m_points, 0.0);
     m_totalCrossSectionEdge.assign(options.m_points + 1, 0.0);
     for (size_t k = 0; k < m_phase->nElectronCrossSections(); k++) {
         vector_fp x = m_phase->energyLevels()[k];
         vector_fp y = m_phase->crossSections()[k];
-        writelog("Kind :    {:s}\n", m_phase->kind(k));
-        writelog("Target :    {:s}\n", m_phase->target(k));
-        writelog("Product :    {:s}\n", m_phase->product(k));
-        writelog("Check X: {:g} =? {:g}\n", m_phase->moleFraction(m_kTargets[k]), m_X_targets[m_klocTargets[k]]);
-        writelog("\n");
+        // writelog("Kind :    {:s}\n", m_phase->kind(k));
+        // writelog("Target :    {:s}\n", m_phase->target(k));
+        // writelog("Product :    {:s}\n", m_phase->product(k));
+        // writelog("Check X: {:g} =? {:g}\n", m_phase->moleFraction(m_kTargets[k]), m_X_targets[m_klocTargets[k]]);
+        // writelog("\n");
         for (size_t i = 0; i < options.m_points; i++) {
             m_totalCrossSectionCenter[i] += m_X_targets[m_klocTargets[k]] *
                                             linearInterp(m_gridCenter[i], x, y);
@@ -564,7 +663,7 @@ void EEDFTwoTermApproximation::calculateTotalCrossSection()
 
 void EEDFTwoTermApproximation::calculateTotalElasticCrossSection()
 {
-    writelog("calculateTotalElasticCrossSection\n");
+    //writelog("calculateTotalElasticCrossSection\n");
     m_sigmaElastic.clear();
     m_sigmaElastic.resize(options.m_points, 0.0);
     for (size_t k : m_phase->kElastic()) {
@@ -582,7 +681,7 @@ void EEDFTwoTermApproximation::calculateTotalElasticCrossSection()
 
 void EEDFTwoTermApproximation::setGridCache()
 {
-    writelog("EEDFTwoTermApproximation::setGridCache\n");
+    //writelog("EEDFTwoTermApproximation::setGridCache\n");
     m_sigma.clear();
     m_sigma.resize(m_phase->nElectronCrossSections());
     m_sigma_offset.clear();

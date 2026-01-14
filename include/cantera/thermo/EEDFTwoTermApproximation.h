@@ -69,6 +69,8 @@ public:
     int calculateDistributionFunction();
 
     void setLinearGrid(double& kTe_max, size_t& ncell);
+    void setQuadraticGrid(double& kTe_max, size_t& ncell);
+    void setGeometricGrid(double& kTe_max, size_t& ncell);
 
     /**
      * Options controlling how the calculation is carried out.
@@ -87,6 +89,16 @@ public:
     double getElectronMobility() const {
         return m_electronMobility;
     }
+
+    void setSmartBoundaries(bool yes_or_no){
+        m_isSmart = yes_or_no;
+    }
+
+    bool getSmartBoundaries(){
+        return m_isSmart;
+    }
+
+    void updateGrid(double kTe_to_set);
 
 protected:
     /**
@@ -189,6 +201,8 @@ protected:
 
     double norm(const Eigen::VectorXd& f, const Eigen::VectorXd& grid);
 
+    auto retrieveTopkTeFromYaml();
+
     double m_electronMobility;
 
     //! Grid of electron energy (cell center) [eV]
@@ -261,6 +275,18 @@ protected:
 
     //! Timer to monitor EEDF solving
     Timer* m_timer_eedf = new Timer("timer_eedf");
+
+    //! Refine grid until the number of decades of decay of the eedf in in the good range
+    //! as done in Loki-B
+    bool m_isSmart = false; // initialisation at false, but can be set to true by the user. By default, the grid provided by the user will not be modified.
+    double m_minEedfDecay = 15.;  //! minimun number of decades of decay for the EEDF
+    double m_maxEedfDecay = 25.;  //! maximum number of decades of decay for the EEDF
+    double m_updateFactor = 0.05; //! factor used to increase or decrease the maximum value of the energy grid
+    double m_kTe_max = 0; // initialisation so that it is declared.
+
+    string grid_type = "Linear";
+    size_t n_cell = 100;
+
 
 private:
 

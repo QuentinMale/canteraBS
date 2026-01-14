@@ -1965,6 +1965,17 @@ cdef class ThermoPhase(_SolutionBase):
             if not self._enable_plasma:
                 raise ThermoModelMethodError(self.thermo_model)
             return self.plasma.normalizedElasticElectronEnergyLossRate()
+    
+    property set_smart_boundaries:
+        """ Automatically fetches the necessary upper bound of the EEDF energy spectrum and adapts the grid accordingly (keeping the resolution constant) """
+        def __get__(self):
+            if not self._enable_plasma:
+                raise ThermoModelMethodError(self.thermo_model)
+            return self.plasma.getSmartBoundaries()
+        def __set__(self, yes_or_no):
+            if not self._enable_plasma:
+                raise ThermoModelMethodError(self.thermo_model)
+            self.plasma.setSmartBoundaries(yes_or_no)
 
 
 cdef class InterfacePhase(ThermoPhase):

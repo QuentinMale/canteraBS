@@ -64,6 +64,7 @@ void ReactorBase::setThermo(ThermoPhase& thermo)
     m_enthalpy = m_thermo->enthalpy_mass();
     m_intEnergy = m_thermo->intEnergy_mass();
     m_pressure = m_thermo->pressure();
+    
 }
 
 void ReactorBase::setThermoMgr(ThermoPhase& thermo)

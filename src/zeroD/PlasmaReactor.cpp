@@ -66,18 +66,51 @@ void PlasmaReactor::getState(double* y)
 
 
 
+// void PlasmaReactor::initialize(double t0)
+// {
+//     IdealGasReactor::initialize(t0);
+
+//     // Number of equation in the reactor
+//     // Equation for vibrational energy density is taken into account here.
+//     m_nspevib = m_plasma->nsp_evib();
+//     m_nv += m_nspevib;
+//     disVibVPower.resize(m_nspevib);
+//     RvtVPower.resize(m_nspevib);
+//     recoverVibSpecies(); // get all the vibrationnal species to use this in the other functions
+//     initializeStarikovskiyReading(); // initialize the reading of the yaml file for the starikovskiy model. This avoids having a heavy I/O operation at each time step.
+//     // for (auto outlet : m_outlet) {
+//     //     outlet->setNspEvib(m_nspevib); // set the number of vibrational species in the outlet flow devices
+//     // }
+//     // for (auto inlet : m_inlet) {
+//     //     inlet->setNspEvib(m_nspevib); // set the number of vibrational species in the outlet flow devices
+//     // }
+// }
+
 void PlasmaReactor::initialize(double t0)
 {
     IdealGasReactor::initialize(t0);
 
+    // ---- DEBUG: print the base class sizing before we add vibrational equations
+    std::fprintf(stderr, "[CV init] base m_nv=%zu m_nsp=%zu\n", m_nv, m_nsp);
+    std::fflush(stderr);
+
     // Number of equation in the reactor
     // Equation for vibrational energy density is taken into account here.
     m_nspevib = m_plasma->nsp_evib();
+
+    std::fprintf(stderr, "[CV init] nspevib=%zu (before add)\n", m_nspevib);
+    std::fflush(stderr);
+
     m_nv += m_nspevib;
+
+    std::fprintf(stderr, "[CV init] after add m_nv=%zu\n", m_nv);
+    std::fflush(stderr);
+
     disVibVPower.resize(m_nspevib);
     RvtVPower.resize(m_nspevib);
-    recoverVibSpecies(); // get all the vibrationnal species to use this in the other functions
-    initializeStarikovskiyReading(); // initialize the reading of the yaml file for the starikovskiy model. This avoids having a heavy I/O operation at each time step.
+
+    recoverVibSpecies();               // get all the vibrational species
+    initializeStarikovskiyReading();   // avoid heavy I/O each time step
 }
 
 void PlasmaReactor::updateState(double* y)
@@ -130,7 +163,7 @@ void PlasmaReactor::eval(double time, double* LHS, double* RHS)
 
     // ////////////////////////////////////////////////////////////////// DEBUG /////////////////////////////////////////////////////////////////
 
-    printf(" **************************** disVPower successfulyy computed with value %f ******************************************\n", m_disVPower);
+    // printf(" **************************** disVPower successfulyy computed with value %f ******************************************\n", m_disVPower);
     double tot_vib_power = 0;
     // printf("nb of vib species considered : %ld \n", m_nspevib);
     if (m_nspevib > 0) {
@@ -139,7 +172,7 @@ void PlasmaReactor::eval(double time, double* LHS, double* RHS)
             tot_vib_power += disVibVPower[n];
         }
     }
-    printf(" **************************** total vibrational power successfully computed with value %f ******************************************\n", tot_vib_power);
+    // printf(" **************************** total vibrational power successfully computed with value %f ******************************************\n", tot_vib_power);
     mcvdTdt += (m_disVPower - tot_vib_power) * m_vol; // RAW FAST GAS HEATING POWER (BEFORE APPLYING PLASMA CHEMICAL SOURCE TERMS)
 
     // gas heating from vibrational–translational relaxation
@@ -151,11 +184,11 @@ void PlasmaReactor::eval(double time, double* LHS, double* RHS)
             tot_relax_power += RvtVPower[n];
         }
     }
-    printf(" **************************** total relaxation power successfuly computed with value %f ******************************************\n", tot_relax_power);
+    // printf(" **************************** total relaxation power successfuly computed with value %f ******************************************\n", tot_relax_power);
     mcvdTdt += tot_relax_power * m_vol; // SLOW GAS HEATING POWER
     
 
-    printf(" Entering species chemical for loop\n");
+    // printf(" Entering species chemical for loop\n");
     for (size_t n = 0; n < m_nsp; n++) {
         
         // heat release from gas phase and surface reactions
@@ -185,6 +218,17 @@ void PlasmaReactor::eval(double time, double* LHS, double* RHS)
         double mdot = outlet->massFlowRate();
         dmdt -= mdot; // mass flow out of system
         mcvdTdt -= mdot * m_pressure * m_vol / m_mass; // flow work
+        // for (size_t n=0; n < m_nspevib; n++){
+        //     double* evib_array = new double[m_nspevib];
+        //     m_plasma->getVibrationalEnergies(evib_array);
+        //     double loc_vib_nrj = evib_array[n];
+        //     devibdt[n] -= mdot * loc_vib_nrj / m_mass ; // flow of vibrational energy out of the system
+        //     if (devibdt[n] < 1e-10){
+        //         devibdt[n] = 0; // if the vibrational energy is too low, we assume no vibrational power
+        //         outlet->setDeltaEvib(n, 0); // set the extensive vibrational power of the outlet flow device (and not volumic!)
+        //     }
+        //     outlet->setDeltaEvib(n, m_vol * mdot * loc_vib_nrj / m_mass); // set the extensive vibrational power of the outlet flow device (and not volumic!)
+        // }
     }
 
     // add terms for inlets
@@ -200,7 +244,16 @@ void PlasmaReactor::eval(double time, double* LHS, double* RHS)
             // In combination with h_in*mdot_in, flow work plus thermal
             // energy carried with the species
             mcvdTdt -= m_uk[n] / mw[n] * mdot_spec;
-        }
+        } // NON FUNCTIONAL VIBRATIONAL ENERGY FLOW -> TODO = FIX IT
+        // vector<double> inlet_vib_energies = inlet->getDeltaEvib(); //flow of volumic vibrational power into the system
+        // for (size_t n = 0; n < m_nspevib; n++) {
+        //     double loc_vib_nrj = inlet_vib_energies[n]; // the total vibrational power of vibrationnally excited species n to enter the reactor throught the inlet considered
+        //     if (loc_vib_nrj > 1e-10) {
+
+        //         devibdt[n] += loc_vib_nrj/m_vol; // tranforming it into volumic vibratinoal power to come back to the vibrational energy equation dimension
+
+        //     }
+        // }
     }
 
     RHS[1] = m_vdot;
@@ -244,13 +297,20 @@ string PlasmaReactor::componentName(size_t k) {
 }
 
 void PlasmaReactor::compute_disVPower() {
-    m_disVPower = ElectronCharge * m_plasma->nElectron()
+    if (m_plasma->E() < 1e-21){
+        // If the electric field is too low, we assume no discharge power.
+        m_disVPower = 0;
+    }
+    else{
+        m_disVPower = ElectronCharge * m_plasma->nElectron()
             * m_plasma->electronMobility()
             * pow(m_plasma->E(), 2);
     }
+    
+    }
 
 void PlasmaReactor::compute_disVibVPower() { 
-;
+
     m_kin->getNetRatesOfProgress(&m_kr[0]); // "kr"
     size_t n_vib_species = m_nspevib;
     
@@ -317,7 +377,7 @@ double PlasmaReactor::compute_TauRelax(size_t n){
     
     double tau = 0;
     string spec_name = vib_spec[n];
-    printf("Computing relaxation time for species %s\n", spec_name.c_str());
+    // printf("Computing relaxation time for species %s\n", spec_name.c_str());
     if (relax_type == "Millikan&White"){
         tau = tau_millikan_white(spec_name);
     }
@@ -370,13 +430,13 @@ double PlasmaReactor::tau_millikan_white(string spec_name){ // TO BE CORRECTED O
         
     tau = prefactor * pow(10, exponent);
     
-    printf("tau_millikan_%s = %e\n", spec_name.c_str(), tau);
+    // printf("tau_millikan_%s = %e\n", spec_name.c_str(), tau);
     
     return tau;
 } 
 
 double PlasmaReactor::tau_castela(string spec_name){
-    double tau = 1e-11; // Almost as fast gas heating if castela is called for a species which is not N2.
+    double tau = 1e-11; // Almost as fast gas heating if castela is called for a species which is not N2. In that case, the species will have a very short relaxation time.
     if (spec_name == "N2") {
         double a_n2 = 221.0;
         double b_n2 = 0.029;
@@ -404,7 +464,7 @@ double PlasmaReactor::tau_castela(string spec_name){
         tau = 1/(1/tau_n2 + 1/tau_o2 + 1/tau_o);
         
     }
-    printf("tau_castela = %e\n", tau);
+    // printf("tau_castela = %e\n", tau);
     return tau;
 }
 
@@ -434,7 +494,7 @@ void PlasmaReactor::readStarikovskiyRelaxYamlFile(string filename){
 
     for (size_t n=0; n<m_nspevib; n++){
         string spec_name = vib_spec[n];
-        printf("Reading STARIKOVSKIY DATA YAML file for species %s\n", spec_name.c_str()); 
+        // printf("Reading STARIKOVSKIY DATA YAML file for species %s\n", spec_name.c_str()); 
         std::string key = spec_name + "_relaxations";
 
         std::vector<RelaxationEntry> reactions;
@@ -462,7 +522,7 @@ double PlasmaReactor::tau_starikovskiy(size_t n){
     if (!starikovskiy_read) {
         if (starikovskiy_yaml_path == "init"){
             starikovskiy_yaml_path = "plasma_relax/starikovskiy_default.yaml"; // default path
-            printf("No yaml file provided for the Starikovskiy relaxation model but this model is used\n. Using default path %s\n", starikovskiy_yaml_path.c_str());
+            // printf("No yaml file provided for the Starikovskiy relaxation model but this model is used\n. Using default path %s\n", starikovskiy_yaml_path.c_str());
         }
         readStarikovskiyRelaxYamlFile(starikovskiy_yaml_path);
         starikovskiy_read = true;
@@ -481,25 +541,26 @@ double PlasmaReactor::tau_starikovskiy(size_t n){
         one_over_tau += k * x_partner * mixture_molar_density * avogadro_per_mol;
     }
     double tau = 1/one_over_tau;
-    std::cout << "Starikovskiy relaxation time for " << vib_spec[n] << ": " << tau << "\n";
+    // std::cout << "Starikovskiy relaxation time for " << vib_spec[n] << ": " << tau << "\n";
 
     return tau;
 } 
 
 void  PlasmaReactor::recoverVibSpecies(){
     vib_spec = m_plasma->getVibSpecies();
-    printf("Vibrational species recovery:\n");
+    // printf("Vibrational species recovery:\n");
     if (vib_spec.size() == 0){
-        printf("    No vibrational species found\n");
+        //printf("    No vibrational species found\n");
     }
     for (size_t n = 0; n < vib_spec.size(); n++){
-        printf("Vibrational species %ld: %s\n", n, vib_spec[n].c_str());
+        //printf("Vibrational species %ld: %s\n", n, vib_spec[n].c_str());
     }
 }
 
 void PlasmaReactor::setVibRelaxType(string relax_type_name){
     relax_type = relax_type_name;
-    printf("Relaxation type set to %s\n", relax_type.c_str());}
+    // printf("Relaxation type set to %s\n", relax_type.c_str());
+    }
 
 string PlasmaReactor::getVibRelaxType(){
     return relax_type;

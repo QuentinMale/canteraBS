@@ -77,7 +77,7 @@ void PlasmaPhase::updateElectronEnergyDistribution()
     } else if (m_distributionType == "isotropic") {
         setIsotropicElectronEnergyDistribution();
     } else if (m_distributionType == "TwoTermApproximation") {
-        writelog("call to calculateDistributionFunction()\n");
+        //writelog("call to calculateDistributionFunction()\n");
         auto ierr = ptrEEDFSolver->calculateDistributionFunction();
         if (ierr == 0) {
             auto x = ptrEEDFSolver->getGridEdge();
@@ -92,7 +92,7 @@ void PlasmaPhase::updateElectronEnergyDistribution()
     }
     electronEnergyDistributionChanged();
     updateElectronTemperatureFromEnergyDist();
-    writelog("Done!\n");
+    //writelog("Done!\n");
 }
 
 void PlasmaPhase::normalizeElectronEnergyDistribution() {
@@ -285,7 +285,7 @@ void PlasmaPhase::setParameters(const AnyMap& phaseNode, const AnyMap& rootNode)
                 setMeanElectronEnergy(energy);
             } else {
                 throw CanteraError("PlasmaPhase::setParameters",
-                    "isotropic type requires electron-temperature key.");
+                    "isotropic type requires electron-temperature (mean-electron-energy) key.");
             }
             if (eedf.hasKey("energy-levels")) {
                 setElectronEnergyLevels(eedf["energy-levels"].asVector<double>().data(),
@@ -310,29 +310,62 @@ void PlasmaPhase::setParameters(const AnyMap& phaseNode, const AnyMap& rootNode)
         } else if (m_distributionType == "TwoTermApproximation") {
             if (rootNode.hasKey("cross-sections")) {
                 // CQM debug
-                writelog("I have cross-sections!\n");
+                // writelog("I have cross-sections!\n");
                 // By default, add all CS from the 'cross-sections' section
                 for (const auto& item : rootNode["cross-sections"].asVector<AnyMap>()) {
                     addElectronCrossSection( newElectronCrossSection(item) );
                 }
-                writelog("m_ncs = {:3d}\n", m_ncs);
+                //writelog("m_ncs = {:3d}\n", m_ncs);
             } else {
                 throw CanteraError("PlasmaPhase::setParameters",
                     "Cross section data are required.");
             }
-            // CQM use the energy-levels input as initial grid??
-            //m_nPoints = eedf["energy-levels"].asVector<double>().size();
-            //auto levels = eedf["energy-levels"].asVector<double>().data();
-            //m_electronEnergyLevels = Eigen::Map<const Eigen::ArrayXd>(levels, m_nPoints);
-            ptrEEDFSolver = make_unique<EEDFTwoTermApproximation>(*this);
-            // CQM hard coded for now
-            // TODO set kTe_max and ncell from user 
-            double kTe_max = 60;
-            size_t nGridCells = 301;
-            // CQM WARNING m_nPoints is nEdges in PlasmaPhase (i.e. nCells+1)
-            // It would be nice to change nPoints to nGridEdges
-            m_nPoints = nGridCells + 1;
-            ptrEEDFSolver->setLinearGrid(kTe_max, nGridCells);
+            if (eedf.hasKey("energy-levels-parameters")){
+                std::vector<double> nrj_levels_params = eedf["energy-levels-parameters"].asVector<double>();
+                if (nrj_levels_params.size() != 2) {
+                    throw CanteraError("PlasmaPhase::setParameters","energy-levels-parameters should contain two values: kTe_max and nGridCells.");
+                }
+                kTe_max = nrj_levels_params[0];
+                size_t nGridCells = static_cast<size_t>(nrj_levels_params[1]);
+                ptrEEDFSolver = make_unique<EEDFTwoTermApproximation>(*this);
+            
+                // CQM WARNING m_nPoints is nEdges in PlasmaPhase (i.e. nCells+1)
+                // It would be nice to change nPoints to nGridEdges
+                m_nPoints = nGridCells + 1;
+
+                if (eedf.hasKey("levels_distribution")){
+                    auto levels_distribution = eedf["levels_distribution"].asString();
+                    if (levels_distribution == "Linear"){
+                        m_discret_type = "Linear";
+                        ptrEEDFSolver->setLinearGrid(kTe_max, nGridCells);
+                    } else if (levels_distribution == "Quadratic"){
+                        m_discret_type = "Quadratic";
+                        ptrEEDFSolver->setQuadraticGrid(kTe_max, nGridCells);
+                    } else if (levels_distribution == "Geometric"){
+                        m_discret_type = "Geometric";
+                        ptrEEDFSolver->setGeometricGrid(kTe_max, nGridCells);
+                    }
+                    else {
+                        throw CanteraError("PlasmaPhase::setParameters","levels_distribution should be Linear, Quadratic or Geometric. For now, no other point distribution options are implemented.\nIf you want another distribution please implement it.");
+                    }
+                } else {
+                    // Default to linear grid if no distribution is specified
+                    ptrEEDFSolver->setLinearGrid(kTe_max, nGridCells);
+                    writelog("No levels_distribution key found in the input file. Defaulting to linear grid.\n");
+                }
+            }
+            
+            // CQM DEBUG The feature for reading the 
+            // } else if (eedf.hasKey("energy-levels")) {
+            //     // CQM debug
+            //     writelog("I have energy-levels!\n");
+            //     setElectronEnergyLevels(eedf["energy-levels"].asVector<double>().data(),
+            //                             eedf["energy-levels"].asVector<double>().size());
+            // } else {
+            //     throw CanteraError("PlasmaPhase::setParameters", "Cannot find key energy-levels nor key energy-levels-parameters. Please provide one of them");
+            // }
+        } else {
+            throw CanteraError("PlasmaPhase::setParameters","Unknown electron-energy-distribution type: '" + m_distributionType + "'");
         }
     }
 }
@@ -386,26 +419,26 @@ bool PlasmaPhase::addElectronCrossSection(shared_ptr<ElectronCrossSection> ecs)
 bool PlasmaPhase::addSpecies(shared_ptr<Species> spec)
 {
     // 🔹 Affichage pour déboguer
-    std::cout << "Adding species : " << spec->name << std::endl;
+    // std::cout << "Adding species : " << spec->name << std::endl;
 
     const auto& input = spec->input;
-    for (const auto& entry : input) {
-        std::cout << "  - " << entry.first << " : ";
+    // for (const auto& entry : input) {
+    //     std::cout << "  - " << entry.first << " : ";
     
-        if (entry.second.is<bool>()) {
-            std::cout << (entry.second.as<bool>() ? "true" : "false");
-        } else if (entry.second.is<std::string>()) {
-            std::cout << entry.second.as<std::string>();
-        } else if (entry.second.is<long int>()) {
-            std::cout << entry.second.as<long int>();
-        } else if (entry.second.is<double>()) {
-            std::cout << entry.second.as<double>();
-        } else {
-            std::cout << "(type not supported for printing)";
-        }
+    //     if (entry.second.is<bool>()) {
+    //         std::cout << (entry.second.as<bool>() ? "true" : "false");
+    //     } else if (entry.second.is<std::string>()) {
+    //         std::cout << entry.second.as<std::string>();
+    //     } else if (entry.second.is<long int>()) {
+    //         std::cout << entry.second.as<long int>();
+    //     } else if (entry.second.is<double>()) {
+    //         std::cout << entry.second.as<double>();
+    //     } else {
+    //         std::cout << "(type not supported for printing)";
+    //     }
     
-        std::cout << std::endl;
-    }
+    //     std::cout << std::endl;
+    // }
     
 
     m_speciesData.push_back(spec->input);  // <--- ligne ajoutée
@@ -426,7 +459,7 @@ bool PlasmaPhase::addSpecies(shared_ptr<Species> spec)
     }
 
     // Afficher la taille de m_speciesData après ajout
-    std::cout << "Current size of m_speciesData : " << m_speciesData.size() << std::endl;
+    // std::cout << "Current size of m_speciesData : " << m_speciesData.size() << std::endl;
 
     return added;
 }
@@ -447,7 +480,7 @@ void PlasmaPhase::initThermo()
     size_t count = 0;
 
     vector<shared_ptr<Reaction>> reactions;
-    printf("initiating the count of reactions given a d_u_vib within launching initThermo");
+    // printf("initiating the count of reactions given a d_u_vib within launching initThermo");
 
     for (AnyMap R : reactionsAnyMapList(*m_kinetics, m_input, m_root)) {
         shared_ptr<Reaction> reaction = newReaction(R, *m_kinetics);
@@ -459,17 +492,17 @@ void PlasmaPhase::initThermo()
         string vibTarget = "-";
         if (reaction->input.hasKey("vib_bool")) {
             vibBool = reaction->input["vib_bool"].asBool();
-            printf("vib_bool = %d\n", vibBool);
+            // printf("vib_bool = %d\n", vibBool);
             if (vibBool) {
                 ++count;
-                printf("Count now has the value = %ld\n", count);
+                // printf("Count now has the value = %ld\n", count);
             }
             if (reaction->input.hasKey("d_u_vib") && vibBool){
                 DUVibValue = reaction->input["d_u_vib"].asDouble();
-                printf("d_u_vib = %f\n", DUVibValue);
+                // printf("d_u_vib = %f\n", DUVibValue);
                 if (reaction->input.hasKey("vib_target")){
                     vibTarget = reaction->input["vib_target"].asString();
-                    printf("vib_target = %s\n", vibTarget.c_str());
+                    // printf("vib_target = %s\n", vibTarget.c_str());
                 }
                 if (!reaction->input.hasKey("vib_target")){
                     throw CanteraError("PlasmaPhase::initThermo",
@@ -511,8 +544,8 @@ void PlasmaPhase::initThermo()
                     DUVibValue = rate->get_threshold();
                     vibTarget = rate->target();
                     if (reaction->input.hasKey("d_u_vib")){
-                        printf("d_u_vib value found: %f\n", old_duvib);
-                        printf("d_u_vib value should be set to cross-section provided threshold: %f\n", DUVibValue);
+                        // printf("d_u_vib value found: %f\n", old_duvib);
+                        // printf("d_u_vib value should be set to cross-section provided threshold: %f\n", DUVibValue);
                         throw CanteraError("PlasmaPhase::initThermo",
                             "A d_u_vib value field has been provided for an electron-collision reaction\n The threshold value provided within the reaction's cross-sections is normally fetched automatically.\n Please remove the d_u_vib field from the reaction in the YAML");
                     }
@@ -526,13 +559,13 @@ void PlasmaPhase::initThermo()
     }
 
     m_nrevib = count;
-    printf("Final value of count = %ld\n", count);
+    //printf("Final value of count = %ld\n", count);
     // std::cout << "Final value of count = " << count << std::endl;
-    printf("TO CHECK:values in the list m_duvib\n");
-    for (size_t i = 0; i < m_duvib.size(); i++) {
-        printf("%f, ", m_duvib[i]);
-    }
-    printf("\n END OF m_duvib LISTING\n");
+    // printf("TO CHECK:values in the list m_duvib\n");
+    // for (size_t i = 0; i < m_duvib.size(); i++) {
+    //     printf("%f, ", m_duvib[i]);
+    // }
+    // printf("\n END OF m_duvib LISTING\n");
 
     // Check that all the d_u_vib values were correctly fetched or given: throw an error is one is still at -1
     bool all_duvib = true;
@@ -802,12 +835,12 @@ void PlasmaPhase::countVibSpecies() {
     int count = 0;
     if (input().hasKey("vib_species")) {
         auto vib = input()["vib_species"].asVector<std::string>();
-        std::cout << "Vibrational species : ";
+        // std::cout << "Vibrational species : ";
         for (const auto& s : vib) {
-            std::cout << s << " ";
+            // std::cout << s << " ";
             count++;
         }
-        std::cout << std::endl;
+        //std::cout << std::endl;
         m_nspevib = count;
         vib_species = vib;
     } else {

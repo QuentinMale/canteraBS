@@ -114,6 +114,48 @@ public:
         m_time = time;
     }
 
+    // PLASMA REACTORS SPECIFIC FLOW DEVICE METHODS
+
+    // void setNspEvib(size_t n) { // allows to get the proper length for the vector of vibraitonnal energy change.
+
+    //     // if(m_in->getThermo()->type() !="plasma" || m_out->getThermo()->type() !="plasma"){
+    //     //     throw CanteraError("FlowDevice::setNspEvib",
+    //     //                        "This function is only for PlasmaReactor");
+    //     // }
+
+    //     m_delta_evib.resize(n);
+    //     for (size_t i = 0; i < n; i++) {
+    //         m_delta_evib[i] = 0.0; // initialize the array to zero
+    //     }
+    // }
+
+    // void setDeltaEvib(size_t n, double delta) { // sets the variaiton of the n_th vibrational species
+    //     // if(m_in->type() !="PlasmaReactor" || m_out->type() != "PlasmaReactor"){
+    //     //     throw CanteraError("FlowDevice::setNspEvib",
+    //     //                        "This function is only for PlasmaReactor");
+    //     // }
+
+    //     if (n < m_delta_evib.size()) {
+    //         m_delta_evib[n] = delta;
+    //     } else {
+    //         throw CanteraError("FlowDevice::setDeltaEvib",
+    //                            "Index out of bounds for m_delta_evib");
+    //     }
+    // }
+
+    // vector<double> getDeltaEvib(){
+
+    //     // if(m_in->type() !="PlasmaReactor" || m_out->type() != "PlasmaReactor"){
+    //     //     throw CanteraError("FlowDevice::setNspEvib",
+    //     //                        "This function is only for PlasmaReactor");
+    //     // }
+    //     return m_delta_evib;
+    // }
+
+    // // PLASMA REACTORS SPECIFIC FLOW DEVICE PARAMETERS
+
+    // vector<double> m_delta_evib; // TO DO, il faut ajuster la longueur de l'array en fonction du yaml utilisé dans les réacteurs d'entrée et de sortie.
+
 protected:
     double m_mdot = Undef;
 
@@ -128,6 +170,7 @@ protected:
 
     //! Current reactor network time
     double m_time = 0.;
+
 
 private:
     size_t m_nspin = 0;

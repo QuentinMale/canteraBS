@@ -218,6 +218,8 @@ cdef extern from "cantera/thermo/PlasmaPhase.h":
         double electronMobility()
         size_t nsp_evib()
         size_t nr_evib()
+        void setSmartBoundaries(cbool)
+        cbool getSmartBoundaries()
 
 
 cdef extern from "cantera/cython/thermo_utils.h":

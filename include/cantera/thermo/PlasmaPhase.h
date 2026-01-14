@@ -427,6 +427,26 @@ public:
 
     std::vector<std::string> vib_species; // a vector to store the names of vibrational species
 
+    void setSmartBoundaries(bool yes_or_no){
+        ptrEEDFSolver->setSmartBoundaries(yes_or_no);
+    }
+
+    bool getSmartBoundaries(){
+        return ptrEEDFSolver->getSmartBoundaries();
+    }
+
+    double get_kTe_max(){
+        return kTe_max;
+    }
+
+    size_t getNGridPointsEEDF(){
+        return m_nPoints - 1;
+    }
+
+    string get_DiscretisationType(){
+        return m_discret_type;
+    }
+
 protected:
 
     
@@ -596,6 +616,12 @@ protected:
 
     //! Electron mobility
     mutable double m_electronMobility;
+
+    // Type of EEDF discrtisation chosen by the user
+
+    string m_discret_type = "Linear";
+
+    double kTe_max = 100; // Initialisation of the maximum energy in eV of the electron distribution
 
 private:
 

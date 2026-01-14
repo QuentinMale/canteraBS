@@ -118,9 +118,9 @@ public:
 protected:
     void setThermo(ThermoPhase& thermo) override;
 
-    double m_dis_vol; //!< Discharge volume
+    double m_dis_vol = 1; //!< Discharge volume
 
-    double m_disVPower; //!< Volumetric discharge power
+    double m_disVPower = 0; //!< Volumetric discharge power
 
     std::vector<double> disVibVPower; //!< Volumetric discharge power going into vibrational excitation
 
@@ -132,13 +132,13 @@ protected:
 
     PlasmaPhase* m_plasma = nullptr; // pointer to the plasma phase
 
-    string relax_type; // relaxation type to be chosen by the user. It will be Castela, Starikovski, Constant or MillikanandWhite
+    string relax_type = "Castela"; // relaxation type to be chosen by the user. It will be Castela, Starikovski, Constant or MillikanandWhite
 
-    double tau_relax_constant_model; // relaxation time for the constant model
+    double tau_relax_constant_model = 1e-4; // relaxation time for the constant model
 
     std::vector<std::vector<RelaxationEntry>> m_data_starikovskiy; // relaxation data input from the relaxation yaml file provided by the user. Used by the Starikovskiy model
 
-    bool starikovskiy_read; // boolean to check if the yaml file has been read or not, to avoid reading it several times
+    bool starikovskiy_read = false; // boolean to check if the yaml file has been read or not, to avoid reading it several times
 
     Kinetics* m_kinetics;
 
