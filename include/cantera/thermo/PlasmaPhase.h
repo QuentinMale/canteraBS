@@ -342,26 +342,48 @@ public:
         return m_F;
     }
 
+    // ancienne fonction pour le champ électrique mais telle quelle E/N n'est pas tenu constant dnas le code car m_E n'est jamais recalculé ...
+    // double E() const {
+    //     return m_E;
+    // }
+
+    // fonction corrigée pour E
     double E() const {
-        return m_E;
+        return m_EN * N();
     }
 
     double ionDegree() const {
         return m_ionDegree;
     }
 
+    // ancienne fonction, mais il est plus robuste de le calculer dynamiquement
+    // double kT() const {
+    //     return m_kT;
+    // }
+
     double kT() const {
-        return m_kT;
+        return Boltzmann * temperature() / ElectronCharge;
     }
 
     double EN() const {
         return m_EN;
     }
 
-    // number density of electron
+    // proposition de modification 7: avant modif
+    // // number density of electron
+    // double nElectron() const {
+    //     compute_nDensity();
+    //     return m_nDensity[speciesIndex("Electron")];
+    // }
+
+    // proposition de modification 7: après modif
     double nElectron() const {
         compute_nDensity();
-        return m_nDensity[speciesIndex("Electron")];
+        if (m_electronSpeciesIndex == npos) {
+            throw CanteraError("PlasmaPhase::nElectron",
+                "No electron species is defined in this phase.");
+        }
+        return m_nDensity[m_electronSpeciesIndex];
     }
 
     // electron mobility
@@ -384,9 +406,20 @@ public:
 
     //! Set reduced electric field given in [V.m2]
     void setReducedElectricField(double EN) {
+        m_former_EN = m_EN;
         m_EN = EN; // [V.m2]
-        m_E = m_EN * molarDensity() * Avogadro; // [V/m]
+        // m_E = m_EN * molarDensity() * Avogadro; // [V/m] // reste de l'ancienne version du code mais il n'y en a plus besoin mtn que E est calculé dynamiquement.
+
     }
+
+    double getReducedElectricField(){
+        return m_EN;
+    }
+
+    double getFormerReducedElectricField(){
+        return m_former_EN;
+    }
+
     //! Get elastic electron energy loss rate (eV/s)
     double elasticElectronEnergyLossRate() {
         return concentration(m_electronSpeciesIndex) *
@@ -427,11 +460,31 @@ public:
 
     std::vector<std::string> vib_species; // a vector to store the names of vibrational species
 
+    // Proposition de modification 6: avant modif
+    // void setSmartBoundaries(bool yes_or_no){
+    //     ptrEEDFSolver->setSmartBoundaries(yes_or_no);
+    // }
+
+    // Proposition de modification 6: après modif
     void setSmartBoundaries(bool yes_or_no){
+        if (!ptrEEDFSolver) {
+            throw CanteraError("PlasmaPhase::setSmartBoundaries",
+                "EEDF solver is not initialized.");
+        }
         ptrEEDFSolver->setSmartBoundaries(yes_or_no);
     }
 
+    // Proposition de modification 6: avant modif
+    // bool getSmartBoundaries(){
+    //     return ptrEEDFSolver->getSmartBoundaries();
+    // }
+
+    // Proposition de modification 6: après modif
     bool getSmartBoundaries(){
+        if (!ptrEEDFSolver) {
+            throw CanteraError("PlasmaPhase::getSmartBoundaries",
+                "EEDF solver is not initialized.");
+        }
         return ptrEEDFSolver->getSmartBoundaries();
     }
 
@@ -446,6 +499,7 @@ public:
     string get_DiscretisationType(){
         return m_discret_type;
     }
+    void setElectronTemperatureNoDistribUpdate(double Te);
 
 protected:
 
@@ -502,6 +556,10 @@ protected:
 
     
 
+    
+
+    
+
     // Electron energy order in the exponential term
     double m_isotropicShapeFactor = 2.0;
 
@@ -541,6 +599,9 @@ protected:
 
     //! reduced electric field [V.m2]
     double m_EN;
+
+    // just a buffer to remeber the former EN that was applied to decided whether or not to re-compute the EEDF
+    double m_former_EN;
 
     //! reduced electric field [Td]
     //double m_EN_Td;

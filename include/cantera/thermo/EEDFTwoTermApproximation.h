@@ -36,11 +36,11 @@ public:
     size_t m_maxn = 200; //!< Maximum number of iterations
     double m_factorM = 4.0; //!< Reduction factor of error
     size_t m_points = 150; //!< Number of points for energy grid
-    double m_rtol = 1e-5; //!< Relative tolerance of EEDF for solving Boltzmann equation
+    double m_rtol = 1e-4; //!< Relative tolerance of EEDF for solving Boltzmann equation
     string m_growth = "temporal"; //!< String for the growth model (none, temporal or spatial)
     double m_moleFractionThreshold = 0.01; //!< Threshold for species not considered in the Boltzmann solver but present in the mixture
     string m_firstguess = "maxwell"; //!< String for EEDF first guess
-    double m_init_kTe = 2.0; //!< Initial electron mean energy
+    double m_init_kTe = 2.0; //!< Initial guess for kT_e [eV]
 
 }; // end of class TwoTermOpt
 
@@ -274,7 +274,8 @@ protected:
     bool m_first_call;
 
     //! Timer to monitor EEDF solving
-    Timer* m_timer_eedf = new Timer("timer_eedf");
+    // Timer* m_timer_eedf = new Timer("timer_eedf"); // old version, but with a Timer* the object is C like and the memory is never freed so effectively this amounts to memory leaks
+    std::unique_ptr<Timer> m_timer_eedf = std::make_unique<Timer>("timer_eedf");
 
     //! Refine grid until the number of decades of decay of the eedf in in the good range
     //! as done in Loki-B
@@ -283,8 +284,9 @@ protected:
     double m_maxEedfDecay = 25.;  //! maximum number of decades of decay for the EEDF
     double m_updateFactor = 0.05; //! factor used to increase or decrease the maximum value of the energy grid
     double m_kTe_max = 0; // initialisation so that it is declared.
+    double r_tol_EN_recompute_EEDF = 0.1; // relative tolerance on reduced electric field to decide whether or not to re-compute the EEDF.
 
-    string grid_type = "Linear";
+    string grid_type = "Linear"; //! type of grid (Linear, Quadratic or Geometric)
     size_t n_cell = 100;
 
 

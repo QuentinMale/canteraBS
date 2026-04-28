@@ -16,25 +16,48 @@
 
 namespace Cantera {
 
+// Proposition de correction 1: avant correction
+// PlasmaPhase::PlasmaPhase(const string& inputFile, const string& id_)
+// {
+//     initialize();
 
+//     initThermoFile(inputFile, id_);
+
+//     // initial grid
+//     m_electronEnergyLevels = Eigen::ArrayXd::LinSpaced(m_nPoints, 0.0, 1.0);
+
+//     // initial electron temperature
+//     setElectronTemperature(temperature());
+
+//     // //CQM TODO set m_nspevib
+//     // m_nspevib = nsp_evib(); 
+//     // m_nrevib = nr_evib();
+//     // setMsp_evib(m_nspevib);
+//     // printf("********************** m_evib.size() = %ld\n **************************************", m_evib.size());
+
+// }
+
+// Proposition de correction 1: après correction
 PlasmaPhase::PlasmaPhase(const string& inputFile, const string& id_)
 {
     initialize();
 
-    initThermoFile(inputFile, id_);
-
-    // initial grid
+    // Default grid available while parsing the YAML
     m_electronEnergyLevels = Eigen::ArrayXd::LinSpaced(m_nPoints, 0.0, 1.0);
 
-    // initial electron temperature
-    setElectronTemperature(temperature());
+    initThermoFile(inputFile, id_);
 
-    // //CQM TODO set m_nspevib
-    // m_nspevib = nsp_evib(); 
-    // m_nrevib = nr_evib();
-    // setMsp_evib(m_nspevib);
-    // printf("********************** m_evib.size() = %ld\n **************************************", m_evib.size());
-
+    // Only create a default EEDF if the YAML did not already provide one
+    if (m_distributionType == "TwoTermApproximation") {
+        if (ptrEEDFSolver && m_electronEnergyDist.size() == 0) {
+            updateElectronEnergyDistribution();
+        }
+    } else if (m_distributionType == "isotropic") {
+        if (m_electronEnergyDist.size() == 0) {
+            setElectronTemperature(temperature());
+        }
+    }
+    // For "discretized", the YAML already defines both the grid and the EEDF
 }
 
 void PlasmaPhase::initialize()
@@ -42,6 +65,7 @@ void PlasmaPhase::initialize()
     m_ncs = 0;
     m_f0_ok = false;
     m_EN = 0.0;
+    m_former_EN = 0.0;
     m_E = 0.0;
     m_F = 0.0;
     m_ionDegree = 0.0;
@@ -69,6 +93,35 @@ void PlasmaPhase::setTemperature(const double temp)
     m_kT = Boltzmann * temp / ElectronCharge;
 }
 
+// proposition de correction 5: avant la correction
+// void PlasmaPhase::updateElectronEnergyDistribution()
+// {
+//     if (m_distributionType == "discretized") {
+//         throw CanteraError("PlasmaPhase::updateElectronEnergyDistribution",
+//             "Invalid for discretized electron energy distribution.");
+//     } else if (m_distributionType == "isotropic") {
+//         setIsotropicElectronEnergyDistribution();
+//     } else if (m_distributionType == "TwoTermApproximation") {
+//         //writelog("call to calculateDistributionFunction()\n");
+//         auto ierr = ptrEEDFSolver->calculateDistributionFunction();
+//         if (ierr == 0) {
+//             auto x = ptrEEDFSolver->getGridEdge();
+//             auto y = ptrEEDFSolver->getEEDFEdge();
+//             m_nPoints = x.size();
+//             m_electronEnergyLevels = Eigen::Map<const Eigen::ArrayXd>(x.data(), m_nPoints);
+//             m_electronEnergyDist = Eigen::Map<const Eigen::ArrayXd>(y.data(), m_nPoints);
+//         } else {
+//             throw CanteraError("PlasmaPhase::updateElectronEnergyDistribution",
+//                 "Call to calculateDistributionFunction failed.");
+//         }
+//     }
+//     electronEnergyDistributionChanged();
+//     updateElectronTemperatureFromEnergyDist();
+//     //writelog("Done!\n");
+// }
+
+// proposition de correction 5: après la correction
+
 void PlasmaPhase::updateElectronEnergyDistribution()
 {
     if (m_distributionType == "discretized") {
@@ -77,35 +130,49 @@ void PlasmaPhase::updateElectronEnergyDistribution()
     } else if (m_distributionType == "isotropic") {
         setIsotropicElectronEnergyDistribution();
     } else if (m_distributionType == "TwoTermApproximation") {
-        //writelog("call to calculateDistributionFunction()\n");
+        if (!ptrEEDFSolver) {
+            throw CanteraError("PlasmaPhase::updateElectronEnergyDistribution",
+                "EEDF solver is not initialized.");
+        }
+
         auto ierr = ptrEEDFSolver->calculateDistributionFunction();
-        if (ierr == 0) {
-            auto x = ptrEEDFSolver->getGridEdge();
-            auto y = ptrEEDFSolver->getEEDFEdge();
-            m_nPoints = x.size();
-            m_electronEnergyLevels = Eigen::Map<const Eigen::ArrayXd>(x.data(), m_nPoints);
-            m_electronEnergyDist = Eigen::Map<const Eigen::ArrayXd>(y.data(), m_nPoints);
-        } else {
+        if (ierr != 0) {
             throw CanteraError("PlasmaPhase::updateElectronEnergyDistribution",
                 "Call to calculateDistributionFunction failed.");
         }
+
+        auto x = ptrEEDFSolver->getGridEdge();
+        auto y = ptrEEDFSolver->getEEDFEdge();
+        m_nPoints = x.size();
+        m_electronEnergyLevels =
+            Eigen::Map<const Eigen::ArrayXd>(x.data(), m_nPoints);
+        m_electronEnergyDist =
+            Eigen::Map<const Eigen::ArrayXd>(y.data(), m_nPoints);
+
+        checkElectronEnergyLevels();
+        checkElectronEnergyDistribution();
+        electronEnergyLevelChanged();
     }
+
     electronEnergyDistributionChanged();
     updateElectronTemperatureFromEnergyDist();
-    //writelog("Done!\n");
 }
 
 void PlasmaPhase::normalizeElectronEnergyDistribution() {
     Eigen::ArrayXd eps32 = m_electronEnergyLevels.pow(3./2.);
     double norm = 2./3. * numericalQuadrature(m_quadratureMethod,
                                               m_electronEnergyDist, eps32);
-    if (norm < 0.0) {
+    if (!std::isfinite(norm) || norm <= 0.0) {
         throw CanteraError("PlasmaPhase::normalizeElectronEnergyDistribution",
                            "The norm is negative. This might be caused by bad "
                            "electron energy distribution");
     }
     m_electronEnergyDist /= norm;
 }
+
+void PlasmaPhase::setElectronTemperatureNoDistribUpdate(double Te){
+        m_electronTemp = Te;
+    }
 
 void PlasmaPhase::setElectronEnergyDistributionType(const string& type)
 {
@@ -168,8 +235,31 @@ void PlasmaPhase::electronEnergyLevelChanged()
     m_levelNum++;
 }
 
+// proposition de correction 2: avant la correction
+// void PlasmaPhase::checkElectronEnergyLevels() const
+// {
+//     Eigen::ArrayXd h = m_electronEnergyLevels.tail(m_nPoints - 1) -
+//                        m_electronEnergyLevels.head(m_nPoints - 1);
+//     if (m_electronEnergyLevels[0] < 0.0 || (h <= 0.0).any()) {
+//         throw CanteraError("PlasmaPhase::checkElectronEnergyLevels",
+//             "Values of electron energy levels need to be positive and "
+//             "monotonically increasing.");
+//     }
+// }
+
+// proposition de correction 2: après la correction
 void PlasmaPhase::checkElectronEnergyLevels() const
 {
+    if (m_nPoints < 2 ||
+        m_electronEnergyLevels.size() != static_cast<Eigen::Index>(m_nPoints)) {
+        throw CanteraError("PlasmaPhase::checkElectronEnergyLevels",
+            "Electron energy grid must contain at least 2 points and match m_nPoints.");
+    }
+    if (!(m_electronEnergyLevels.isFinite()).all()) {
+        throw CanteraError("PlasmaPhase::checkElectronEnergyLevels",
+            "Electron energy grid contains non-finite values.");
+    }
+
     Eigen::ArrayXd h = m_electronEnergyLevels.tail(m_nPoints - 1) -
                        m_electronEnergyLevels.head(m_nPoints - 1);
     if (m_electronEnergyLevels[0] < 0.0 || (h <= 0.0).any()) {
@@ -179,10 +269,36 @@ void PlasmaPhase::checkElectronEnergyLevels() const
     }
 }
 
+// proposition de correction 2: avant la correction
+// void PlasmaPhase::checkElectronEnergyDistribution() const
+// {
+//     Eigen::ArrayXd h = m_electronEnergyLevels.tail(m_nPoints - 1) -
+//                        m_electronEnergyLevels.head(m_nPoints - 1);
+//     if ((m_electronEnergyDist < 0.0).any()) {
+//         throw CanteraError("PlasmaPhase::checkElectronEnergyDistribution",
+//             "Values of electron energy distribution cannot be negative.");
+//     }
+//     if (m_electronEnergyDist[m_nPoints - 1] > 0.01) {
+//         warn_user("PlasmaPhase::checkElectronEnergyDistribution",
+//         "The value of the last element of electron energy distribution exceed 0.01. "
+//         "This indicates that the value of electron energy level is not high enough "
+//         "to contain the isotropic distribution at mean electron energy of "
+//         "{} eV", meanElectronEnergy());
+//     }
+// }
+
+// proposition de correction 2: après la correction
 void PlasmaPhase::checkElectronEnergyDistribution() const
 {
-    Eigen::ArrayXd h = m_electronEnergyLevels.tail(m_nPoints - 1) -
-                       m_electronEnergyLevels.head(m_nPoints - 1);
+    if (m_nPoints < 2 ||
+        m_electronEnergyDist.size() != static_cast<Eigen::Index>(m_nPoints)) {
+        throw CanteraError("PlasmaPhase::checkElectronEnergyDistribution",
+            "Electron energy distribution must contain at least 2 points and match m_nPoints.");
+    }
+    if (!(m_electronEnergyDist.isFinite()).all()) {
+        throw CanteraError("PlasmaPhase::checkElectronEnergyDistribution",
+            "Electron energy distribution contains non-finite values.");
+    }
     if ((m_electronEnergyDist < 0.0).any()) {
         throw CanteraError("PlasmaPhase::checkElectronEnergyDistribution",
             "Values of electron energy distribution cannot be negative.");
@@ -216,9 +332,32 @@ void PlasmaPhase::setDiscretizedElectronEnergyDist(const double* levels,
     electronEnergyDistributionChanged();
 }
 
+// Proposition de correction 3: avant la correction
+// void PlasmaPhase::setDiscretizedElectronEnergyDist(const double* dist,
+//                                                    size_t length)
+// {
+//     m_distributionType = "discretized";
+//     m_nPoints = length;
+//     m_electronEnergyDist =
+//         Eigen::Map<const Eigen::ArrayXd>(dist, length);
+//     checkElectronEnergyLevels();
+//     if (m_do_normalizeElectronEnergyDist) {
+//         normalizeElectronEnergyDistribution();
+//     }
+//     checkElectronEnergyDistribution();
+//     updateElectronTemperatureFromEnergyDist();
+//     electronEnergyDistributionChanged();
+// }
+
+// Proposition de correction 3: après la correction
 void PlasmaPhase::setDiscretizedElectronEnergyDist(const double* dist,
                                                    size_t length)
 {
+    if (m_electronEnergyLevels.size() != static_cast<Eigen::Index>(length)) {
+        throw CanteraError("PlasmaPhase::setDiscretizedElectronEnergyDist",
+            "Distribution length does not match the electron-energy grid length.");
+    }
+
     m_distributionType = "discretized";
     m_nPoints = length;
     m_electronEnergyDist =
@@ -232,12 +371,27 @@ void PlasmaPhase::setDiscretizedElectronEnergyDist(const double* dist,
     electronEnergyDistributionChanged();
 }
 
+// ancienne fonction, remplacée par une fonction plus robuste aux zeros et infinis
+// void PlasmaPhase::updateElectronTemperatureFromEnergyDist()
+// {
+//     // calculate mean electron energy and electron temperature
+//     Eigen::ArrayXd eps52 = m_electronEnergyLevels.pow(5./2.);
+//     double epsilon_m = 2.0 / 5.0 * numericalQuadrature(m_quadratureMethod,
+//                                                        m_electronEnergyDist, eps52);
+//     m_electronTemp = 2.0 / 3.0 * epsilon_m * ElectronCharge / Boltzmann;
+// }
+
 void PlasmaPhase::updateElectronTemperatureFromEnergyDist()
 {
-    // calculate mean electron energy and electron temperature
     Eigen::ArrayXd eps52 = m_electronEnergyLevels.pow(5./2.);
-    double epsilon_m = 2.0 / 5.0 * numericalQuadrature(m_quadratureMethod,
-                                                       m_electronEnergyDist, eps52);
+    double epsilon_m = 2.0 / 5.0 * numericalQuadrature(
+        m_quadratureMethod, m_electronEnergyDist, eps52);
+
+    if (!std::isfinite(epsilon_m) || epsilon_m < 0.0) {
+        throw CanteraError("PlasmaPhase::updateElectronTemperatureFromEnergyDist",
+            "Invalid mean electron energy computed from EEDF.");
+    }
+
     m_electronTemp = 2.0 / 3.0 * epsilon_m * ElectronCharge / Boltzmann;
 }
 
@@ -320,39 +474,93 @@ void PlasmaPhase::setParameters(const AnyMap& phaseNode, const AnyMap& rootNode)
                 throw CanteraError("PlasmaPhase::setParameters",
                     "Cross section data are required.");
             }
-            if (eedf.hasKey("energy-levels-parameters")){
-                std::vector<double> nrj_levels_params = eedf["energy-levels-parameters"].asVector<double>();
-                if (nrj_levels_params.size() != 2) {
-                    throw CanteraError("PlasmaPhase::setParameters","energy-levels-parameters should contain two values: kTe_max and nGridCells.");
-                }
-                kTe_max = nrj_levels_params[0];
-                size_t nGridCells = static_cast<size_t>(nrj_levels_params[1]);
-                ptrEEDFSolver = make_unique<EEDFTwoTermApproximation>(*this);
+            if (m_kElastic.empty()) {
+                throw CanteraError("PlasmaPhase::setParameters",
+                    "TwoTermApproximation requires at least one electron cross section "
+                    "of kind 'elastic' or 'effective'.");
+            }
+            // Proposition de correction 4: avant la correction
+            // if (eedf.hasKey("energy-levels-parameters")){
+            //     std::vector<double> nrj_levels_params = eedf["energy-levels-parameters"].asVector<double>();
+            //     if (nrj_levels_params.size() != 2) {
+            //         throw CanteraError("PlasmaPhase::setParameters","energy-levels-parameters should contain two values: kTe_max and nGridCells.");
+            //     }
+            //     kTe_max = nrj_levels_params[0];
+            //     size_t nGridCells = static_cast<size_t>(nrj_levels_params[1]);
+            //     ptrEEDFSolver = make_unique<EEDFTwoTermApproximation>(*this);
             
-                // CQM WARNING m_nPoints is nEdges in PlasmaPhase (i.e. nCells+1)
-                // It would be nice to change nPoints to nGridEdges
-                m_nPoints = nGridCells + 1;
+            //     // CQM WARNING m_nPoints is nEdges in PlasmaPhase (i.e. nCells+1)
+            //     // It would be nice to change nPoints to nGridEdges
+            //     m_nPoints = nGridCells + 1;
 
-                if (eedf.hasKey("levels_distribution")){
-                    auto levels_distribution = eedf["levels_distribution"].asString();
-                    if (levels_distribution == "Linear"){
-                        m_discret_type = "Linear";
-                        ptrEEDFSolver->setLinearGrid(kTe_max, nGridCells);
-                    } else if (levels_distribution == "Quadratic"){
-                        m_discret_type = "Quadratic";
-                        ptrEEDFSolver->setQuadraticGrid(kTe_max, nGridCells);
-                    } else if (levels_distribution == "Geometric"){
-                        m_discret_type = "Geometric";
-                        ptrEEDFSolver->setGeometricGrid(kTe_max, nGridCells);
-                    }
-                    else {
-                        throw CanteraError("PlasmaPhase::setParameters","levels_distribution should be Linear, Quadratic or Geometric. For now, no other point distribution options are implemented.\nIf you want another distribution please implement it.");
-                    }
-                } else {
-                    // Default to linear grid if no distribution is specified
+            //     if (eedf.hasKey("levels_distribution")){
+            //         auto levels_distribution = eedf["levels_distribution"].asString();
+            //         if (levels_distribution == "Linear"){
+            //             m_discret_type = "Linear";
+            //             ptrEEDFSolver->setLinearGrid(kTe_max, nGridCells);
+            //         } else if (levels_distribution == "Quadratic"){
+            //             m_discret_type = "Quadratic";
+            //             ptrEEDFSolver->setQuadraticGrid(kTe_max, nGridCells);
+            //         } else if (levels_distribution == "Geometric"){
+            //             m_discret_type = "Geometric";
+            //             ptrEEDFSolver->setGeometricGrid(kTe_max, nGridCells);
+            //         }
+            //         else {
+            //             throw CanteraError("PlasmaPhase::setParameters","levels_distribution should be Linear, Quadratic or Geometric. For now, no other point distribution options are implemented.\nIf you want another distribution please implement it.");
+            //         }
+            //     } else {
+            //         // Default to linear grid if no distribution is specified
+            //         ptrEEDFSolver->setLinearGrid(kTe_max, nGridCells);
+            //         writelog("No levels_distribution key found in the input file. Defaulting to linear grid.\n");
+            //     }
+            // }
+
+            // Proposition de correction 4: après la correction
+            if (!eedf.hasKey("energy-levels-parameters")) {
+                throw CanteraError("PlasmaPhase::setParameters",
+                    "TwoTermApproximation requires the key 'energy-levels-parameters'.");
+            }
+
+            std::vector<double> nrj_levels_params = eedf["energy-levels-parameters"].asVector<double>();
+            if (nrj_levels_params.size() != 2) {
+                throw CanteraError("PlasmaPhase::setParameters",
+                    "energy-levels-parameters should contain two values: kTe_max and nGridCells.");
+            }
+
+            kTe_max = nrj_levels_params[0];
+            size_t nGridCells = static_cast<size_t>(nrj_levels_params[1]);
+            ptrEEDFSolver = make_unique<EEDFTwoTermApproximation>(*this);
+
+            // In PlasmaPhase, m_nPoints is the number of grid edges
+            m_nPoints = nGridCells + 1;
+
+            if (eedf.hasKey("levels_distribution")) {
+                auto levels_distribution = eedf["levels_distribution"].asString();
+                if (levels_distribution == "Linear") {
+                    m_discret_type = "Linear";
                     ptrEEDFSolver->setLinearGrid(kTe_max, nGridCells);
-                    writelog("No levels_distribution key found in the input file. Defaulting to linear grid.\n");
+                } else if (levels_distribution == "Quadratic") {
+                    m_discret_type = "Quadratic";
+                    ptrEEDFSolver->setQuadraticGrid(kTe_max, nGridCells);
+                } else if (levels_distribution == "Geometric") {
+                    m_discret_type = "Geometric";
+                    ptrEEDFSolver->setGeometricGrid(kTe_max, nGridCells);
+                } else {
+                    throw CanteraError("PlasmaPhase::setParameters",
+                        "levels_distribution should be Linear, Quadratic or Geometric.");
                 }
+            } else {
+                m_discret_type = "Linear";
+                ptrEEDFSolver->setLinearGrid(kTe_max, nGridCells);
+                writelog("No levels_distribution key found in the input file. Defaulting to linear grid.\n");
+            }
+
+            // Synchronize the phase grid with the solver grid
+            {
+                auto x = ptrEEDFSolver->getGridEdge();
+                m_nPoints = x.size();
+                m_electronEnergyLevels =
+                    Eigen::Map<const Eigen::ArrayXd>(x.data(), m_nPoints);
             }
             
             // CQM DEBUG The feature for reading the 
@@ -387,7 +595,7 @@ bool PlasmaPhase::addElectronCrossSection(shared_ptr<ElectronCrossSection> ecs)
 
     // scattering-in factor
     if (ecs->kind == "ionization") {
-        m_inFactor.push_back(2);
+        m_inFactor.push_back(2); // MODIFICATION, ORIGINALLEMENT 2 et aussi dans le papier bolsig + haagela 2005 mais dans loki et d'autres c'est à 4.
     } else if (ecs->kind == "attachment") {
         m_inFactor.push_back(0);
     } else {
@@ -719,8 +927,22 @@ void PlasmaPhase::compute_nDensity() const {
     }
 }
 
+// Proposition de modification 6: avant modif
+// void PlasmaPhase::compute_electronMobility() const {
+//     if (m_distributionType == "TwoTermApproximation") {
+//         m_electronMobility = ptrEEDFSolver->getElectronMobility();
+//     } else {
+//         throw NotImplementedError("PlasmaPhase::compute_electronMobility");
+//     }
+// }
+
+// Proposition de modification 6: après modif
 void PlasmaPhase::compute_electronMobility() const {
     if (m_distributionType == "TwoTermApproximation") {
+        if (!ptrEEDFSolver) {
+            throw CanteraError("PlasmaPhase::compute_electronMobility",
+                "EEDF solver is not initialized.");
+        }
         m_electronMobility = ptrEEDFSolver->getElectronMobility();
     } else {
         throw NotImplementedError("PlasmaPhase::compute_electronMobility");

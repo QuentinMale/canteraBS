@@ -109,6 +109,50 @@ double simpson(const Eigen::ArrayXd& f, const Eigen::ArrayXd& x)
     }
 }
 
+double simpsonQuadrature(const vector_fp& x, const vector_fp& y)
+{
+    if (x.size() != y.size()) {
+        throw CanteraError(
+            "Cantera::simpsonQuadrature",
+            "size of x is not equal to size of y"
+        );
+    }
+
+    if (x.empty()) {
+        return 0.0;
+    }
+
+    size_t N = x.size();
+    size_t ns = (N - 1) / 2;
+    size_t ms = (N - 1) % 2;
+
+    double sum = 0.0;
+
+    for (size_t i = 0; i < ns; i++) {
+        double c[3];
+        double xs[3] = { x[2*i],     x[2*i + 1], x[2*i + 2] };
+        double ys[3] = { y[2*i],     y[2*i + 1], y[2*i + 2] };
+
+        polyfit(3, 2, xs, ys, nullptr, c);
+
+        double xL = x[2*i];
+        double xR = x[2*i + 2];
+
+        sum += c[0] * (xR - xL)
+             + c[1] * 0.5 * (xR*xR - xL*xL)
+             + c[2] * (1.0 / 3.0) * (xR*xR*xR - xL*xL*xL);
+    }
+
+    if (ms == 1) {
+        sum += 0.5 * (x[N - 1] - x[N - 2]) * (y[N - 1] + y[N - 2]);
+    }
+
+    return sum;
+}
+
+
+
+
 double numericalQuadrature(const string& method,
                            const Eigen::ArrayXd& f,
                            const Eigen::ArrayXd& x)
@@ -123,5 +167,7 @@ double numericalQuadrature(const string& method,
                            "Please use 'simpson' or 'trapezoidal'");
     }
 }
+
+
 
 }

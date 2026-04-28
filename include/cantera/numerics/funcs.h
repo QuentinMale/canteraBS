@@ -15,6 +15,8 @@
 namespace Cantera
 {
 
+typedef vector<double> vector_fp;
+
 /**
  * @defgroup mathUtils  Numerical Integration and Interpolation
  * Collection of numerical utility functions for integration, interpolation and data
@@ -63,6 +65,8 @@ double trapezoidal(const Eigen::ArrayXd& f, const Eigen::ArrayXd& x);
  * @ingroup mathUtils
  */
 double simpson(const Eigen::ArrayXd& f, const Eigen::ArrayXd& x);
+
+double simpsonQuadrature(const vector_fp& x, const vector_fp& y);
 
 //! Numerical integration of a function.
 /*!

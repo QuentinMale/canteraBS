@@ -11,6 +11,8 @@
 #include "cantera/base/ctexceptions.h"
 #include "cantera/thermo/PlasmaPhase.h"
 #include <iostream>
+#include <algorithm>
+#include <cmath>
 
 namespace Cantera
 {
@@ -76,13 +78,18 @@ void EEDFTwoTermApproximation::setGeometricGrid(double& kTe_max, size_t& ncell)
     m_f0.resize(options.m_points);
     m_f0_edge.resize(options.m_points + 1);
     
-    auto f = [=](double x) {
-        return pow(x, ncell) - kTe_max * x + kTe_max - 1;
-    };
+    // OLD IMPLEMENTATION OF THE FUNCTION WHICH DOES NOT FIT PERFECLTY TO kTe and produces silent bugs
 
-    auto df = [=](double x) {
-        return ncell * pow(x, ncell - 1) - kTe_max;
-    };
+    // auto f = [=](double x) {
+    //     return pow(x, ncell) - kTe_max * x + kTe_max - 1;
+    // };
+
+    // auto df = [=](double x) {
+    //     return ncell * pow(x, ncell - 1) - kTe_max;
+    // };
+
+    auto f  = [=](double x) { return x*(1 + kTe_max) - pow(x, ncell+1) - kTe_max; };
+    auto df = [=](double x) { return (1 + kTe_max) - (ncell+1)*pow(x, ncell); };
 
     auto newton = [&](std::function<double(double)> func, std::function<double(double)> dfunc,
                     double x0, double tol = 1e-6, int max_iter = 100) -> double {
@@ -97,13 +104,21 @@ void EEDFTwoTermApproximation::setGeometricGrid(double& kTe_max, size_t& ncell)
         }
         return x;
     };
-    double delta = 1;
-    try {
-        delta = newton(f, df, 2*kTe_max/(ncell*(ncell+1)));
-        std::cout << "Root found: energy grid delta set to: " << delta << std::endl;
-    } catch (const std::exception& e) {
-        std::cerr << "Error while computing the energy grid geometric delta: " << e.what() << std::endl;
+    // Proposition de correction 12: bloc avant la correction
+    // double delta = 1;
+    // try {
+    //     delta = newton(f, df, 2*kTe_max/(ncell*(ncell+1)));
+    //     std::cout << "Root found: energy grid delta set to: " << delta << std::endl;
+    // } catch (const std::exception& e) {
+    //     std::cerr << "Error while computing the energy grid geometric delta: " << e.what() << std::endl;
+    // }
+    // Proposition de correction 12: bloc après la correction avec une erreur qui arrete le programme plutot que juste un print qui se perdra dans mon terminal.
+    double delta = newton(f, df, 2*kTe_max/(ncell*(ncell+1)));
+    if (!std::isfinite(delta) || delta <= 0.0 || delta >= 1.0) {
+        throw CanteraError("EEDFTwoTermApproximation::setGeometricGrid",
+            "Invalid geometric-grid ratio delta.");
     }
+
     for (size_t j = 0; j < options.m_points; j++) {
         m_gridCenter[j] = (delta / (1-delta))*(1-pow(delta, j + 0.5));
         m_gridEdge[j] = (delta / (1-delta))*(1-pow(delta, j));
@@ -121,9 +136,164 @@ void EEDFTwoTermApproximation::updateGrid(double kTe_to_set){
         setQuadraticGrid(kTe_to_set, ncell);
     } else if (grid_type == "Geometric"){
         setGeometricGrid(kTe_to_set, ncell);
+    } else {
+        throw CanteraError("EEDFTwoTermApproximation::updateGrid",
+            "Unknown grid type '{}'.", grid_type);
     }
 }
 
+//Proposition de correction 8: la fonction avant la correction
+// int EEDFTwoTermApproximation::calculateDistributionFunction()
+// {
+//     // TODO
+//     // -> call to converge to get f0
+//     // -> update EEDF dist and grid in the PlasmaPhase object!
+
+
+
+//     // During the first call to this function the indices of target species need to be defined
+//     if (m_first_call)
+//     {
+//         //writelog("First call to calculateDistributionFunction\n");
+//         initSpeciesIndexCS();
+//         m_first_call = false;
+//     } else {
+//         // writelog("pass init\n");
+//     }
+
+//     update_mole_fractions();
+//     checkSpeciesNoCrossSection();
+//     updateCS();
+
+//     // decide whether or not to re-apply a maxwellian first guess before re-converging the EEDF.
+
+//     if (m_phase->getFormerReducedElectricField() != m_phase->getReducedElectricField()) {
+//         if (m_phase->getReducedElectricField() !=0.0){
+//             if ((m_phase->getFormerReducedElectricField() - m_phase->getReducedElectricField())/m_phase->getReducedElectricField() > r_tol_EN_recompute_EEDF ||
+//                 (m_phase->getFormerReducedElectricField() - m_phase->getReducedElectricField())/m_phase->getReducedElectricField() < -r_tol_EN_recompute_EEDF){
+//                 // writelog("Significant change in reduced electric field detected. Re-applying maxwellian first guess.\n");
+//                 m_has_EEDF = false;
+//             }
+//         }
+//     }
+        
+
+//     if (!m_has_EEDF) {
+//         if (options.m_firstguess == "maxwell") {
+//             //writelog("First guess EEDF maxwell\n");
+//             m_kTe_max = options.m_init_kTe; 
+//             // m_kTe_max = m_phase->RT()/(11600*GasConstant);
+//             for (size_t j = 0; j < options.m_points; j++) {
+//                 m_f0(j) = 2.0 * pow(1.0 / Pi, 0.5) * pow(m_kTe_max, -3. / 2.) *
+//                           exp(-m_gridCenter[j] / m_kTe_max);
+//             }
+//         m_f0 /= norm(m_f0, m_gridCenter);
+//         printf("Applied Te%f\n", m_kTe_max * 11600 * GasConstant);
+//         printf("R%f\n", GasConstant);
+//         printf("RT:%f\n", m_phase->RT());
+//         m_phase->setElectronTemperatureNoDistribUpdate(m_kTe_max * 11600);
+//         printf("Read Te %f K\n", m_phase->electronTemperature());
+//         } else {
+//             throw CanteraError("EEDFTwoTermApproximation::calculateDistributionFunction",
+//                                " unknown EEDF first guess");
+//         }
+//     }
+
+//     // Start of monitoring
+//     m_timer_eedf->start();
+
+//     // Computation of the EEDF
+//     if (m_phase->getReducedElectricField() > 1e-21){
+//         converge(m_f0);
+//     }
+
+//     // if (m_isSmart) {
+//     //     // Compute EEDF and change the grid until :
+//     //     double decades = std::log10(m_f0(0)) - std::log10(m_f0(options.m_points-1));
+//     //     while (decades < m_minEedfDecay){
+//     //         m_kTe_max = m_kTe_max * (1. + m_updateFactor);
+//     //         // writelog("Right boundary too low. Ndecades was {:5.1e}. ", decades);
+//     //         // writelog("New boundary is {:5.3e} eV.\n", m_kTe_max);
+//     //         updateGrid(m_kTe_max);
+//     //         updateCS();
+//     //         converge(m_f0);
+//     //         decades = std::log10(m_f0(0)) - std::log10(m_f0(options.m_points-1));
+//     //     }
+//     //     while (decades > m_maxEedfDecay){
+//     //         m_kTe_max = m_kTe_max / (1. + m_updateFactor);
+//     //         // writelog("Right boundary too high. Ndecades was {:5.1e}. ", decades);
+//     //         // writelog("New boundary is {:5.3e} eV.\n", m_kTe_max);
+//     //         updateGrid(m_kTe_max);
+//     //         updateCS();0.
+//     //         converge(m_f0);
+//     //         decades = std::log10(m_f0(0)) - std::log10(m_f0(options.m_points-1));
+//     //     }
+//     // }
+
+//     // FORCE A MAXWELLIAN IF THE REDUCED ELECTRIC FIELD IS TOO SMALL
+
+//     if (m_phase->getReducedElectricField() < 1e-21 || m_phase->getReducedElectricField() == 1e-21){
+//         m_kTe_max = m_phase->RT()/(11600*GasConstant); 
+//         for (size_t j = 0; j < options.m_points; j++) {
+//             m_f0(j) = 2.0 * pow(1.0 / Pi, 0.5) * pow(m_kTe_max, -3. / 2.) *
+//                         exp(-m_gridCenter[j] /m_kTe_max);
+//         }
+//         m_f0 /= norm(m_f0, m_gridCenter);
+//         printf("Applied Te%f\n", m_kTe_max * 11600 * GasConstant);
+//         printf("R%f\n", GasConstant);
+//         printf("RT:%f\n", m_phase->RT());
+//         m_phase->setElectronTemperatureNoDistribUpdate(m_kTe_max * 11600);
+//         printf("Read Te %f K\n", m_phase->electronTemperature());
+//     }
+
+//     // End of monitoring
+//     m_timer_eedf->stop();
+
+//     // write the EEDF at grid edges
+//     vector<double> f(m_f0.data(), m_f0.data() + m_f0.rows() * m_f0.cols());
+//     vector<double> x(m_gridCenter.data(), m_gridCenter.data() + m_gridCenter.rows() * m_gridCenter.cols());
+//     for (size_t i = 0; i < options.m_points + 1; i++) {
+//         m_f0_edge[i] = linearInterp(m_gridEdge[i], x, f);
+//     }
+
+
+//     std::cout << "m_gridCenter = [";
+//     for (int i = 0; i < m_gridCenter.rows(); ++i) {
+//         for (int j = 0; j < m_gridCenter.cols(); ++j) {
+//             std::cout << m_gridCenter(i, j);
+//             if (!(i == m_gridCenter.rows() - 1 && j == m_gridCenter.cols() - 1))
+//                 std::cout << ", ";
+//         }
+//     }
+//     std::cout << "]" << std::endl;
+
+
+//     std::cout << "m_gridEdge = [";
+//     for (size_t i = 0; i < m_gridEdge.size(); ++i) {
+//         std::cout << m_gridEdge[i];
+//         if (i != m_gridEdge.size() - 1)
+//             std::cout << ", ";
+//     }
+//     std::cout << "]" << std::endl;
+
+//     std::cout << "m_f0 = [";
+//     for (size_t i = 0; i < m_f0.size(); ++i) {
+//         std::cout << m_f0[i];
+//         if (i != m_f0.size() - 1)
+//             std::cout << ", ";
+//     }
+//     std::cout << "]" << std::endl;
+
+//     m_has_EEDF = true;
+
+//     // update electron mobility
+//     m_electronMobility = electronMobility(m_f0);
+
+//     return 0;
+
+// }
+
+// proposition de correction 8: la fonction après la correction
 int EEDFTwoTermApproximation::calculateDistributionFunction()
 {
     // TODO
@@ -144,13 +314,52 @@ int EEDFTwoTermApproximation::calculateDistributionFunction()
     checkSpeciesNoCrossSection();
     updateCS();
 
+    // decide whether or not to re-apply a maxwellian first guess before re-converging the EEDF.
+
+    if (m_phase->getFormerReducedElectricField() != m_phase->getReducedElectricField()) {
+        if (m_phase->getReducedElectricField() !=0.0){
+            if ((m_phase->getFormerReducedElectricField() - m_phase->getReducedElectricField())/m_phase->getReducedElectricField() > r_tol_EN_recompute_EEDF ||
+                (m_phase->getFormerReducedElectricField() - m_phase->getReducedElectricField())/m_phase->getReducedElectricField() < -r_tol_EN_recompute_EEDF){
+                // writelog("Significant change in reduced electric field detected. Re-applying maxwellian first guess.\n");
+                m_has_EEDF = false;
+            }
+        }
+    }
+        
+
+    const double EN = m_phase->getReducedElectricField();
+
+    auto setMaxwellian = [&](double kTe_eV) {
+        if (!std::isfinite(kTe_eV) || kTe_eV <= 0.0) {
+            throw CanteraError("EEDFTwoTermApproximation::calculateDistributionFunction",
+                "Invalid kTe value for Maxwellian first guess.");
+        }
+        const double f_floor = 1e-300;
+        for (size_t j = 0; j < options.m_points; j++) {
+            double arg = -m_gridCenter[j] / kTe_eV;
+            if (arg < -700.0) {
+                m_f0(j) = f_floor;
+            } else {
+                m_f0(j) = std::max(f_floor,
+                    2.0 * std::sqrt(1.0 / Pi) * std::pow(kTe_eV, -1.5) * std::exp(arg));
+            }
+        }
+        double fnorm = norm(m_f0, m_gridCenter);
+        if (!std::isfinite(fnorm) || fnorm <= 0.0) {
+            throw CanteraError("EEDFTwoTermApproximation::calculateDistributionFunction",
+                "Invalid norm for Maxwellian initialization.");
+        }
+        m_f0 /= fnorm;
+        m_phase->setElectronTemperatureNoDistribUpdate(
+            kTe_eV * ElectronCharge / Boltzmann);
+    };
+
+    // si on n'a pas encore d'EEDF et que la fonction de distribution doit être recalculée, on applique une première estimation de type maxwellien
+    // à haute température pour aider à la convergence
     if (!m_has_EEDF) {
         if (options.m_firstguess == "maxwell") {
-            //writelog("First guess EEDF maxwell\n");
-            m_kTe_max = m_phase->get_kTe_max(); // old option: 30.0 * options.m_init_kTe; The new option takes as initial guess the entry of the user. Hopefully it is more accurate.
-            for (size_t j = 0; j < options.m_points; j++) {
-                m_f0(j) = 2.0 * pow(1.0 / Pi, 0.5) * pow(options.m_init_kTe, -3. / 2.) *
-                          exp(-m_gridCenter[j] / options.m_init_kTe);
+            if (EN > 1e-21) {
+                setMaxwellian(options.m_init_kTe);
             }
         } else {
             throw CanteraError("EEDFTwoTermApproximation::calculateDistributionFunction",
@@ -162,29 +371,37 @@ int EEDFTwoTermApproximation::calculateDistributionFunction()
     m_timer_eedf->start();
 
     // Computation of the EEDF
-    converge(m_f0);
+    if (EN > 1e-21){
+        converge(m_f0);
+    }
 
-    if (m_isSmart) {
-        // Compute EEDF and change the grid until :
-        double decades = std::log10(m_f0(0)) - std::log10(m_f0(options.m_points-1));
-        while (decades < m_minEedfDecay){
-            m_kTe_max = m_kTe_max * (1. + m_updateFactor);
-            // writelog("Right boundary too low. Ndecades was {:5.1e}. ", decades);
-            // writelog("New boundary is {:5.3e} eV.\n", m_kTe_max);
-            updateGrid(m_kTe_max);
-            updateCS();
-            converge(m_f0);
-            decades = std::log10(m_f0(0)) - std::log10(m_f0(options.m_points-1));
-        }
-        while (decades > m_maxEedfDecay){
-            m_kTe_max = m_kTe_max / (1. + m_updateFactor);
-            // writelog("Right boundary too high. Ndecades was {:5.1e}. ", decades);
-            // writelog("New boundary is {:5.3e} eV.\n", m_kTe_max);
-            updateGrid(m_kTe_max);
-            updateCS();
-            converge(m_f0);
-            decades = std::log10(m_f0(0)) - std::log10(m_f0(options.m_points-1));
-        }
+    // if (m_isSmart) {
+    //     // Compute EEDF and change the grid until :
+    //     double decades = std::log10(m_f0(0)) - std::log10(m_f0(options.m_points-1));
+    //     while (decades < m_minEedfDecay){
+    //         m_kTe_max = m_kTe_max * (1. + m_updateFactor);
+    //         // writelog("Right boundary too low. Ndecades was {:5.1e}. ", decades);
+    //         // writelog("New boundary is {:5.3e} eV.\n", m_kTe_max);
+    //         updateGrid(m_kTe_max);
+    //         updateCS();
+    //         converge(m_f0);
+    //         decades = std::log10(m_f0(0)) - std::log10(m_f0(options.m_points-1));
+    //     }
+    //     while (decades > m_maxEedfDecay){
+    //         m_kTe_max = m_kTe_max / (1. + m_updateFactor);
+    //         // writelog("Right boundary too high. Ndecades was {:5.1e}. ", decades);
+    //         // writelog("New boundary is {:5.3e} eV.\n", m_kTe_max);
+    //         updateGrid(m_kTe_max);
+    //         updateCS();0.
+    //         converge(m_f0);
+    //         decades = std::log10(m_f0(0)) - std::log10(m_f0(options.m_points-1));
+    //     }
+    // }
+
+    // FORCE A MAXWELLIAN IF THE REDUCED ELECTRIC FIELD IS TOO SMALL
+
+    if (EN <= 1e-21) {
+        setMaxwellian(m_phase->kT());
     }
 
     // End of monitoring
@@ -197,6 +414,34 @@ int EEDFTwoTermApproximation::calculateDistributionFunction()
         m_f0_edge[i] = linearInterp(m_gridEdge[i], x, f);
     }
 
+
+    std::cout << "m_gridCenter = [";
+    for (int i = 0; i < m_gridCenter.rows(); ++i) {
+        for (int j = 0; j < m_gridCenter.cols(); ++j) {
+            std::cout << m_gridCenter(i, j);
+            if (!(i == m_gridCenter.rows() - 1 && j == m_gridCenter.cols() - 1))
+                std::cout << ", ";
+        }
+    }
+    std::cout << "]" << std::endl;
+
+
+    std::cout << "m_gridEdge = [";
+    for (size_t i = 0; i < m_gridEdge.size(); ++i) {
+        std::cout << m_gridEdge[i];
+        if (i != m_gridEdge.size() - 1)
+            std::cout << ", ";
+    }
+    std::cout << "]" << std::endl;
+
+    std::cout << "m_f0 = [";
+    for (size_t i = 0; i < m_f0.size(); ++i) {
+        std::cout << m_f0[i];
+        if (i != m_f0.size() - 1)
+            std::cout << ", ";
+    }
+    std::cout << "]" << std::endl;
+
     m_has_EEDF = true;
 
     // update electron mobility
@@ -206,6 +451,7 @@ int EEDFTwoTermApproximation::calculateDistributionFunction()
 
 }
 
+// ancienne version de la fonction, essai avec une convergence plus centrùèe sur la queue dans la seconde fonction
 void EEDFTwoTermApproximation::converge(Eigen::VectorXd& f0)
 {
     writelog("EEDFTwoTermApproximation::converge is called\n");
@@ -237,6 +483,114 @@ void EEDFTwoTermApproximation::converge(Eigen::VectorXd& f0)
     }
 }
 
+// proposition de remplacement de converge avec un critère vérifiant que la queue est bien convergée, et pas seulement la partie centrale de l'EEDF. ne done pas d emeileurs résultats que la fonction précédente.
+// void EEDFTwoTermApproximation::converge(Eigen::VectorXd& f0)
+// {
+//     writelog("EEDFTwoTermApproximation::converge is called\n");
+//     double err0 = 0.0;
+//     double err1 = 0.0;
+//     double delta = options.m_delta0;
+
+//     for (size_t n = 0; n < options.m_maxn; n++) {
+//         if (0.0 < err1 && err1 < err0) {
+//             delta *= log(options.m_factorM) / (log(err0) - log(err1));
+//         }
+
+//         Eigen::VectorXd f0_old = f0;
+//         f0 = iterate(f0_old, delta);
+
+//         err0 = err1;
+//         Eigen::VectorXd Df0(options.m_points);
+//         for (size_t i = 0; i < options.m_points; i++) {
+//             Df0(i) = std::abs(f0_old(i) - f0(i));
+//         }
+//         err1 = norm(Df0, m_gridCenter);
+
+//         // Second criterion: relative convergence in the tail
+//         double rel_tail = 0.0;
+//         const double fref = std::max(f0.maxCoeff(), 1e-300);
+//         const double fcut = 1e-12 * fref;
+
+//         for (size_t i = 0; i < options.m_points; i++) {
+//             if (std::max(f0(i), f0_old(i)) > fcut) {
+//                 double denom = std::max(std::max(f0(i), f0_old(i)), 1e-300);
+//                 rel_tail = std::max(rel_tail,
+//                     std::abs(f0(i) - f0_old(i)) / denom);
+//             }
+//         }
+
+//         if (err1 < options.m_rtol && rel_tail < 1e-3) {
+//             break;
+//         } else if (n == options.m_maxn - 1) {
+//             throw CanteraError("EEDFTwoTermApproximation::converge",
+//                 "Convergence failed: err_abs = {}, err_rel_tail = {}",
+//                 err1, rel_tail);
+//         }
+//     }
+// }
+
+// // Proposition de correction 10: la fonction avant la correction
+// Eigen::VectorXd EEDFTwoTermApproximation::iterate(const Eigen::VectorXd& f0, double delta)
+// {
+//     // CQM multiple call to vector_* and matrix_*
+//     // probably extremely ineficient
+//     // must be refactored!!
+
+//     //writelog("EEDFTwoTermApproximation::iterate\n");
+//     SparseMat_fp PQ(options.m_points, options.m_points);
+//     vector_fp g = vector_g(f0);
+//     for (size_t k : m_phase->kInelastic()) {
+//         PQ += (matrix_Q(g, k) - matrix_P(g, k)) * m_X_targets[m_klocTargets[k]];
+//     }
+
+//     SparseMat_fp A = matrix_A(f0);
+//     SparseMat_fp I(options.m_points, options.m_points);
+//     for (size_t i = 0; i < options.m_points; i++) {
+//         I.insert(i,i) = 1.0;
+//     }
+//     A -= PQ;
+//     A *= delta;
+//     A += I;
+
+//     // Check matrix validity
+//     //writelog("{:d}rows {:d}cols\n", A.rows(), A.cols());
+//     // writelog("Number of non zero values: {:d}\n", A.nonZeros());
+//     // if (!A.isVector()) {
+//     //     writelog("The matrix A is not sparse!\n");
+//     // }
+//     // if (!A.isCompressed()) {
+//     //     writelog("The matrix A is not in compressed form!\n");
+//     // }
+
+//     // Matrix decomposition
+
+//     // SparseLU :
+//     Eigen::SparseLU<SparseMat_fp> solver(A);
+//     if (solver.info() == Eigen::NumericalIssue) {
+//         throw CanteraError("EEDFTwoTermApproximation::iterate",
+//             "Error SparseLU solver: NumericalIssue");
+//     } else if (solver.info() == Eigen::InvalidInput) {
+//         throw CanteraError("EEDFTwoTermApproximation::iterate",
+//             "Error SparseLU solver: InvalidInput");
+//     }
+//     if (solver.info() != Eigen::Success) {
+//         throw CanteraError("EEDFTwoTermApproximation::iterate",
+//             "Error SparseLU solver", "Decomposition failed");
+//         return f0;
+//     }
+
+//     // solve f0
+//     Eigen::VectorXd f1 = solver.solve(f0);
+//     if(solver.info() != Eigen::Success) {
+//         throw CanteraError("EEDFTwoTermApproximation::iterate", "Solving failed");
+//         return f0;
+//     }
+
+//     f1 /= norm(f1, m_gridCenter);
+//     return f1;
+// }
+
+// Proposition de correction 10: la fonction après la correction
 Eigen::VectorXd EEDFTwoTermApproximation::iterate(const Eigen::VectorXd& f0, double delta)
 {
     // CQM multiple call to vector_* and matrix_*
@@ -246,9 +600,16 @@ Eigen::VectorXd EEDFTwoTermApproximation::iterate(const Eigen::VectorXd& f0, dou
     //writelog("EEDFTwoTermApproximation::iterate\n");
     SparseMat_fp PQ(options.m_points, options.m_points);
     vector_fp g = vector_g(f0);
+    // coupage diagnostique de l'ionisation
     for (size_t k : m_phase->kInelastic()) {
         PQ += (matrix_Q(g, k) - matrix_P(g, k)) * m_X_targets[m_klocTargets[k]];
     }
+    // for (size_t k : m_phase->kInelastic()) {
+    //     if (m_phase->kind(k) == "ionization") {
+    //         continue; // test diagnostic
+    //     }
+    //     PQ += (matrix_Q(g, k) - matrix_P(g, k)) * m_X_targets[m_klocTargets[k]];
+    // }
 
     SparseMat_fp A = matrix_A(f0);
     SparseMat_fp I(options.m_points, options.m_points);
@@ -258,6 +619,16 @@ Eigen::VectorXd EEDFTwoTermApproximation::iterate(const Eigen::VectorXd& f0, dou
     A -= PQ;
     A *= delta;
     A += I;
+
+    A.makeCompressed();
+    for (int col = 0; col < A.outerSize(); ++col) {
+        for (SparseMat_fp::InnerIterator it(A, col); it; ++it) {
+            if (!std::isfinite(it.value())) {
+                throw CanteraError("EEDFTwoTermApproximation::iterate",
+                    "Matrix A contains a non-finite coefficient.");
+            }
+        }
+    }
 
     // Check matrix validity
     //writelog("{:d}rows {:d}cols\n", A.rows(), A.cols());
@@ -270,6 +641,15 @@ Eigen::VectorXd EEDFTwoTermApproximation::iterate(const Eigen::VectorXd& f0, dou
     // }
 
     // Matrix decomposition
+
+    // Proposition de correction 14: bloc de débuggage à retirer plus tard si je veux [DEBUG]
+
+    for (int i = 0; i < f0.size(); ++i) {
+        if (!std::isfinite(f0(i)) || f0(i) <= 0.0) {
+            throw CanteraError("EEDFTwoTermApproximation::iterate",
+                "Input EEDF contains non-finite or non-positive values.");
+        }
+    }
 
     // SparseLU :
     Eigen::SparseLU<SparseMat_fp> solver(A);
@@ -288,12 +668,27 @@ Eigen::VectorXd EEDFTwoTermApproximation::iterate(const Eigen::VectorXd& f0, dou
 
     // solve f0
     Eigen::VectorXd f1 = solver.solve(f0);
-    if(solver.info() != Eigen::Success) {
+    if (solver.info() != Eigen::Success) {
         throw CanteraError("EEDFTwoTermApproximation::iterate", "Solving failed");
-        return f0;
     }
 
-    f1 /= norm(f1, m_gridCenter);
+    for (int i = 0; i < f1.size(); ++i) {
+        if (!std::isfinite(f1(i))) {
+            throw CanteraError("EEDFTwoTermApproximation::iterate",
+                "Non-finite value found in the updated EEDF.");
+        }
+        if (f1(i) <= 0.0) {
+            f1(i) = 1e-300;
+        }
+    }
+
+    double fnorm = norm(f1, m_gridCenter);
+    if (!std::isfinite(fnorm) || fnorm <= 0.0) {
+        throw CanteraError("EEDFTwoTermApproximation::iterate",
+            "Invalid norm after linear solve.");
+    }
+
+    f1 /= fnorm;
     return f1;
 }
 
@@ -325,18 +720,50 @@ double EEDFTwoTermApproximation::integralPQ(double a, double b, double u0, doubl
     return c0 * A1 + c1 * A2;
 }
 
+// Proposition de correction 9: avant la correction
+// vector_fp EEDFTwoTermApproximation::vector_g(const Eigen::VectorXd& f0)
+// {
+//     //writelog("EEDFTwoTermApproximation::vector_g\n");
+//     vector_fp g(options.m_points, 0.0);
+//     g[0] = log(f0(1)/f0(0)) / (m_gridCenter[1] - m_gridCenter[0]);
+//     size_t N = options.m_points - 1;
+//     g[N] = log(f0(N)/f0(N-1)) / (m_gridCenter[N] - m_gridCenter[N-1]);
+//     for (size_t i = 1; i < options.m_points - 1; i++) {
+//         g[i] = log(f0(i+1)/f0(i-1)) / (m_gridCenter[i+1] - m_gridCenter[i-1]);
+//     }
+//     return g;
+// }
+
+// Proposition de correction 9: après la correction
 vector_fp EEDFTwoTermApproximation::vector_g(const Eigen::VectorXd& f0)
 {
-    //writelog("EEDFTwoTermApproximation::vector_g\n");
+    if (options.m_points < 2) {
+        throw CanteraError("EEDFTwoTermApproximation::vector_g",
+            "At least 2 grid cells are required.");
+    }
+
+    for (size_t i = 0; i < options.m_points; i++) {
+        if (!std::isfinite(f0(i)) || f0(i) <= 0.0) {
+            throw CanteraError("EEDFTwoTermApproximation::vector_g",
+                "Non-positive or non-finite EEDF value encountered.");
+        }
+    }
+
+    auto safe = [](double v) {
+        return std::max(v, 1e-300);
+    };
+
     vector_fp g(options.m_points, 0.0);
-    g[0] = log(f0(1)/f0(0)) / (m_gridCenter[1] - m_gridCenter[0]);
+    g[0] = std::log(safe(f0(1)) / safe(f0(0))) / (m_gridCenter[1] - m_gridCenter[0]);
     size_t N = options.m_points - 1;
-    g[N] = log(f0(N)/f0(N-1)) / (m_gridCenter[N] - m_gridCenter[N-1]);
+    g[N] = std::log(safe(f0(N)) / safe(f0(N-1))) / (m_gridCenter[N] - m_gridCenter[N-1]);
     for (size_t i = 1; i < options.m_points - 1; i++) {
-        g[i] = log(f0(i+1)/f0(i-1)) / (m_gridCenter[i+1] - m_gridCenter[i-1]);
+        g[i] = std::log(safe(f0(i+1)) / safe(f0(i-1))) /
+               (m_gridCenter[i+1] - m_gridCenter[i-1]);
     }
     return g;
 }
+
 
 SparseMat_fp EEDFTwoTermApproximation::matrix_P(const vector_fp& g, size_t k)
 {
@@ -377,6 +804,110 @@ SparseMat_fp EEDFTwoTermApproximation::matrix_Q(const vector_fp& g, size_t k)
     return Q;
 }
 
+// Proposition de correction 11: fonction avant la correction
+// SparseMat_fp EEDFTwoTermApproximation::matrix_A(const Eigen::VectorXd& f0)
+// {
+//     //writelog("EEDFTwoTermApproximation::matrix_A\n");
+//     vector_fp a0(options.m_points + 1);
+//     vector_fp a1(options.m_points + 1);
+//     size_t N = options.m_points - 1;
+//     // Scharfetter-Gummel scheme
+//     double nu = netProductionFreq(f0);
+//     a0[0] = NAN;
+//     a1[0] = NAN;
+//     a0[N+1] = NAN;
+//     a1[N+1] = NAN;
+
+//     // Electron-electron collisions declarations
+//     double a;
+//     vector_fp A1, A2, A3;
+//     if (m_eeCol) {
+//         // TODO
+//         //eeColIntegrals(A1, A2, A3, a, options.m_points);
+//         throw CanteraError("EEDFTwoTermApproximation::matrix_A",
+//             "eeCol to be implemented");
+//     }
+
+//     double alpha;
+//     if (options.m_growth == "spatial") {
+//         double mu = electronMobility(f0);
+//         double D = electronDiffusivity(f0);
+//         alpha = (mu * m_phase->E() - sqrt(pow(mu * m_phase->E(), 2) - 4 * D * nu * m_phase->N())) / 2.0 / D / m_phase->N();
+//     } else {
+//         alpha = 0.0;
+//     }
+
+//     double sigma_tilde;
+//     double omega = 2 * Pi * m_phase->F();
+//     for (size_t j = 1; j < options.m_points; j++) {
+//         if (options.m_growth == "temporal") {
+//             sigma_tilde = m_totalCrossSectionEdge[j] + nu / pow(m_gridEdge[j], 0.5) / m_gamma;
+//         }
+//         else {
+//             sigma_tilde = m_totalCrossSectionEdge[j];
+//         }
+//         double q = omega / (m_phase->N() * m_gamma * pow(m_gridEdge[j], 0.5));
+//         double W = -m_gamma * m_gridEdge[j] * m_gridEdge[j] * m_sigmaElastic[j];
+//         double F = sigma_tilde * sigma_tilde / (sigma_tilde * sigma_tilde + q * q);
+//         double DA = m_gamma / 3.0 * pow(m_phase->E() / m_phase->N(), 2.0) * m_gridEdge[j];
+//         double DB = m_gamma * m_phase->kT() * m_gridEdge[j] * m_gridEdge[j] * m_sigmaElastic[j];
+//         double D = DA / sigma_tilde * F + DB;
+//         if (m_eeCol) {
+//             W -= 3 * a * m_phase->ionDegree() * A1[j];
+//             D += 2 * a * m_phase->ionDegree() * (A2[j] + pow(m_gridEdge[j], 1.5) * A3[j]);
+//         }
+//         if (options.m_growth == "spatial") {
+//             W -= m_gamma / 3.0 * 2 * alpha * m_phase->E() / m_phase->N() * m_gridEdge[j] / sigma_tilde;
+//         }
+//         double z = W * (m_gridCenter[j] - m_gridCenter[j-1]) / D;
+//         a0[j] = W / (1 - std::exp(-z));
+//         a1[j] = W / (1 - std::exp(z));
+//     }
+
+//     std::vector<Triplet_fp> tripletList;
+//     // center diagonal
+//     // zero flux b.c. at energy = 0
+//     tripletList.push_back(Triplet_fp(0, 0, a0[1]));
+
+//     for (size_t j = 1; j < options.m_points - 1; j++) {
+//         tripletList.push_back(Triplet_fp(j, j, a0[j+1] - a1[j]));
+//     }
+
+//     // upper diagonal
+//     for (size_t j = 0; j < options.m_points - 1; j++) {
+//         tripletList.push_back(Triplet_fp(j, j+1, a1[j+1]));
+//     }
+
+//     // lower diagonal
+//     for (size_t j = 1; j < options.m_points; j++) {
+//         tripletList.push_back(Triplet_fp(j, j-1, -a0[j]));
+//     }
+
+//     // zero flux b.c.
+//     tripletList.push_back(Triplet_fp(N, N, -a1[N]));
+
+//     SparseMat_fp A(options.m_points, options.m_points);
+//     A.setFromTriplets(tripletList.begin(), tripletList.end());
+
+//     //plus G
+//     SparseMat_fp G(options.m_points, options.m_points);
+//     if (options.m_growth == "temporal") {
+//         for (size_t i = 0; i < options.m_points; i++) {
+//             G.insert(i, i) = 2.0 / 3.0 * (pow(m_gridEdge[i+1], 1.5) - pow(m_gridEdge[i], 1.5)) * nu;
+//         }
+//     }
+//     else if (options.m_growth == "spatial") {
+//         for (size_t i = 0; i < options.m_points; i++) {
+//             double sigma_c = 0.5 * (m_totalCrossSectionEdge[i] + m_totalCrossSectionEdge[i + 1]);
+//             G.insert(i, i) = - alpha * m_gamma / 3 * (alpha * (pow(m_gridEdge[i + 1], 2) - pow(m_gridEdge[i], 2)) / sigma_c / 2
+//                  - m_phase->E() / m_phase->N() * (m_gridEdge[i + 1] / m_totalCrossSectionEdge[i + 1] - m_gridEdge[i] / m_totalCrossSectionEdge[i]));
+//         }
+//     }
+
+//     return A + G;
+// }
+
+// Proposition de correction 11: fonction après la correction
 SparseMat_fp EEDFTwoTermApproximation::matrix_A(const Eigen::VectorXd& f0)
 {
     //writelog("EEDFTwoTermApproximation::matrix_A\n");
@@ -384,6 +915,9 @@ SparseMat_fp EEDFTwoTermApproximation::matrix_A(const Eigen::VectorXd& f0)
     vector_fp a1(options.m_points + 1);
     size_t N = options.m_points - 1;
     // Scharfetter-Gummel scheme
+
+    // double nu = 0;
+
     double nu = netProductionFreq(f0);
     a0[0] = NAN;
     a1[0] = NAN;
@@ -404,7 +938,12 @@ SparseMat_fp EEDFTwoTermApproximation::matrix_A(const Eigen::VectorXd& f0)
     if (options.m_growth == "spatial") {
         double mu = electronMobility(f0);
         double D = electronDiffusivity(f0);
-        alpha = (mu * m_phase->E() - sqrt(pow(mu * m_phase->E(), 2) - 4 * D * nu * m_phase->N())) / 2.0 / D / m_phase->N();
+        double disc = std::pow(mu * m_phase->E(), 2) - 4.0 * D * nu * m_phase->N();
+        if (!std::isfinite(D) || D <= 0.0 || !std::isfinite(disc) || disc < 0.0) {
+            throw CanteraError("EEDFTwoTermApproximation::matrix_A",
+                "Invalid coefficients in spatial growth model.");
+        }
+        alpha = (mu * m_phase->E() - std::sqrt(disc)) / 2.0 / D / m_phase->N();
     } else {
         alpha = 0.0;
     }
@@ -413,27 +952,66 @@ SparseMat_fp EEDFTwoTermApproximation::matrix_A(const Eigen::VectorXd& f0)
     double omega = 2 * Pi * m_phase->F();
     for (size_t j = 1; j < options.m_points; j++) {
         if (options.m_growth == "temporal") {
-            sigma_tilde = m_totalCrossSectionEdge[j] + nu / pow(m_gridEdge[j], 0.5) / m_gamma;
-        }
-        else {
+            std::cout << "[DEBUG] Calculating sigma_tilde for temporal growth at grid edge " << j << std::endl;
+            std::cout << "m_totalCrossSectionEdge[j] = " << m_totalCrossSectionEdge[j] << std::endl;
+            std::cout << "nu = " << nu << ", m_gridEdge[j] = " << m_gridEdge[j] << ", m_gamma = " << m_gamma << std::endl;
+            sigma_tilde = m_totalCrossSectionEdge[j] + nu / std::sqrt(m_gridEdge[j]) / m_gamma;
+        } else {
             sigma_tilde = m_totalCrossSectionEdge[j];
         }
-        double q = omega / (m_phase->N() * m_gamma * pow(m_gridEdge[j], 0.5));
+        if (!std::isfinite(sigma_tilde) || sigma_tilde <= 0.0) {
+            throw CanteraError("EEDFTwoTermApproximation::matrix_A",
+                "Invalid sigma_tilde.");
+        }
+
+        double q = omega / (m_phase->N() * m_gamma * std::sqrt(m_gridEdge[j]));
         double W = -m_gamma * m_gridEdge[j] * m_gridEdge[j] * m_sigmaElastic[j];
-        double F = sigma_tilde * sigma_tilde / (sigma_tilde * sigma_tilde + q * q);
-        double DA = m_gamma / 3.0 * pow(m_phase->E() / m_phase->N(), 2.0) * m_gridEdge[j];
+
+        double denomF = sigma_tilde * sigma_tilde + q * q;
+        if (!std::isfinite(denomF) || denomF <= 0.0) {
+            throw CanteraError("EEDFTwoTermApproximation::matrix_A",
+                "Invalid denominator in Scharfetter-Gummel flux.");
+        }
+        double F = sigma_tilde * sigma_tilde / denomF;
+
+        double DA = m_gamma / 3.0 * std::pow(m_phase->E() / m_phase->N(), 2.0) * m_gridEdge[j];
         double DB = m_gamma * m_phase->kT() * m_gridEdge[j] * m_gridEdge[j] * m_sigmaElastic[j];
         double D = DA / sigma_tilde * F + DB;
+
         if (m_eeCol) {
             W -= 3 * a * m_phase->ionDegree() * A1[j];
-            D += 2 * a * m_phase->ionDegree() * (A2[j] + pow(m_gridEdge[j], 1.5) * A3[j]);
+            D += 2 * a * m_phase->ionDegree() * (A2[j] + std::pow(m_gridEdge[j], 1.5) * A3[j]);
         }
         if (options.m_growth == "spatial") {
-            W -= m_gamma / 3.0 * 2 * alpha * m_phase->E() / m_phase->N() * m_gridEdge[j] / sigma_tilde;
+            W -= m_gamma / 3.0 * 2 * alpha * m_phase->E() / m_phase->N() *
+                 m_gridEdge[j] / sigma_tilde;
         }
-        double z = W * (m_gridCenter[j] - m_gridCenter[j-1]) / D;
-        a0[j] = W / (1 - std::exp(-z));
-        a1[j] = W / (1 - std::exp(z));
+        if (!std::isfinite(D) || D <= 0.0) {
+            throw CanteraError("EEDFTwoTermApproximation::matrix_A",
+                "Invalid diffusion coefficient D.");
+        }
+
+        double dE = m_gridCenter[j] - m_gridCenter[j-1];
+        double z = W * dE / D;
+        if (!std::isfinite(z)) {
+            throw CanteraError("EEDFTwoTermApproximation::matrix_A",
+                "Invalid Peclet number in Scharfetter-Gummel discretization.");
+        }
+
+        if (std::abs(z) < 1e-8) {
+            a0[j] = D / dE + 0.5 * W;
+            a1[j] = -D / dE + 0.5 * W;
+        } else {
+            double denom0 = -std::expm1(-z); // 1 - exp(-z)
+            double denom1 = -std::expm1(z);  // 1 - exp(z)
+            if (!std::isfinite(denom0) || !std::isfinite(denom1) ||
+                std::abs(denom0) < 1e-300 || std::abs(denom1) < 1e-300) {
+                throw CanteraError("EEDFTwoTermApproximation::matrix_A",
+                    "Invalid Scharfetter-Gummel denominator.");
+            }
+            a0[j] = W / denom0;
+            a1[j] = W / denom1;
+        }
     }
 
     std::vector<Triplet_fp> tripletList;
@@ -479,6 +1057,7 @@ SparseMat_fp EEDFTwoTermApproximation::matrix_A(const Eigen::VectorXd& f0)
     return A + G;
 }
 
+// normal function
 double EEDFTwoTermApproximation::netProductionFreq(const Eigen::VectorXd& f0)
 {
     double nu = 0.0;
@@ -500,6 +1079,28 @@ double EEDFTwoTermApproximation::netProductionFreq(const Eigen::VectorXd& f0)
     return nu;
 }
 
+// wrong function that deactivates ionisation for diagnistics:
+// double EEDFTwoTermApproximation::netProductionFreq(const Eigen::VectorXd& f0)
+// {
+//     double nu = 0.0;
+//     vector_fp g = vector_g(f0);
+
+//     for (size_t k = 0; k < m_phase->nElectronCrossSections(); k++) {
+//         if (m_phase->kind(k) == "ionization") {
+//             continue; // vrai test sans ionisation dans nu
+//         }
+//         if (m_phase->kind(k) == "attachment") {
+//             SparseMat_fp PQ = (matrix_Q(g, k) - matrix_P(g, k)) *
+//                               m_X_targets[m_klocTargets[k]];
+//             Eigen::VectorXd s = PQ * f0;
+//             for (size_t i = 0; i < options.m_points; i++) {
+//                 nu += s[i];
+//             }
+//         }
+//     }
+//     return nu;
+// }
+
 double EEDFTwoTermApproximation::electronDiffusivity(const Eigen::VectorXd& f0)
 {
     vector_fp y(options.m_points, 0.0);
@@ -512,7 +1113,11 @@ double EEDFTwoTermApproximation::electronDiffusivity(const Eigen::VectorXd& f0)
     }
     auto f = Eigen::Map<const Eigen::ArrayXd>(y.data(), y.size());
     auto x = Eigen::Map<const Eigen::ArrayXd>(m_gridCenter.data(), m_gridCenter.size());
+    // vector_fp xv(x.data(), x.data() + x.size());
+    // vector_fp fv(f.data(), f.data() + f.size());
+    // return 1./3. * m_gamma * simpsonQuadrature(xv, fv) / m_phase->N();
     return 1./3. * m_gamma * simpson(f, x) / m_phase->N();
+    // return 1./3. * m_gamma * norm(f, x) / m_phase->N();
 }
 
 double EEDFTwoTermApproximation::electronMobility(const Eigen::VectorXd& f0)
@@ -529,7 +1134,11 @@ double EEDFTwoTermApproximation::electronMobility(const Eigen::VectorXd& f0)
     }
     auto f = Eigen::Map<const Eigen::ArrayXd>(y.data(), y.size());
     auto x = Eigen::Map<const Eigen::ArrayXd>(m_gridEdge.data(), m_gridEdge.size());
+    // vector_fp xv(x.data(), x.data() + x.size());
+    // vector_fp fv(f.data(), f.data() + f.size());
+    // return -1./3. * m_gamma * simpsonQuadrature(xv, fv) / m_phase->N();
     return -1./3. * m_gamma * simpson(f, x) / m_phase->N();
+    // return -1./3. * m_gamma * norm(f, x) / m_phase->N();
 }
 
 void EEDFTwoTermApproximation::initSpeciesIndexCS()
@@ -600,12 +1209,36 @@ void EEDFTwoTermApproximation::checkSpeciesNoCrossSection()
     }
 }
 
+// old version of the function
+// void EEDFTwoTermApproximation::updateCS()
+// {
+//     //writelog("updateCS\n");
+//     // Compute sigma_m and sigma_\epsilon
+//     calculateTotalCrossSection();
+//     calculateTotalElasticCrossSection();
+// }
+
+//corrected versino of the function:
+
 void EEDFTwoTermApproximation::updateCS()
 {
-    //writelog("updateCS\n");
-    // Compute sigma_m and sigma_\epsilon
     calculateTotalCrossSection();
     calculateTotalElasticCrossSection();
+
+    if (m_phase->kElastic().empty()) {
+        throw CanteraError("EEDFTwoTermApproximation::updateCS",
+            "No electron cross section of kind 'elastic' or 'effective' is loaded. "
+            "The two-term transport operator cannot be assembled.");
+    }
+
+    for (size_t j = 1; j < options.m_points; ++j) {
+        if (!std::isfinite(m_totalCrossSectionEdge[j]) ||
+            m_totalCrossSectionEdge[j] <= 0.0) {
+            throw CanteraError("EEDFTwoTermApproximation::updateCS",
+                "The total electron cross section is zero or non-finite on the "
+                "EEDF grid at edge {} (epsilon = {}).", j, m_gridEdge[j]);
+        }
+    }
 }
 
 // Update the species mole fractions used for EEDF computation
@@ -623,6 +1256,12 @@ void EEDFTwoTermApproximation::update_mole_fractions()
     //writelog("Update mole fractions in EEDFTwoTermApproximation 2\n");
     // writelog("Sum of mole fraction is equal to {:.2g}\n", tmp_sum);
 
+    // Proposition de correction 13: ajout de ce if pour etre sur de ne pas faire de division par zero.
+    if (tmp_sum <= 0.0) {
+        throw CanteraError("EEDFTwoTermApproximation::update_mole_fractions",
+            "Sum of target mole fractions is zero.");
+    }
+
     // Normalize the mole fractions to unity:
     for (size_t k = 0; k < m_X_targets.size(); k++)
     {
@@ -637,6 +1276,7 @@ void EEDFTwoTermApproximation::update_mole_fractions()
     //writelog("Update mole fractions in EEDFTwoTermApproximation 3\n");
 }
 
+// version originale de la fonction
 void EEDFTwoTermApproximation::calculateTotalCrossSection()
 {
     //writelog("calculateTotalCrossSection\n");
@@ -661,6 +1301,31 @@ void EEDFTwoTermApproximation::calculateTotalCrossSection()
     }
 }
 
+// version de la fonction pour désactiver l'ionisation
+// void EEDFTwoTermApproximation::calculateTotalCrossSection()
+//     {
+//         m_totalCrossSectionCenter.assign(options.m_points, 0.0);
+//         m_totalCrossSectionEdge.assign(options.m_points + 1, 0.0);
+
+//         for (size_t k = 0; k < m_phase->nElectronCrossSections(); k++) {
+//             if (m_phase->kind(k) == "ionization") {
+//                 continue; // test diagnostic propre
+//             }
+
+//             vector_fp x = m_phase->energyLevels()[k];
+//             vector_fp y = m_phase->crossSections()[k];
+
+//             for (size_t i = 0; i < options.m_points; i++) {
+//                 m_totalCrossSectionCenter[i] += m_X_targets[m_klocTargets[k]]
+//                                                 * linearInterp(m_gridCenter[i], x, y);
+//             }
+//             for (size_t i = 0; i < options.m_points + 1; i++) {
+//                 m_totalCrossSectionEdge[i] += m_X_targets[m_klocTargets[k]]
+//                                             * linearInterp(m_gridEdge[i], x, y);
+//             }
+//         }
+//     }
+
 void EEDFTwoTermApproximation::calculateTotalElasticCrossSection()
 {
     //writelog("calculateTotalElasticCrossSection\n");
@@ -679,6 +1344,7 @@ void EEDFTwoTermApproximation::calculateTotalElasticCrossSection()
     }
 }
 
+// version initiale de setGridCache
 void EEDFTwoTermApproximation::setGridCache()
 {
     //writelog("EEDFTwoTermApproximation::setGridCache\n");
@@ -756,6 +1422,121 @@ void EEDFTwoTermApproximation::setGridCache()
         }
     }
 }
+
+// Proposition de version corrigée pour setGridCache: ne change pas vraiment les choses (meme rend la convergence pire)
+// void EEDFTwoTermApproximation::setGridCache()
+// {
+//     m_sigma.clear();
+//     m_sigma.resize(m_phase->nElectronCrossSections());
+
+//     m_sigma_offset.clear();
+//     m_sigma_offset.resize(m_phase->nElectronCrossSections());
+
+//     m_eps.clear();
+//     m_eps.resize(m_phase->nElectronCrossSections());
+
+//     m_j.clear();
+//     m_j.resize(m_phase->nElectronCrossSections());
+
+//     m_i.clear();
+//     m_i.resize(m_phase->nElectronCrossSections());
+
+//     const double E0 = m_gridEdge.front();
+//     const double Emax = m_gridEdge.back();
+
+//     auto cell_index = [](const vector_fp& edges, double e, size_t ncell) -> size_t {
+//         auto it = std::upper_bound(edges.begin(), edges.end(), e);
+//         if (it == edges.begin()) {
+//             return 0;
+//         }
+//         size_t idx = static_cast<size_t>(it - edges.begin() - 1);
+//         return std::min(idx, ncell - 1);
+//     };
+
+//     for (size_t k = 0; k < m_phase->nElectronCrossSections(); k++) {
+//         auto x = m_phase->energyLevels()[k];
+//         auto y = m_phase->crossSections()[k];
+
+//         vector_fp eps1_raw(options.m_points + 1);
+//         for (size_t i = 0; i < options.m_points + 1; i++) {
+//             eps1_raw[i] = m_phase->shiftFactor()[k] * m_gridEdge[i]
+//                         + m_phase->threshold(k);
+//         }
+
+//         const double overlap_min = std::max(E0, eps1_raw.front());
+//         const double overlap_max = std::min(Emax, eps1_raw.back());
+
+//         // No overlap between the physical grid and the shifted grid
+//         if (!(overlap_max > overlap_min)) {
+//             continue;
+//         }
+
+//         vector_fp nodes;
+//         nodes.reserve(2 * (options.m_points + 1) + x.size() + 2);
+
+//         nodes.push_back(overlap_min);
+//         nodes.push_back(overlap_max);
+
+//         for (double e : m_gridEdge) {
+//             if (e > overlap_min && e < overlap_max) {
+//                 nodes.push_back(e);
+//             }
+//         }
+
+//         for (double e : x) {
+//             if (e > overlap_min && e < overlap_max) {
+//                 nodes.push_back(e);
+//             }
+//         }
+
+//         for (double e : eps1_raw) {
+//             if (e > overlap_min && e < overlap_max) {
+//                 nodes.push_back(e);
+//             }
+//         }
+
+//         std::sort(nodes.begin(), nodes.end());
+//         nodes.erase(std::unique(nodes.begin(), nodes.end()), nodes.end());
+
+//         if (nodes.size() < 2) {
+//             continue;
+//         }
+
+//         vector_fp sigma0(nodes.size());
+//         for (size_t n = 0; n < nodes.size(); n++) {
+//             sigma0[n] = linearInterp(nodes[n], x, y);
+//         }
+
+//         m_sigma[k].reserve(nodes.size() - 1);
+//         m_eps[k].reserve(nodes.size() - 1);
+//         m_j[k].reserve(nodes.size() - 1);
+//         m_i[k].reserve(nodes.size() - 1);
+
+//         for (size_t n = 0; n < nodes.size() - 1; n++) {
+//             double ea = nodes[n];
+//             double eb = nodes[n + 1];
+//             double emid = 0.5 * (ea + eb);
+
+//             size_t jcell = cell_index(m_gridEdge, emid, options.m_points);
+//             size_t icell = cell_index(eps1_raw, emid, options.m_points);
+
+//             m_j[k].push_back(jcell);
+//             m_i[k].push_back(icell);
+//             m_sigma[k].push_back({sigma0[n], sigma0[n + 1]});
+//             m_eps[k].push_back({ea, eb});
+//         }
+
+//         auto x_offset = m_phase->energyLevels()[k];
+//         for (auto& element : x_offset) {
+//             element -= m_phase->threshold(k);
+//         }
+
+//         m_sigma_offset[k].reserve(options.m_points);
+//         for (size_t i = 0; i < options.m_points; i++) {
+//             m_sigma_offset[k].push_back(linearInterp(m_gridCenter[i], x_offset, y));
+//         }
+//     }
+// }
 
 double EEDFTwoTermApproximation::norm(const Eigen::VectorXd& f, const Eigen::VectorXd& grid)
 {
